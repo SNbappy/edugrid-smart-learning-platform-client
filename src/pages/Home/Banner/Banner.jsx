@@ -20,7 +20,7 @@ const Banner = () => {
                     </div>
                     <div className="w-1/2 flex justify-between">
                         <img
-                            src="/public/BannerImg/banner1.jpg"
+                            src="BannerImg/banner1.jpg"
                             className="w-[278px] h-[350px] rounded-tr-0 rounded-bl-0 rounded-br-[50px] rounded-tl-[50px] self-end"
                             style={{
                                 animation: 'float 3s ease-in-out infinite',
@@ -28,7 +28,7 @@ const Banner = () => {
                             alt=""
                         />
                         <img
-                            src="/public/BannerImg/banner2.jpg"
+                            src="BannerImg/banner2.jpg"
                             className="w-[278px] h-[350px] rounded-tr-[50px] rounded-bl-[50px] rounded-br-0 rounded-tl-0"
                             style={{
                                 animation: 'float 3s ease-in-out infinite',

@@ -32,7 +32,7 @@ const Login = () => {
                 showConfirmButton: false,
                 timer: 1500
             });
-            navigate(from, { replace: true });
+            navigate('/dashboard', { replace: true });
         } catch (error) {
             console.error('Login error:', error);
             Swal.fire({
@@ -58,7 +58,7 @@ const Login = () => {
                 showConfirmButton: false,
                 timer: 1500
             });
-            navigate(from, { replace: true });
+            navigate('/dashboard', { replace: true });
         } catch (error) {
             console.error('Google sign-in error:', error);
             Swal.fire({
@@ -128,7 +128,7 @@ const Login = () => {
                                 className="flex items-center justify-center gap-3 w-full bg-white border border-gray-300 py-3 px-4 rounded-[8px] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-gray-700"
                             >
                                 <img
-                                    src="/public/LoginImg/Google__G__logo.svg.png"
+                                    src="LoginImg/Google__G__logo.svg.png"
                                     alt="Google"
                                     className="w-5 h-5"
                                 />
@@ -146,7 +146,7 @@ const Login = () => {
                         </div>
                     </div>
                     <div>
-                        <img src="/public/LoginImg/upscalemedia-transformed.png" alt="Login illustration" className="w-full" />
+                        <img src="LoginImg/upscalemedia-transformed.png" alt="Login illustration" className="w-full" />
                     </div>
                 </div>
             </div>

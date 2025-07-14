@@ -7,7 +7,9 @@ import {
     signOut,
     updateProfile,
     GoogleAuthProvider,
-    signInWithPopup
+    signInWithPopup,
+    sendPasswordResetEmail,
+    fetchSignInMethodsForEmail
 } from "firebase/auth";
 import { app } from '../firebase/firebase.config';
 
@@ -34,6 +36,43 @@ const AuthProvider = ({ children }) => {
     const signInWithGoogle = () => {
         setLoading(true);
         return signInWithPopup(auth, googleProvider);
+    }
+
+    // Fixed resetPassword function
+    const resetPassword = async (email) => {
+        try {
+            console.log('Checking user existence for:', email);
+
+            // Check if user exists using fetchSignInMethodsForEmail
+            const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+
+            console.log('Sign-in methods found:', signInMethods);
+
+            if (signInMethods.length === 0) {
+                console.log('No sign-in methods found - user does not exist');
+                throw new Error('auth/user-not-found');
+            }
+
+            console.log('User exists, sending password reset email');
+
+            // User exists, send reset email
+            const actionCodeSettings = {
+                url: 'http://localhost:3000/login', // Update with your domain
+                handleCodeInApp: false,
+            };
+
+            return sendPasswordResetEmail(auth, email, actionCodeSettings);
+
+        } catch (error) {
+            console.error('Password reset error:', error);
+
+            // If it's fetchSignInMethodsForEmail error, user doesn't exist
+            if (error.code === 'auth/user-not-found' || error.message === 'auth/user-not-found') {
+                throw new Error('auth/user-not-found');
+            }
+
+            throw error;
+        }
     }
 
     const logOut = () => {
@@ -64,7 +103,8 @@ const AuthProvider = ({ children }) => {
         loading,
         createUser,
         signIn,
-        signInWithGoogle,  // Added Google sign-in
+        signInWithGoogle,
+        resetPassword,
         logOut,
         updateUserProfile
     }
