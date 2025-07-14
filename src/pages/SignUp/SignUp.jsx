@@ -140,13 +140,13 @@ const SignUp = () => {
                             </span>
                         )}
                         
-                        <p className="font-medium text-sm pb-1">Photo URL (Optional)</p>
+                        {/* <p className="font-medium text-sm pb-1">Photo URL (Optional)</p>
                         <input
                             type="url"
                             {...register('photoURL')}
                             placeholder="https://example.com/your-photo.jpg"
                             className="bg-white rounded-[4px] py-3 pl-4 w-full mb-7"
-                        />
+                        /> */}
                         
                         <button 
                             type="submit" 
@@ -159,18 +159,18 @@ const SignUp = () => {
                     
                     <p className="text-sm py-[30px] text-center font-medium">or continue with</p>
                     
-                    <div className="text-center">
+                    {/* <div className="text-center">
                         <p className="text-sm font-medium">
                             Already have an account?{' '}
                             <Link to="/login" className="text-[#457B9D] hover:underline">
                                 Sign in here
                             </Link>
                         </p>
-                    </div>
-                    <div className="flex justify-between">
-                        <img className="w-[20px] bg-white py-2" src="/public/LoginImg/Google__G__logo.svg.png" alt="" />
-                        <img className="w-[20px]" src="/public/LoginImg/Facebook_Logo_2023.png" alt="" />
-                        <img className="w-[20px]" src="/public/LoginImg/747.png" alt="" />
+                    </div> */}
+                    <div className="flex justify-between items-center">
+                        <img className="w-[70px] bg-white py-2 px-6  rounded-[30px]" src="/public/LoginImg/Google__G__logo.svg.png" alt="" />
+                        <img className="w-[70px] bg-white py-2 px-6  rounded-[30px]" src="/public/LoginImg/Facebook_Logo_2023.png" alt="" />
+                        <img className="w-[70px] bg-white py-2 px-6  rounded-[30px]" src="/public/LoginImg/747.png" alt="" />
                     </div>
                 </div>
                 <div>
