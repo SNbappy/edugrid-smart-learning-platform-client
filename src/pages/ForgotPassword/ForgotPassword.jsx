@@ -71,7 +71,7 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="bg-[#DCE8F5] font-poppins min-h-screen">
+        <div className="bg-[#DCE8F5] font-poppins min-h-screen text-black">
             <div className="max-w-[1250px] mx-auto">
                 <Helmet>
                     <title>EduGrid | Forgot Password</title>
@@ -147,7 +147,7 @@ const ForgotPassword = () => {
 
                     <div className="w-1/2">
                         <img
-                            src="/public/LoginImg/upscalemedia-transformed.png"
+                            src="LoginImg/upscalemedia-transformed.png"
                             alt="Forgot password illustration"
                             className="w-full h-auto"
                         />

@@ -98,7 +98,7 @@ const SignUp = () => {
 
 
     return (
-        <div className="bg-[#DCE8F5] font-poppins">
+        <div className="bg-[#DCE8F5] font-poppins text-black">
             <div className="max-w-[1250px] mx-auto">
                 <Helmet>
                     <title>EduGrid | Sign Up</title>

@@ -10,8 +10,8 @@ import AllClasses from "../pages/AllClasses/AllClasses";
 import SignUp from "../pages/SignUp/SignUp";
 import Login from "../pages/Login/Login";
 import PrivateRoute from "./PrivateRoute";
-import Dashboard from "../pages/Dashboard/Dashboard";
 import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
+import Dashboard from "../pages/Dashboard/Dashboard/Dashboard";
 
 export const router = createBrowserRouter([
     {

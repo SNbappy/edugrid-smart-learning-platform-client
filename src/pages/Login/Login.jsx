@@ -72,7 +72,7 @@ const Login = () => {
     };
 
     return (
-        <div className="bg-[#DCE8F5] font-poppins">
+        <div className="bg-[#DCE8F5] font-poppins text-black">
             <div className="max-w-[1250px] mx-auto">
                 <Helmet>
                     <title>EduGrid | Login</title>
@@ -80,7 +80,7 @@ const Login = () => {
 
                 <div className="flex justify-between">
                     <div className="bg-[#DCE8F5]/30 rounded-[30px] shadow-2xl px-[70px] w-1/2 pt-[80px] pb-[40px] mb-[63px] mt-[30px]">
-                        <p className="font-bold text-[28.5px] pb-5">Welcome back</p>
+                        <p className="font-bold text-[28.5px] pb-5  ">Welcome back</p>
 
                         <form onSubmit={handleLogin}>
                             <p className="font-medium text-sm pb-1">Enter an Email Address</p>

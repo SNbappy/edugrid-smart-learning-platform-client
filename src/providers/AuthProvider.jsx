@@ -1,113 +1,170 @@
-import React, { createContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import {
     createUserWithEmailAndPassword,
-    getAuth,
-    onAuthStateChanged,
     signInWithEmailAndPassword,
+    onAuthStateChanged,
     signOut,
     updateProfile,
     GoogleAuthProvider,
     signInWithPopup,
-    sendPasswordResetEmail,
-    fetchSignInMethodsForEmail
-} from "firebase/auth";
-import { app } from '../firebase/firebase.config';
+    sendPasswordResetEmail
+} from 'firebase/auth';
+import { auth } from '../firebase/firebase.config'; // Adjust path as needed
 
 export const AuthContext = createContext(null);
 
 const AuthProvider = ({ children }) => {
-    const auth = getAuth(app);
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Google provider setup
+    // Google Auth Provider
     const googleProvider = new GoogleAuthProvider();
 
-    const createUser = (email, password) => {
-        setLoading(true);
-        return createUserWithEmailAndPassword(auth, email, password);
-    }
+    // Configure Google provider for better user experience
+    googleProvider.setCustomParameters({
+        prompt: 'select_account'
+    });
 
-    const signIn = (email, password) => {
+    // Create user with email and password
+    const createUser = async (email, password) => {
         setLoading(true);
-        return signInWithEmailAndPassword(auth, email, password);
-    }
-
-    const signInWithGoogle = () => {
-        setLoading(true);
-        return signInWithPopup(auth, googleProvider);
-    }
-
-    // Fixed resetPassword function
-    const resetPassword = async (email) => {
         try {
-            console.log('Checking user existence for:', email);
+            const result = await createUserWithEmailAndPassword(auth, email, password);
+            return result;
+        } catch (error) {
+            console.error('Create user error:', error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            // Check if user exists using fetchSignInMethodsForEmail
-            const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+    // Sign in with email and password
+    const signIn = async (email, password) => {
+        setLoading(true);
+        try {
+            const result = await signInWithEmailAndPassword(auth, email, password);
+            return result;
+        } catch (error) {
+            console.error('Sign in error:', error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
 
-            console.log('Sign-in methods found:', signInMethods);
+    // Sign in with Google
+    const signInWithGoogle = async () => {
+        setLoading(true);
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
 
-            if (signInMethods.length === 0) {
-                console.log('No sign-in methods found - user does not exist');
-                throw new Error('auth/user-not-found');
+            // Validate the result
+            if (!result || !result.user) {
+                throw new Error('Google sign-in failed - no user data received');
             }
 
-            console.log('User exists, sending password reset email');
+            if (!result.user.email) {
+                throw new Error('Google sign-in failed - no email provided');
+            }
 
-            // User exists, send reset email
-            const actionCodeSettings = {
-                url: 'http://localhost:3000/login', // Update with your domain
-                handleCodeInApp: false,
-            };
-
-            return sendPasswordResetEmail(auth, email, actionCodeSettings);
-
+            console.log('Google sign-in successful:', result.user);
+            return result;
         } catch (error) {
-            console.error('Password reset error:', error);
+            console.error('Google sign-in error:', error);
 
-            // If it's fetchSignInMethodsForEmail error, user doesn't exist
-            if (error.code === 'auth/user-not-found' || error.message === 'auth/user-not-found') {
-                throw new Error('auth/user-not-found');
+            // Handle specific Google Auth errors
+            if (error.code === 'auth/popup-closed-by-user') {
+                throw new Error('Sign-in was cancelled. Please try again.');
+            } else if (error.code === 'auth/popup-blocked') {
+                throw new Error('Popup was blocked by browser. Please allow popups and try again.');
+            } else if (error.code === 'auth/cancelled-popup-request') {
+                throw new Error('Sign-in request was cancelled. Please try again.');
+            } else if (error.code === 'auth/network-request-failed') {
+                throw new Error('Network error. Please check your connection and try again.');
+            } else if (error.code === 'auth/internal-error') {
+                throw new Error('An internal error occurred. Please try again later.');
             }
 
             throw error;
+        } finally {
+            setLoading(false);
         }
-    }
+    };
 
-    const logOut = () => {
+    // Update user profile
+    const updateUserProfile = async (name, photoURL = '') => {
+        try {
+            if (!auth.currentUser) {
+                throw new Error('No user is currently signed in');
+            }
+
+            await updateProfile(auth.currentUser, {
+                displayName: name,
+                photoURL: photoURL
+            });
+
+            // Update local user state
+            setUser(prevUser => ({
+                ...prevUser,
+                displayName: name,
+                photoURL: photoURL
+            }));
+
+            console.log('User profile updated successfully');
+        } catch (error) {
+            console.error('Update profile error:', error);
+            throw error;
+        }
+    };
+
+    // Sign out
+    const logOut = async () => {
         setLoading(true);
-        return signOut(auth);
-    }
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error('Sign out error:', error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const updateUserProfile = (name, photo) => {
-        return updateProfile(auth.currentUser, {
-            displayName: name,
-            photoURL: photo
-        });
-    }
+    // Reset password
+    const resetPassword = async (email) => {
+        try {
+            await sendPasswordResetEmail(auth, email);
+        } catch (error) {
+            console.error('Reset password error:', error);
+            throw error;
+        }
+    };
 
+    // Monitor auth state changes
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, currentUser => {
+        const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+            console.log('Auth state changed:', currentUser?.email || 'No user');
             setUser(currentUser);
-            console.log('current user', currentUser);
             setLoading(false);
         });
-        return () => {
-            return unsubscribe();
-        }
-    }, [])
 
+        return () => {
+            unsubscribe();
+        };
+    }, []);
+
+    // Auth info object
     const authInfo = {
         user,
         loading,
         createUser,
         signIn,
         signInWithGoogle,
-        resetPassword,
+        updateUserProfile,
         logOut,
-        updateUserProfile
-    }
+        resetPassword
+    };
 
     return (
         <AuthContext.Provider value={authInfo}>
