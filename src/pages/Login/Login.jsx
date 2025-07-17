@@ -3,14 +3,59 @@ import { AuthContext } from '../../providers/AuthProvider';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Swal from 'sweetalert2';
+import useAxiosPublic from '../../hooks/useAxiosPublic';
 
 const Login = () => {
     const { signIn, signInWithGoogle } = useContext(AuthContext);
+    const axiosPublic = useAxiosPublic();
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
 
     const from = location.state?.from?.pathname || "/";
+
+    // Function to check if user exists and create if not
+    // Function to check if user exists and create if not
+    const checkAndCreateUser = async (user, loginMethod) => {
+        try {
+            console.log('🔍 Checking if user exists:', user.email);
+
+            // First check if user exists using axios
+            const checkResponse = await axiosPublic.get(`/users/${user.email}`);  // ✅ Fixed
+            console.log('✅ User already exists in database');
+
+        } catch (error) {
+            if (error.response?.status === 404) {
+                console.log('❌ User not found, creating new user...');
+
+                // User doesn't exist, create them
+                const userData = {
+                    name: user.displayName || user.email.split('@')[0],
+                    email: user.email,
+                    photoURL: user.photoURL || '',
+                    loginMethod: loginMethod,
+                    createdAt: new Date(),
+                    role: 'teacher',
+                    profile: {
+                        department: '',
+                        subject: '',
+                        phone: '',
+                        address: '',
+                        bio: ''
+                    }
+                };
+
+                console.log('📤 Creating user with data:', userData);
+
+                const createResponse = await axiosPublic.post('/users', userData);  // ✅ Fixed
+                console.log('✅ User created successfully:', createResponse.data);
+
+            } else {
+                console.error('❌ Error checking user existence:', error);
+            }
+        }
+    };
+
 
     const handleLogin = async (event) => {
         event.preventDefault();
@@ -23,7 +68,7 @@ const Login = () => {
         try {
             const result = await signIn(email, password);
             const user = result.user;
-            console.log(user);
+            console.log('✅ Email/Password login successful:', user.email);
 
             Swal.fire({
                 position: "top-end",
@@ -34,7 +79,7 @@ const Login = () => {
             });
             navigate('/dashboard', { replace: true });
         } catch (error) {
-            console.error('Login error:', error);
+            console.error('❌ Login error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Login Failed!',
@@ -48,8 +93,14 @@ const Login = () => {
     const handleGoogleSignIn = async () => {
         try {
             setIsLoading(true);
+            console.log('🔄 Starting Google sign-in...');
+
             const result = await signInWithGoogle();
             const user = result.user;
+            console.log('✅ Google authentication successful:', user.email);
+
+            // Check if user exists in database, create if not
+            await checkAndCreateUser(user, 'google');
 
             Swal.fire({
                 position: "top-end",
@@ -60,7 +111,7 @@ const Login = () => {
             });
             navigate('/dashboard', { replace: true });
         } catch (error) {
-            console.error('Google sign-in error:', error);
+            console.error('❌ Google sign-in error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
@@ -80,7 +131,7 @@ const Login = () => {
 
                 <div className="flex justify-between">
                     <div className="bg-[#DCE8F5]/30 rounded-[30px] shadow-2xl px-[70px] w-1/2 pt-[80px] pb-[40px] mb-[63px] mt-[30px]">
-                        <p className="font-bold text-[28.5px] pb-5  ">Welcome back</p>
+                        <p className="font-bold text-[28.5px] pb-5">Welcome back</p>
 
                         <form onSubmit={handleLogin}>
                             <p className="font-medium text-sm pb-1">Enter an Email Address</p>
@@ -113,7 +164,7 @@ const Login = () => {
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full text-white bg-[#457B9D] py-4 rounded-[4px] hover:bg-[#3a6b8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full text-white bg-[#457B9D] py-4 rounded-[4px] hover:bg-[#3a6b8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                             >
                                 {isLoading ? 'Signing in...' : 'Sign in'}
                             </button>
@@ -146,7 +197,11 @@ const Login = () => {
                         </div>
                     </div>
                     <div>
-                        <img src="LoginImg/upscalemedia-transformed.png" alt="Login illustration" className="w-full" />
+                        <img
+                            src="LoginImg/upscalemedia-transformed.png"
+                            alt="Login illustration"
+                            className="w-full"
+                        />
                     </div>
                 </div>
             </div>

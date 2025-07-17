@@ -1,8 +1,13 @@
-import axios from "axios";
+import axios from 'axios';
 
 const axiosPublic = axios.create({
-    baseURL: 'https://just-debate-club-server.vercel.app'
-})
+    baseURL: 'http://localhost:5000/api',
+    timeout: 10000,
+    headers: {
+        'Content-Type': 'application/json',
+    }
+});
+
 const useAxiosPublic = () => {
     return axiosPublic;
 };

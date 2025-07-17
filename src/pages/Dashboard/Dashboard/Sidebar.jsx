@@ -10,7 +10,8 @@ import {
     MdBarChart,
     MdTask,
     MdGrade,
-    MdLogout
+    MdLogout,
+    MdEdit
 } from 'react-icons/md';
 
 const Sidebar = () => {
@@ -58,9 +59,20 @@ const Sidebar = () => {
                         <h3 className="font-semibold text-lg text-center">
                             {user?.displayName || 'User'}
                         </h3>
-                        <p className="text-sm text-center font-medium ">Applied Science Teacher</p>
+                        <p className="text-sm text-center font-medium">Applied Science Teacher</p>
                     </div>
                 </div>
+            </div>
+
+            {/* Edit Details Button */}
+            <div className="px-6 mt-4">
+                <Link
+                    to="/edit-profile"
+                    className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-[#457B9D] bg-white rounded-md hover:bg-gray-50 transition-colors border border-[#457B9D]"
+                >
+                    <MdEdit className="mr-2 text-lg" />
+                    Edit Details
+                </Link>
             </div>
 
             {/* Navigation Menu */}
@@ -72,8 +84,8 @@ const Sidebar = () => {
                             key={index}
                             to={item.path}
                             className={`flex items-center px-6 py-3 text-sm font-medium transition-colors ${location.pathname === item.path
-                                    ? 'bg-[#457B9D] text-white'
-                                    : 'hover:bg-blue-100'
+                                ? 'bg-[#457B9D] text-white'
+                                : 'hover:bg-blue-100'
                                 }`}
                         >
                             <IconComponent className="mr-3 text-lg" />

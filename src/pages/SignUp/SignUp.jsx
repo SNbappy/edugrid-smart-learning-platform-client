@@ -9,7 +9,7 @@ import useAxiosPublic from "../../hooks/useAxiosPublic";
 const SignUp = () => {
     const axiosPublic = useAxiosPublic();
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const {
         register,
         handleSubmit,
@@ -23,35 +23,56 @@ const SignUp = () => {
 
     const onSubmit = async (data) => {
         setIsLoading(true);
+        console.log('🔄 Starting sign up process...');
+        console.log('📝 Form data:', data);
+
         try {
             const result = await createUser(data.email, data.password);
             const loggedUser = result.user;
-            console.log(loggedUser);
-            
+            console.log('✅ Firebase user created:', loggedUser);
+
             await updateUserProfile(data.name, data.photoURL || "");
-            
-            // create user entry in the database
+            console.log('✅ Firebase profile updated');
+
+            // Create user entry in the database
             const userInfo = {
                 name: data.name,
-                email: data.email
+                email: data.email,
+                photoURL: data.photoURL || "",
+                loginMethod: 'email_password',
+                createdAt: new Date(),
+                role: 'teacher',
+                profile: {
+                    department: '',
+                    subject: '',
+                    phone: '',
+                    address: '',
+                    bio: ''
+                }
             };
-            
+
+            console.log('📤 Sending to backend:', userInfo);
+
             const res = await axiosPublic.post('/users', userInfo);
-            
-            if (res.data.insertedId) {
-                console.log('user added to the database');
+            console.log('📨 Backend response:', res.data);
+
+            if (res.data.insertedId || res.data.message === 'User created successfully') {
+                console.log('🎉 User successfully saved to database');
                 reset();
                 Swal.fire({
                     position: "top-end",
                     icon: "success",
-                    title: "User created successfully",
+                    title: "Account created successfully",
                     showConfirmButton: false,
                     timer: 1500
                 });
-                navigate('/');
+                navigate('/dashboard');
+            } else {
+                console.log('⚠️ Unexpected response from backend');
             }
         } catch (error) {
-            console.error(error);
+            console.error('❌ Sign up error:', error);
+            console.error('❌ Error details:', error.response?.data);
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
@@ -65,36 +86,53 @@ const SignUp = () => {
     const handleGoogleSignUp = async () => {
         try {
             setIsLoading(true);
+            console.log('🔄 Starting Google sign up process...');
+
             const result = await signInWithGoogle();
             const user = result.user;
+            console.log('✅ Google authentication successful:', user);
 
             // Create user entry in database
             const userInfo = {
                 name: user.displayName,
                 email: user.email,
-                photoURL: user.photoURL
+                photoURL: user.photoURL || "",
+                loginMethod: 'google',
+                createdAt: new Date(),
+                role: 'teacher',
+                profile: {
+                    department: '',
+                    subject: '',
+                    phone: '',
+                    address: '',
+                    bio: ''
+                }
             };
 
-            const res = await axiosPublic.post('/users', userInfo);
+            console.log('📤 Sending to /api/users endpoint:', userInfo);
 
-            if (res.data.insertedId || res.data.message === 'user already exists') {
+            // This should create user in 'users' collection
+            const res = await axiosPublic.post('/users', userInfo);
+            console.log('📨 User creation response:', res.data);
+
+            if (res.data.insertedId || res.data.message === 'User created successfully') {
+                console.log('🎉 User successfully saved to USERS collection');
                 Swal.fire({
                     position: "top-end",
                     icon: "success",
-                    title: "Signed in with Google successfully",
+                    title: "Account created with Google successfully",
                     showConfirmButton: false,
                     timer: 1500
                 });
-                navigate('/');
+                navigate('/dashboard');
             }
         } catch (error) {
-            console.error('Google sign-up error:', error);
-            // Handle error appropriately
+            console.error('❌ Google sign-up error:', error);
+            // Handle error...
         } finally {
             setIsLoading(false);
         }
     };
-
 
 
     return (
@@ -117,7 +155,7 @@ const SignUp = () => {
                                 className="bg-white rounded-[4px] py-3 pl-4 w-full mb-[30px]"
                             />
                             {errors.name && (
-                                <span className="text-red-500 text-sm block  mt-[-30px] mb-5">
+                                <span className="text-red-500 text-sm block mt-[-30px] mb-5">
                                     {errors.name.message}
                                 </span>
                             )}
@@ -136,7 +174,7 @@ const SignUp = () => {
                                 className="bg-white rounded-[4px] py-3 pl-4 w-full mb-[30px]"
                             />
                             {errors.email && (
-                                <span className="text-red-500 text-sm block  mt-[-30px] mb-5">
+                                <span className="text-red-500 text-sm block mt-[-30px] mb-5">
                                     {errors.email.message}
                                 </span>
                             )}
@@ -155,7 +193,7 @@ const SignUp = () => {
                                 className="bg-white rounded-[4px] py-3 pl-4 w-full mb-[30px]"
                             />
                             {errors.password && (
-                                <span className="text-red-500 text-sm block  mt-[-30px] mb-5">
+                                <span className="text-red-500 text-sm block mt-[-30px] mb-5">
                                     {errors.password.message}
                                 </span>
                             )}
@@ -171,39 +209,21 @@ const SignUp = () => {
                                 className="bg-white rounded-[4px] py-3 pl-4 w-full mb-[30px]"
                             />
                             {errors.confirmPassword && (
-                                <span className="text-red-500 text-sm block  mt-[-30px] mb-5">
+                                <span className="text-red-500 text-sm block mt-[-30px] mb-5">
                                     {errors.confirmPassword.message}
                                 </span>
                             )}
 
-                            {/* <p className="font-medium text-sm pb-1">Photo URL (Optional)</p>
-                        <input
-                            type="url"
-                            {...register('photoURL')}
-                            placeholder="https://example.com/your-photo.jpg"
-                            className="bg-white rounded-[4px] py-3 pl-4 w-full mb-[30px] mb-7"
-                        /> */}
-
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="w-full text-white bg-[#457B9D] py-4 rounded-[4px] hover:bg-[#3a6b8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full text-white bg-[#457B9D] py-4 rounded-[4px] hover:bg-[#3a6b8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                             >
                                 {isLoading ? 'Creating Account...' : 'Sign up'}
                             </button>
                         </form>
 
                         <p className="text-sm py-[30px] text-center font-medium">or continue with</p>
-
-                        {/* <div className="text-center">
-                        <p className="text-sm font-medium">
-                            Already have an account?{' '}
-                            <Link to="/login" className="text-[#457B9D] hover:underline">
-                                Sign in here
-                            </Link>
-                        </p>
-                    </div> */}
-                        {/* <p className="text-sm py-[30px] text-center font-medium">or continue with</p> */}
 
                         <div className="flex justify-center">
                             <button
@@ -216,7 +236,7 @@ const SignUp = () => {
                                     alt="Google"
                                     className="w-5 h-5"
                                 />
-                                Sign up with Google
+                                {isLoading ? 'Creating Account...' : 'Sign up with Google'}
                             </button>
                         </div>
 
@@ -228,10 +248,9 @@ const SignUp = () => {
                                 </Link>
                             </p>
                         </div>
-
                     </div>
                     <div>
-                        <img src="LoginImg/upscalemedia-transformed.png" alt="Sign up illustration" className="w-full"/>
+                        <img src="LoginImg/upscalemedia-transformed.png" alt="Sign up illustration" className="w-full" />
                     </div>
                 </div>
             </div>
