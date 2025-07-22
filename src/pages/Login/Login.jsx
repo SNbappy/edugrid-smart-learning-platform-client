@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react';
 import { AuthContext } from '../../providers/AuthProvider';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Swal from 'sweetalert2';
 import useAxiosPublic from '../../hooks/useAxiosPublic';
@@ -10,25 +10,21 @@ const Login = () => {
     const axiosPublic = useAxiosPublic();
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-    const location = useLocation();
+    // const location = useLocation();
 
-    const from = location.state?.from?.pathname || "/";
+    // const from = location.state?.from?.pathname || "/";
 
-    // Function to check if user exists and create if not
-    // Function to check if user exists and create if not
     const checkAndCreateUser = async (user, loginMethod) => {
         try {
             console.log('🔍 Checking if user exists:', user.email);
 
-            // First check if user exists using axios
-            const checkResponse = await axiosPublic.get(`/users/${user.email}`);  // ✅ Fixed
-            console.log('✅ User already exists in database');
+            // const checkResponse = await axiosPublic.get(`/users/${user.email}`);
+            console.log('User already exists in database');
 
         } catch (error) {
             if (error.response?.status === 404) {
-                console.log('❌ User not found, creating new user...');
+                console.log('User not found, creating new user...');
 
-                // User doesn't exist, create them
                 const userData = {
                     name: user.displayName || user.email.split('@')[0],
                     email: user.email,
@@ -45,13 +41,13 @@ const Login = () => {
                     }
                 };
 
-                console.log('📤 Creating user with data:', userData);
+                console.log('Creating user with data:', userData);
 
-                const createResponse = await axiosPublic.post('/users', userData);  // ✅ Fixed
-                console.log('✅ User created successfully:', createResponse.data);
+                const createResponse = await axiosPublic.post('/users', userData);
+                console.log('User created successfully:', createResponse.data);
 
             } else {
-                console.error('❌ Error checking user existence:', error);
+                console.error('Error checking user existence:', error);
             }
         }
     };
@@ -68,7 +64,7 @@ const Login = () => {
         try {
             const result = await signIn(email, password);
             const user = result.user;
-            console.log('✅ Email/Password login successful:', user.email);
+            console.log('Email/Password login successful:', user.email);
 
             Swal.fire({
                 position: "top-end",
@@ -79,7 +75,7 @@ const Login = () => {
             });
             navigate('/dashboard', { replace: true });
         } catch (error) {
-            console.error('❌ Login error:', error);
+            console.error('Login error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Login Failed!',
@@ -93,13 +89,12 @@ const Login = () => {
     const handleGoogleSignIn = async () => {
         try {
             setIsLoading(true);
-            console.log('🔄 Starting Google sign-in...');
+            console.log('Starting Google sign-in...');
 
             const result = await signInWithGoogle();
             const user = result.user;
-            console.log('✅ Google authentication successful:', user.email);
+            console.log('Google authentication successful:', user.email);
 
-            // Check if user exists in database, create if not
             await checkAndCreateUser(user, 'google');
 
             Swal.fire({
@@ -111,7 +106,7 @@ const Login = () => {
             });
             navigate('/dashboard', { replace: true });
         } catch (error) {
-            console.error('❌ Google sign-in error:', error);
+            console.error('Google sign-in error:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',

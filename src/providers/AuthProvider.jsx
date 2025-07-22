@@ -9,7 +9,7 @@ import {
     signInWithPopup,
     sendPasswordResetEmail
 } from 'firebase/auth';
-import { auth } from '../firebase/firebase.config'; // Adjust path as needed
+import { auth } from '../firebase/firebase.config';
 
 export const AuthContext = createContext(null);
 
@@ -17,15 +17,12 @@ const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Google Auth Provider
     const googleProvider = new GoogleAuthProvider();
 
-    // Configure Google provider for better user experience
     googleProvider.setCustomParameters({
         prompt: 'select_account'
     });
 
-    // Create user with email and password
     const createUser = async (email, password) => {
         setLoading(true);
         try {
@@ -39,7 +36,6 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    // Sign in with email and password
     const signIn = async (email, password) => {
         setLoading(true);
         try {
@@ -53,13 +49,11 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    // Sign in with Google
     const signInWithGoogle = async () => {
         setLoading(true);
         try {
             const result = await signInWithPopup(auth, googleProvider);
 
-            // Validate the result
             if (!result || !result.user) {
                 throw new Error('Google sign-in failed - no user data received');
             }
@@ -73,7 +67,6 @@ const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Google sign-in error:', error);
 
-            // Handle specific Google Auth errors
             if (error.code === 'auth/popup-closed-by-user') {
                 throw new Error('Sign-in was cancelled. Please try again.');
             } else if (error.code === 'auth/popup-blocked') {
@@ -92,7 +85,6 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    // Update user profile
     const updateUserProfile = async (name, photoURL = '') => {
         try {
             if (!auth.currentUser) {
@@ -104,7 +96,6 @@ const AuthProvider = ({ children }) => {
                 photoURL: photoURL
             });
 
-            // Update local user state
             setUser(prevUser => ({
                 ...prevUser,
                 displayName: name,
@@ -118,7 +109,6 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    // Sign out
     const logOut = async () => {
         setLoading(true);
         try {
@@ -131,7 +121,6 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    // Reset password
     const resetPassword = async (email) => {
         try {
             await sendPasswordResetEmail(auth, email);
@@ -141,7 +130,6 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    // Monitor auth state changes
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             console.log('Auth state changed:', currentUser?.email || 'No user');
@@ -154,7 +142,6 @@ const AuthProvider = ({ children }) => {
         };
     }, []);
 
-    // Auth info object
     const authInfo = {
         user,
         loading,

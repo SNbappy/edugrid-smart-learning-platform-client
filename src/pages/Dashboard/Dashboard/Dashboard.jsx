@@ -9,7 +9,6 @@ const Dashboard = () => {
             </Helmet>
 
             <div className="flex">
-                {/* Sidebar */}
                 <Sidebar />
 
             </div>

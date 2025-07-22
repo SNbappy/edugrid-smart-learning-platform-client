@@ -23,18 +23,17 @@ const SignUp = () => {
 
     const onSubmit = async (data) => {
         setIsLoading(true);
-        console.log('🔄 Starting sign up process...');
-        console.log('📝 Form data:', data);
+        console.log('Starting sign up process...');
+        console.log('Form data:', data);
 
         try {
             const result = await createUser(data.email, data.password);
             const loggedUser = result.user;
-            console.log('✅ Firebase user created:', loggedUser);
+            console.log('Firebase user created:', loggedUser);
 
             await updateUserProfile(data.name, data.photoURL || "");
-            console.log('✅ Firebase profile updated');
+            console.log('Firebase profile updated');
 
-            // Create user entry in the database
             const userInfo = {
                 name: data.name,
                 email: data.email,
@@ -51,13 +50,13 @@ const SignUp = () => {
                 }
             };
 
-            console.log('📤 Sending to backend:', userInfo);
+            console.log('Sending to backend:', userInfo);
 
             const res = await axiosPublic.post('/users', userInfo);
-            console.log('📨 Backend response:', res.data);
+            console.log('Backend response:', res.data);
 
             if (res.data.insertedId || res.data.message === 'User created successfully') {
-                console.log('🎉 User successfully saved to database');
+                console.log('User successfully saved to database');
                 reset();
                 Swal.fire({
                     position: "top-end",
@@ -68,11 +67,11 @@ const SignUp = () => {
                 });
                 navigate('/dashboard');
             } else {
-                console.log('⚠️ Unexpected response from backend');
+                console.log('Unexpected response from backend');
             }
         } catch (error) {
-            console.error('❌ Sign up error:', error);
-            console.error('❌ Error details:', error.response?.data);
+            console.error('Sign up error:', error);
+            console.error('Error details:', error.response?.data);
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
@@ -86,13 +85,12 @@ const SignUp = () => {
     const handleGoogleSignUp = async () => {
         try {
             setIsLoading(true);
-            console.log('🔄 Starting Google sign up process...');
+            console.log('Starting Google sign up process...');
 
             const result = await signInWithGoogle();
             const user = result.user;
-            console.log('✅ Google authentication successful:', user);
+            console.log('Google authentication successful:', user);
 
-            // Create user entry in database
             const userInfo = {
                 name: user.displayName,
                 email: user.email,
@@ -109,14 +107,13 @@ const SignUp = () => {
                 }
             };
 
-            console.log('📤 Sending to /api/users endpoint:', userInfo);
+            console.log('Sending to /api/users endpoint:', userInfo);
 
-            // This should create user in 'users' collection
             const res = await axiosPublic.post('/users', userInfo);
-            console.log('📨 User creation response:', res.data);
+            console.log('User creation response:', res.data);
 
             if (res.data.insertedId || res.data.message === 'User created successfully') {
-                console.log('🎉 User successfully saved to USERS collection');
+                console.log('User successfully saved to USERS collection');
                 Swal.fire({
                     position: "top-end",
                     icon: "success",
@@ -127,8 +124,7 @@ const SignUp = () => {
                 navigate('/dashboard');
             }
         } catch (error) {
-            console.error('❌ Google sign-up error:', error);
-            // Handle error...
+            console.error('Google sign-up error:', error);
         } finally {
             setIsLoading(false);
         }

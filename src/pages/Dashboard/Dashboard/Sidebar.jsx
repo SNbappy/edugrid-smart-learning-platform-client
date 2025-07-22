@@ -39,7 +39,6 @@ const Sidebar = () => {
 
     return (
         <div className="fixed left-0 top-0 h-full w-[272px] bg-[#DCE8F5] z-10 text-[#457B9D] font-montserrat">
-            {/* Profile Section */}
             <div className="pt-[45px]">
                 <div className="">
                     <div className="w-[100px] rounded-full overflow-hidden flex items-center justify-center border-4 mx-auto">
@@ -64,7 +63,6 @@ const Sidebar = () => {
                 </div>
             </div>
 
-            {/* Edit Details Button */}
             <div className="px-6 mt-4">
                 <Link
                     to="/edit-profile"
@@ -75,7 +73,6 @@ const Sidebar = () => {
                 </Link>
             </div>
 
-            {/* Navigation Menu */}
             <nav className="mt-6">
                 {menuItems.map((item, index) => {
                     const IconComponent = item.icon;
@@ -95,7 +92,6 @@ const Sidebar = () => {
                 })}
             </nav>
 
-            {/* Logout Button */}
             <div className="absolute bottom-4 left-4 right-4">
                 <button
                     onClick={handleLogout}
