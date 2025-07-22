@@ -40,7 +40,7 @@ const SignUp = () => {
                 photoURL: data.photoURL || "",
                 loginMethod: 'email_password',
                 createdAt: new Date(),
-                role: 'teacher',
+                role: 'user',
                 profile: {
                     department: '',
                     subject: '',
@@ -97,7 +97,7 @@ const SignUp = () => {
                 photoURL: user.photoURL || "",
                 loginMethod: 'google',
                 createdAt: new Date(),
-                role: 'teacher',
+                role: 'user',
                 profile: {
                     department: '',
                     subject: '',
