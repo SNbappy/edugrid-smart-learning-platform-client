@@ -11,11 +11,13 @@ import {
     MdPeople,
     MdCalendarToday,
     MdCheckCircle,
-    MdCancel,
-    MdQuestionMark,
-    MdDownload,
-    MdDateRange
+    MdDownload
 } from 'react-icons/md';
+
+import AttendanceSessionCard from '../../components/AttendanceSessionCard';
+import CreateAttendanceModal from '../../components/CreateAttendanceModal';
+import SessionDetailsModal from '../../components/SessionDetailsModal';
+import { calculateAttendanceStats } from '../../utils/attendanceUtils';
 
 const AttendancePage = () => {
     const { user, loading } = useContext(AuthContext);
@@ -28,6 +30,116 @@ const AttendancePage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showCreateSession, setShowCreateSession] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
+
+    // Enhanced owner check function
+    const isOwner = () => {
+        if (!classroom || !user) return false;
+
+        // Check multiple possible owner/teacher fields
+        const possibleOwnerFields = [
+            classroom.owner,
+            classroom.teacher,
+            classroom.instructor,
+            classroom.createdBy,
+            classroom.teacherEmail
+        ];
+
+        // Check if user email matches any owner field (case insensitive)
+        const isDirectOwner = possibleOwnerFields.some(field =>
+            field && field.toLowerCase().trim() === user.email?.toLowerCase().trim()
+        );
+
+        // Check if user is in teachers array (if it exists)
+        const isInTeachersArray = classroom.teachers && Array.isArray(classroom.teachers) &&
+            classroom.teachers.some(teacher => {
+                if (typeof teacher === 'string') {
+                    return teacher.toLowerCase().trim() === user.email?.toLowerCase().trim();
+                }
+                if (typeof teacher === 'object' && teacher.email) {
+                    return teacher.email.toLowerCase().trim() === user.email?.toLowerCase().trim();
+                }
+                return false;
+            });
+
+        // Check if user is in instructors array (if it exists)
+        const isInInstructorsArray = classroom.instructors && Array.isArray(classroom.instructors) &&
+            classroom.instructors.some(instructor => {
+                if (typeof instructor === 'string') {
+                    return instructor.toLowerCase().trim() === user.email?.toLowerCase().trim();
+                }
+                if (typeof instructor === 'object' && instructor.email) {
+                    return instructor.email.toLowerCase().trim() === user.email?.toLowerCase().trim();
+                }
+                return false;
+            });
+
+        // Check if user has teacher/owner role in members array
+        const hasTeacherRole = classroom.members && Array.isArray(classroom.members) &&
+            classroom.members.some(member => {
+                const emailMatch = member.email?.toLowerCase().trim() === user.email?.toLowerCase().trim() ||
+                    member.userId === user.uid;
+                const teacherRoles = ['owner', 'teacher', 'instructor', 'admin'];
+                return emailMatch && teacherRoles.includes(member.role?.toLowerCase());
+            });
+
+        const result = isDirectOwner || isInTeachersArray || isInInstructorsArray || hasTeacherRole;
+
+        // Debug logging (only in development)
+        if (process.env.NODE_ENV === 'development') {
+            console.log('Owner check details:', {
+                userEmail: user.email,
+                classroomOwner: classroom.owner,
+                classroomTeacher: classroom.teacher,
+                isDirectOwner,
+                isInTeachersArray,
+                isInInstructorsArray,
+                hasTeacherRole,
+                finalResult: result
+            });
+        }
+
+        return result;
+    };
+
+    // Debug component for development
+    const DebugInfo = () => {
+        if (process.env.NODE_ENV !== 'development') return null;
+
+        return (
+            <div className="bg-yellow-100 p-4 rounded-lg mb-4 text-sm border border-yellow-300">
+                <h3 className="font-bold mb-2 text-yellow-800">🐛 Debug Info (Development Only)</h3>
+                <div className="space-y-1 text-yellow-700">
+                    <p><strong>User Email:</strong> {user?.email || 'Not available'}</p>
+                    <p><strong>User UID:</strong> {user?.uid || 'Not available'}</p>
+                    <p><strong>Classroom Owner:</strong> {classroom?.owner || 'Not set'}</p>
+                    <p><strong>Classroom Teacher:</strong> {classroom?.teacher || 'Not set'}</p>
+                    <p><strong>Is Owner Result:</strong> {isOwner() ? '✅ Yes' : '❌ No'}</p>
+                    <p><strong>Classroom ID:</strong> {classroom?.id || 'Not available'}</p>
+                    {classroom?.teachers && (
+                        <p><strong>Teachers Array:</strong> {JSON.stringify(classroom.teachers)}</p>
+                    )}
+                    {classroom?.members && (
+                        <p><strong>Members:</strong> {JSON.stringify(classroom.members.map(m => ({
+                            email: m.email,
+                            role: m.role,
+                            userId: m.userId
+                        })))}</p>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    // Debug classroom and user data
+    useEffect(() => {
+        if (classroom && user && process.env.NODE_ENV === 'development') {
+            console.log('=== ATTENDANCE DEBUG INFO ===');
+            console.log('Classroom data:', classroom);
+            console.log('Current user:', user);
+            console.log('Owner check result:', isOwner());
+            console.log('=============================');
+        }
+    }, [classroom, user]);
 
     // Fetch classroom and attendance data
     useEffect(() => {
@@ -58,7 +170,12 @@ const AttendancePage = () => {
     // Create new attendance session
     const createAttendanceSession = async (sessionData) => {
         try {
-            // For now, we'll simulate the API call
+            // Verify ownership before creating
+            if (!isOwner()) {
+                Swal.fire('Access Denied!', 'Only the classroom teacher can create attendance sessions.', 'error');
+                return;
+            }
+
             const newSession = {
                 id: Date.now().toString(),
                 date: sessionData.date,
@@ -68,7 +185,7 @@ const AttendancePage = () => {
                 attendance: classroom.students.map(student => ({
                     studentEmail: student.email,
                     studentName: student.name,
-                    status: 'unmarked' // present, absent, late, unmarked
+                    status: 'unmarked'
                 })),
                 createdAt: new Date(),
                 createdBy: user.email
@@ -87,6 +204,12 @@ const AttendancePage = () => {
     // Update attendance for a student
     const updateAttendance = async (sessionId, studentEmail, status) => {
         try {
+            // Verify ownership before updating
+            if (!isOwner()) {
+                Swal.fire('Access Denied!', 'Only the classroom teacher can update attendance.', 'error');
+                return;
+            }
+
             const updatedSessions = attendanceSessions.map(session => {
                 if (session.id === sessionId) {
                     return {
@@ -108,25 +231,7 @@ const AttendancePage = () => {
         }
     };
 
-    // Calculate attendance statistics
-    const getAttendanceStats = () => {
-        if (!attendanceSessions.length || !classroom?.students?.length) {
-            return { totalSessions: 0, averageAttendance: 0 };
-        }
-
-        const totalSessions = attendanceSessions.length;
-        const totalPossibleAttendance = totalSessions * classroom.students.length;
-        const totalPresent = attendanceSessions.reduce((sum, session) => {
-            return sum + session.attendance.filter(record => record.status === 'present').length;
-        }, 0);
-
-        return {
-            totalSessions,
-            averageAttendance: totalPossibleAttendance > 0 ? Math.round((totalPresent / totalPossibleAttendance) * 100) : 0
-        };
-    };
-
-    const stats = getAttendanceStats();
+    const stats = calculateAttendanceStats(attendanceSessions, classroom, user, isOwner());
 
     if (loading || isLoading) {
         return (
@@ -150,6 +255,9 @@ const AttendancePage = () => {
 
                 <div className="flex-1 ml-[320px] p-6">
                     <div className="max-w-7xl mx-auto">
+                        {/* Debug Info */}
+                        <DebugInfo />
+
                         {/* Header */}
                         <div className="mb-6">
                             <button
@@ -166,15 +274,28 @@ const AttendancePage = () => {
                                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
                                             Attendance - {classroom?.name}
                                         </h1>
-                                        <p className="text-gray-600">Track and manage student attendance</p>
+                                        <p className="text-gray-600">
+                                            {isOwner() ? 'Track and manage student attendance' : 'View your attendance record'}
+                                        </p>
+                                        {/* Access level indicator */}
+                                        <div className="mt-2">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isOwner()
+                                                    ? 'bg-green-100 text-green-800'
+                                                    : 'bg-blue-100 text-blue-800'
+                                                }`}>
+                                                {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
+                                            </span>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => setShowCreateSession(true)}
-                                        className="flex items-center px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold shadow-lg"
-                                    >
-                                        <MdAdd className="mr-2" />
-                                        New Session
-                                    </button>
+                                    {isOwner() && (
+                                        <button
+                                            onClick={() => setShowCreateSession(true)}
+                                            className="flex items-center px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold shadow-lg"
+                                        >
+                                            <MdAdd className="mr-2" />
+                                            New Session
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -187,7 +308,9 @@ const AttendancePage = () => {
                                         <MdPeople className="text-blue-600 text-xl" />
                                     </div>
                                     <div className="ml-3">
-                                        <p className="text-sm text-gray-600">Total Students</p>
+                                        <p className="text-sm text-gray-600">
+                                            {isOwner() ? 'Total Students' : 'Class Size'}
+                                        </p>
                                         <p className="text-2xl font-bold text-gray-900">{classroom?.students?.length || 0}</p>
                                     </div>
                                 </div>
@@ -211,18 +334,22 @@ const AttendancePage = () => {
                                         <MdCheckCircle className="text-yellow-600 text-xl" />
                                     </div>
                                     <div className="ml-3">
-                                        <p className="text-sm text-gray-600">Average Attendance</p>
+                                        <p className="text-sm text-gray-600">
+                                            {isOwner() ? 'Average Attendance' : 'Your Attendance'}
+                                        </p>
                                         <p className="text-2xl font-bold text-gray-900">{stats.averageAttendance}%</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                <button className="flex items-center text-purple-600 hover:text-purple-700 transition-colors">
-                                    <MdDownload className="mr-2" />
-                                    <span className="font-semibold">Export Report</span>
-                                </button>
-                            </div>
+                            {isOwner() && (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                                    <button className="flex items-center text-purple-600 hover:text-purple-700 transition-colors">
+                                        <MdDownload className="mr-2" />
+                                        <span className="font-semibold">Export Report</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Attendance Sessions */}
@@ -230,13 +357,20 @@ const AttendancePage = () => {
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
                                 <MdCalendarToday className="text-6xl text-gray-300 mx-auto mb-4" />
                                 <h3 className="text-2xl font-semibold text-gray-600 mb-2">No Attendance Sessions</h3>
-                                <p className="text-gray-500 mb-6">Create your first attendance session to start tracking student presence.</p>
-                                <button
-                                    onClick={() => setShowCreateSession(true)}
-                                    className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold"
-                                >
-                                    Create First Session
-                                </button>
+                                <p className="text-gray-500 mb-6">
+                                    {isOwner()
+                                        ? 'Create your first attendance session to start tracking student presence.'
+                                        : 'No attendance sessions have been created yet.'
+                                    }
+                                </p>
+                                {isOwner() && (
+                                    <button
+                                        onClick={() => setShowCreateSession(true)}
+                                        className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold"
+                                    >
+                                        Create First Session
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-6">
@@ -246,6 +380,8 @@ const AttendancePage = () => {
                                         session={session}
                                         onUpdateAttendance={updateAttendance}
                                         onViewDetails={() => setSelectedSession(session)}
+                                        isOwner={isOwner()}
+                                        currentUserEmail={user?.email}
                                     />
                                 ))}
                             </div>
@@ -254,247 +390,23 @@ const AttendancePage = () => {
                 </div>
             </div>
 
-            {/* Create Session Modal */}
-            {showCreateSession && (
+            {/* Modals */}
+            {isOwner() && showCreateSession && (
                 <CreateAttendanceModal
                     onClose={() => setShowCreateSession(false)}
                     onSubmit={createAttendanceSession}
                 />
             )}
 
-            {/* Session Details Modal */}
             {selectedSession && (
                 <SessionDetailsModal
                     session={selectedSession}
                     onClose={() => setSelectedSession(null)}
                     onUpdateAttendance={updateAttendance}
+                    isOwner={isOwner()}
+                    currentUserEmail={user?.email}
                 />
             )}
-        </div>
-    );
-};
-
-// Attendance Session Card Component
-const AttendanceSessionCard = ({ session, onUpdateAttendance, onViewDetails }) => {
-    const presentCount = session.attendance.filter(record => record.status === 'present').length;
-    const absentCount = session.attendance.filter(record => record.status === 'absent').length;
-    const unmarkedCount = session.attendance.filter(record => record.status === 'unmarked').length;
-    const totalStudents = session.attendance.length;
-    const attendancePercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
-
-    return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex justify-between items-start mb-4">
-                <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">{session.title}</h3>
-                    <p className="text-gray-600 mb-2">{session.description}</p>
-                    <div className="flex items-center text-sm text-gray-500">
-                        <MdDateRange className="mr-1" />
-                        <span>{new Date(session.date).toLocaleDateString()}</span>
-                    </div>
-                </div>
-                <div className="text-right">
-                    <div className="text-2xl font-bold text-gray-900">{attendancePercentage}%</div>
-                    <div className="text-sm text-gray-600">Attendance</div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 mb-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <div className="text-lg font-bold text-green-600">{presentCount}</div>
-                    <div className="text-sm text-green-600">Present</div>
-                </div>
-                <div className="text-center p-3 bg-red-50 rounded-lg">
-                    <div className="text-lg font-bold text-red-600">{absentCount}</div>
-                    <div className="text-sm text-red-600">Absent</div>
-                </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="text-lg font-bold text-gray-600">{unmarkedCount}</div>
-                    <div className="text-sm text-gray-600">Unmarked</div>
-                </div>
-            </div>
-
-            <div className="flex gap-2">
-                <button
-                    onClick={onViewDetails}
-                    className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors font-medium"
-                >
-                    Mark Attendance
-                </button>
-                <button className="bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-                    Export
-                </button>
-            </div>
-        </div>
-    );
-};
-
-// Create Attendance Modal
-const CreateAttendanceModal = ({ onClose, onSubmit }) => {
-    const [formData, setFormData] = useState({
-        title: '',
-        description: '',
-        date: new Date().toISOString().split('T')[0]
-    });
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (formData.title && formData.date) {
-            onSubmit(formData);
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
-                <h2 className="text-2xl font-bold mb-6">Create Attendance Session</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Session Title *
-                        </label>
-                        <input
-                            type="text"
-                            value={formData.title}
-                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="e.g., Monday Morning Class"
-                            required
-                        />
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Date *
-                        </label>
-                        <input
-                            type="date"
-                            value={formData.date}
-                            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
-                        />
-                    </div>
-                    <div className="mb-6">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Description
-                        </label>
-                        <textarea
-                            value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Optional description"
-                            rows="3"
-                        />
-                    </div>
-                    <div className="flex gap-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 px-6 py-3 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-semibold"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="flex-1 px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold"
-                        >
-                            Create Session
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
-};
-
-// Session Details Modal
-const SessionDetailsModal = ({ session, onClose, onUpdateAttendance }) => {
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case 'present':
-                return <MdCheckCircle className="text-green-500" />;
-            case 'absent':
-                return <MdCancel className="text-red-500" />;
-            case 'late':
-                return <MdQuestionMark className="text-yellow-500" />;
-            default:
-                return <MdQuestionMark className="text-gray-400" />;
-        }
-    };
-
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'present':
-                return 'bg-green-100 text-green-800';
-            case 'absent':
-                return 'bg-red-100 text-red-800';
-            case 'late':
-                return 'bg-yellow-100 text-yellow-800';
-            default:
-                return 'bg-gray-100 text-gray-800';
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-2xl p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">{session.title}</h2>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-500 hover:text-gray-700"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-
-                <div className="mb-6">
-                    <p className="text-gray-600 mb-2">{session.description}</p>
-                    <p className="text-sm text-gray-500">
-                        Date: {new Date(session.date).toLocaleDateString()}
-                    </p>
-                </div>
-
-                <div className="space-y-3">
-                    {session.attendance.map((record) => (
-                        <div key={record.studentEmail} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                            <div className="flex items-center">
-                                {getStatusIcon(record.status)}
-                                <div className="ml-3">
-                                    <p className="font-medium text-gray-900">{record.studentName}</p>
-                                    <p className="text-sm text-gray-500">{record.studentEmail}</p>
-                                </div>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(record.status)}`}>
-                                    {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-                                </span>
-                                <select
-                                    value={record.status}
-                                    onChange={(e) => onUpdateAttendance(session.id, record.studentEmail, e.target.value)}
-                                    className="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="unmarked">Unmarked</option>
-                                    <option value="present">Present</option>
-                                    <option value="absent">Absent</option>
-                                    <option value="late">Late</option>
-                                </select>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-                <div className="mt-6 flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold"
-                    >
-                        Done
-                    </button>
-                </div>
-            </div>
         </div>
     );
 };
