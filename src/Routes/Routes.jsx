@@ -15,11 +15,12 @@ import Dashboard from "../pages/Dashboard/Dashboard/Dashboard";
 import EditProfile from "../pages/EditProfile/EditProfile";
 import CreateClass from "../pages/CreateClass/CreateClass";
 import MyClasses from "../pages/MyClasses/MyClasses";
-import MaterialsPage from "../pages/Classroom/MaterialsPage";
+// import MaterialsPage from "../pages/Classroom/MaterialsPage";
 import AttendancePage from "../pages/Classroom/AttendancePage";
 import Classroom from "../pages/Classroom/Classroom";
 import TasksPage from "../pages/Classroom/TasksPage";
 import MarksPage from "../pages/Classroom/MarksPage";
+import MaterialsPage from "../pages/Classroom/MaterialsPage";
 
 export const router = createBrowserRouter([
     {
