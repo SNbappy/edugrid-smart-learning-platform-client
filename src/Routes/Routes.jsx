@@ -12,6 +12,14 @@ import Login from "../pages/Login/Login";
 import PrivateRoute from "./PrivateRoute";
 import ForgotPassword from "../pages/ForgotPassword/ForgotPassword";
 import Dashboard from "../pages/Dashboard/Dashboard/Dashboard";
+import EditProfile from "../pages/EditProfile/EditProfile";
+import CreateClass from "../pages/CreateClass/CreateClass";
+import MyClasses from "../pages/MyClasses/MyClasses";
+import MaterialsPage from "../pages/Classroom/MaterialsPage";
+import AttendancePage from "../pages/Classroom/AttendancePage";
+import Classroom from "../pages/Classroom/Classroom";
+import TasksPage from "../pages/Classroom/TasksPage";
+import MarksPage from "../pages/Classroom/MarksPage";
 
 export const router = createBrowserRouter([
     {
@@ -53,12 +61,39 @@ export const router = createBrowserRouter([
         ]
     },
     {
-        path: 'dashboard',
-        element: <PrivateRoute><Dashboard /></PrivateRoute>,
-        children: [
-            {
-                
-            }
-        ]
+        path: '/dashboard',
+        element: <PrivateRoute><Dashboard /></PrivateRoute>
+    },
+    {
+        path: '/edit-profile',
+        element: <PrivateRoute><EditProfile /></PrivateRoute>
+    },
+    {
+        path: '/create-class',
+        element: <PrivateRoute><CreateClass/></PrivateRoute>
+    },
+    {
+        path: '/my-classes',
+        element: <PrivateRoute><MyClasses/></PrivateRoute>
+    },
+    {
+        path: '/classroom/:classroomId',
+        element: <PrivateRoute><Classroom /></PrivateRoute>
+    },
+    {
+        path: '/classroom/:classroomId/attendance',
+        element: <PrivateRoute><AttendancePage /></PrivateRoute>
+    },
+    {
+        path: '/classroom/:classroomId/materials',
+        element: <PrivateRoute><MaterialsPage /></PrivateRoute>
+    },
+    {
+        path: '/classroom/:classroomId/tasks',
+        element: <PrivateRoute><TasksPage /></PrivateRoute>
+    },
+    {
+        path: '/classroom/:classroomId/marks',
+        element: <PrivateRoute><MarksPage /></PrivateRoute>
     }
 ]);

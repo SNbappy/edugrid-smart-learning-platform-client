@@ -31,13 +31,16 @@ const Login = () => {
                     photoURL: user.photoURL || '',
                     loginMethod: loginMethod,
                     createdAt: new Date(),
-                    role: 'teacher',
+                    role: 'user',  // ✅ Changed from 'teacher' to 'user'
                     profile: {
-                        department: '',
-                        subject: '',
-                        phone: '',
-                        address: '',
-                        bio: ''
+                        bio: '',
+                        institution: '',
+                        country: '',
+                        district: '',
+                        city: '',
+                        facebook: '',
+                        linkedin: '',
+                        mailLink: ''
                     }
                 };
 
@@ -195,7 +198,7 @@ const Login = () => {
                         <img
                             src="LoginImg/upscalemedia-transformed.png"
                             alt="Login illustration"
-                            className="w-full"
+                            className="w-full mt-[100px]"
                         />
                     </div>
                 </div>

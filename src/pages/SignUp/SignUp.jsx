@@ -40,13 +40,16 @@ const SignUp = () => {
                 photoURL: data.photoURL || "",
                 loginMethod: 'email_password',
                 createdAt: new Date(),
-                role: 'user',
+                role: 'user',  // ✅ Changed from 'teacher' to 'user'
                 profile: {
-                    department: '',
-                    subject: '',
-                    phone: '',
-                    address: '',
-                    bio: ''
+                    bio: '',
+                    institution: '',
+                    country: '',
+                    district: '',
+                    city: '',
+                    facebook: '',
+                    linkedin: '',
+                    mailLink: ''
                 }
             };
 
@@ -97,13 +100,16 @@ const SignUp = () => {
                 photoURL: user.photoURL || "",
                 loginMethod: 'google',
                 createdAt: new Date(),
-                role: 'user',
+                role: 'user',  // ✅ Changed from 'teacher' to 'user'
                 profile: {
-                    department: '',
-                    subject: '',
-                    phone: '',
-                    address: '',
-                    bio: ''
+                    bio: '',
+                    institution: '',
+                    country: '',
+                    district: '',
+                    city: '',
+                    facebook: '',
+                    linkedin: '',
+                    mailLink: ''
                 }
             };
 
@@ -246,7 +252,7 @@ const SignUp = () => {
                         </div>
                     </div>
                     <div>
-                        <img src="LoginImg/upscalemedia-transformed.png" alt="Sign up illustration" className="w-full" />
+                        <img src="LoginImg/upscalemedia-transformed.png" alt="Sign up illustration" className="w-full mt-[100px]" />
                     </div>
                 </div>
             </div>
