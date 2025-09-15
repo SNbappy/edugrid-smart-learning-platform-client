@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet-async';
 import Swal from 'sweetalert2';
 import useAxiosPublic from '../../hooks/useAxiosPublic';
 import Sidebar from '../Dashboard/Dashboard/Sidebar';
-import { Country, State, City } from 'country-state-city';
+import { Country, State } from 'country-state-city';
 import { uploadImageToImgBB, validateImageFile, compressImage } from '../../services/imageUpload';
 
 const EditProfile = () => {
@@ -15,16 +15,17 @@ const EditProfile = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [isUploadingCover, setIsUploadingCover] = useState(false);
     const [userData, setUserData] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
+    const [coverPreview, setCoverPreview] = useState(null);
     const [selectedFile, setSelectedFile] = useState(null);
+    const [selectedCoverFile, setSelectedCoverFile] = useState(null);
 
-    // Dynamic location data
+    // Dynamic location data (removed cities)
     const [countries, setCountries] = useState([]);
     const [states, setStates] = useState([]);
-    const [cities, setCities] = useState([]);
     const [selectedCountryCode, setSelectedCountryCode] = useState('');
-    const [selectedStateCode, setSelectedStateCode] = useState('');
 
     const {
         register,
@@ -34,7 +35,7 @@ const EditProfile = () => {
         formState: { errors },
     } = useForm();
 
-    // Watch for country and state changes
+    // Watch for country changes
     const watchedCountry = watch('country');
 
     // Load countries on component mount
@@ -43,49 +44,24 @@ const EditProfile = () => {
         setCountries(allCountries);
     }, []);
 
-    // Update states when country changes
+    // Update states when country changes (removed cities logic)
     useEffect(() => {
         if (selectedCountryCode) {
             const countryStates = State.getStatesOfCountry(selectedCountryCode);
             setStates(countryStates);
-            setCities([]);
-            setSelectedStateCode('');
         } else {
             setStates([]);
-            setCities([]);
         }
     }, [selectedCountryCode]);
 
-    // Update cities when state changes
-    useEffect(() => {
-        if (selectedCountryCode && selectedStateCode) {
-            const stateCities = City.getCitiesOfState(selectedCountryCode, selectedStateCode);
-            setCities(stateCities);
-        } else {
-            setCities([]);
-        }
-    }, [selectedCountryCode, selectedStateCode]);
-
-    // Handle country selection
+    // Handle country selection (removed city reset)
     const handleCountryChange = (e) => {
         const selectedCountry = countries.find(country => country.name === e.target.value);
         if (selectedCountry) {
             setSelectedCountryCode(selectedCountry.isoCode);
             setValue('district', '');
-            setValue('city', '');
         } else {
             setSelectedCountryCode('');
-        }
-    };
-
-    // Handle state selection
-    const handleStateChange = (e) => {
-        const selectedState = states.find(state => state.name === e.target.value);
-        if (selectedState) {
-            setSelectedStateCode(selectedState.isoCode);
-            setValue('city', '');
-        } else {
-            setSelectedStateCode('');
         }
     };
 
@@ -101,13 +77,12 @@ const EditProfile = () => {
                         const fetchedUser = response.data.user;
                         setUserData(fetchedUser);
 
-                        // Populate form with existing data
+                        // Populate form with existing data (removed city)
                         setValue('name', fetchedUser.name || '');
                         setValue('email', fetchedUser.email || '');
                         setValue('bio', fetchedUser.profile?.bio || '');
                         setValue('country', fetchedUser.profile?.country || '');
                         setValue('district', fetchedUser.profile?.district || '');
-                        setValue('city', fetchedUser.profile?.city || '');
                         setValue('institution', fetchedUser.profile?.institution || '');
                         setValue('facebook', fetchedUser.profile?.facebook || '');
                         setValue('linkedin', fetchedUser.profile?.linkedin || '');
@@ -118,6 +93,11 @@ const EditProfile = () => {
                             setPhotoPreview(fetchedUser.photoURL);
                         }
 
+                        // Set cover photo preview if exists
+                        if (fetchedUser.profile?.coverPhotoURL) {
+                            setCoverPreview(fetchedUser.profile.coverPhotoURL);
+                        }
+
                         // Set selected country code for existing data
                         if (fetchedUser.profile?.country) {
                             const existingCountry = Country.getAllCountries().find(
@@ -125,18 +105,6 @@ const EditProfile = () => {
                             );
                             if (existingCountry) {
                                 setSelectedCountryCode(existingCountry.isoCode);
-
-                                // Set selected state if exists
-                                if (fetchedUser.profile?.district) {
-                                    setTimeout(() => {
-                                        const existingState = State.getStatesOfCountry(existingCountry.isoCode).find(
-                                            state => state.name === fetchedUser.profile.district
-                                        );
-                                        if (existingState) {
-                                            setSelectedStateCode(existingState.isoCode);
-                                        }
-                                    }, 100);
-                                }
                             }
                         }
 
@@ -158,7 +126,7 @@ const EditProfile = () => {
         }
     }, [user, loading, axiosPublic, setValue]);
 
-    // Handle photo selection and upload
+    // Handle profile photo selection
     const handlePhotoChange = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -184,13 +152,39 @@ const EditProfile = () => {
         reader.readAsDataURL(file);
     };
 
-    // Upload image to ImgBB
+    // Handle cover photo selection
+    const handleCoverPhotoChange = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        // Validate file
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid File!',
+                text: validation.error,
+            });
+            return;
+        }
+
+        setSelectedCoverFile(file);
+
+        // Show preview immediately
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setCoverPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Upload profile photo to ImgBB
     const uploadPhoto = async () => {
         if (!selectedFile) return null;
 
         setIsUploadingImage(true);
         try {
-            console.log('📤 Uploading image to ImgBB...');
+            console.log('📤 Uploading profile photo to ImgBB...');
 
             // Compress image before upload
             const compressedFile = await compressImage(selectedFile, 800, 0.8);
@@ -199,17 +193,17 @@ const EditProfile = () => {
             const uploadResult = await uploadImageToImgBB(compressedFile);
 
             if (uploadResult.success) {
-                console.log('✅ Image uploaded successfully:', uploadResult.url);
+                console.log('✅ Profile photo uploaded successfully:', uploadResult.url);
                 return uploadResult.url;
             } else {
                 throw new Error(uploadResult.error);
             }
         } catch (error) {
-            console.error('❌ Image upload failed:', error);
+            console.error('❌ Profile photo upload failed:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Upload Failed!',
-                text: 'Failed to upload image. Please try again.',
+                text: 'Failed to upload profile photo. Please try again.',
             });
             return null;
         } finally {
@@ -217,51 +211,77 @@ const EditProfile = () => {
         }
     };
 
+    // Upload cover photo to ImgBB
+    const uploadCoverPhoto = async () => {
+        if (!selectedCoverFile) return null;
+
+        setIsUploadingCover(true);
+        try {
+            console.log('📤 Uploading cover photo to ImgBB...');
+
+            // Compress image before upload
+            const compressedFile = await compressImage(selectedCoverFile, 1200, 0.8);
+
+            // Upload to ImgBB
+            const uploadResult = await uploadImageToImgBB(compressedFile);
+
+            if (uploadResult.success) {
+                console.log('✅ Cover photo uploaded successfully:', uploadResult.url);
+                return uploadResult.url;
+            } else {
+                throw new Error(uploadResult.error);
+            }
+        } catch (error) {
+            console.error('❌ Cover photo upload failed:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Upload Failed!',
+                text: 'Failed to upload cover photo. Please try again.',
+            });
+            return null;
+        } finally {
+            setIsUploadingCover(false);
+        }
+    };
+
+    // THE onSubmit FUNCTION (removed city)
     const onSubmit = async (data) => {
         setIsLoading(true);
         console.log('📝 Updating profile with data:', data);
 
         try {
             let photoURL = userData?.photoURL || '';
+            let coverPhotoURL = userData?.profile?.coverPhotoURL || '';
 
-            // Upload new photo if selected
+            // Upload new profile photo if selected
             if (selectedFile) {
                 const uploadedPhotoURL = await uploadPhoto();
                 if (uploadedPhotoURL) {
                     photoURL = uploadedPhotoURL;
-                } else {
-                    // If photo upload failed, ask user if they want to continue
-                    const result = await Swal.fire({
-                        title: 'Photo Upload Failed',
-                        text: 'Do you want to save other changes without updating the photo?',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Save Without Photo',
-                        cancelButtonText: 'Cancel'
-                    });
-
-                    if (!result.isConfirmed) {
-                        setIsLoading(false);
-                        return;
-                    }
                 }
             }
 
-            // In your onSubmit function, remove role from updateData:
+            // Upload new cover photo if selected
+            if (selectedCoverFile) {
+                const uploadedCoverURL = await uploadCoverPhoto();
+                if (uploadedCoverURL) {
+                    coverPhotoURL = uploadedCoverURL;
+                }
+            }
+
+            // Prepare update data (removed city)
             const updateData = {
                 name: data.name,
                 bio: data.bio,
                 country: data.country,
                 district: data.district,
-                city: data.city || '',
                 institution: data.institution,
                 facebook: data.facebook,
                 linkedin: data.linkedin,
                 mailLink: data.mailLink,
-                photoURL: photoURL
-                // ❌ Removed: role: data.role
+                photoURL: photoURL,
+                coverPhotoURL: coverPhotoURL
             };
-
 
             const response = await axiosPublic.put(`/users/${user.email}`, updateData);
 
@@ -276,8 +296,9 @@ const EditProfile = () => {
                     timer: 1500
                 });
 
-                // Clear selected file after successful upload
+                // Clear selected files after successful upload
                 setSelectedFile(null);
+                setSelectedCoverFile(null);
 
                 setTimeout(() => {
                     navigate('/dashboard');
@@ -297,9 +318,9 @@ const EditProfile = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
+            <div className="min-h-screen flex items-center justify-center bg-gray-50">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#457B9D] mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
                     <p className="text-gray-600 font-medium">Loading profile...</p>
                 </div>
             </div>
@@ -312,7 +333,7 @@ const EditProfile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] font-poppins">
+        <div className="min-h-screen bg-gray-50 font-inter">
             <Helmet>
                 <title>EduGrid | Edit Profile</title>
             </Helmet>
@@ -321,59 +342,103 @@ const EditProfile = () => {
                 <Sidebar />
 
                 <div className="flex-1 ml-[320px] p-6">
-                    <div className="max-w-5xl mx-auto">
-                        {/* Header Section */}
-                        <div className="mb-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Edit Profile</h1>
-                                    <p className="text-lg text-gray-600">Manage your personal information and preferences</p>
-                                </div>
-                                <div className="hidden md:flex items-center space-x-4">
-                                    <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] flex items-center justify-center shadow-lg">
-                                        <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                        </svg>
+                    <div className="max-w-4xl mx-auto">
+                        {/* Professional Header */}
+                        <div className="mb-8">
+                            <div className="">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h1 className="text-3xl font-bold text-gray-900 mt-2 -mb-2">Edit Profile</h1>
+                                        {/* <p className="text-gray-600">Update your personal information and preferences</p> */}
                                     </div>
+                                    {/* <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        </div>
+                                    </div> */}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Main Profile Form */}
-                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                        {/* Main Content */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                             <form onSubmit={handleSubmit(onSubmit)}>
-                                {/* Photo Upload Section */}
-                                <div className="bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] px-8 py-12 text-center">
-                                    <div className="flex flex-col items-center">
-                                        <div className="relative mb-6">
-                                            <div className="w-40 h-40 rounded-full overflow-hidden border-6 border-white shadow-2xl bg-white flex items-center justify-center">
-                                                {photoPreview ? (
-                                                    <img
-                                                        src={photoPreview}
-                                                        alt="Profile Preview"
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="text-gray-400 text-center">
-                                                        <svg className="w-16 h-16 mx-auto mb-3" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                                        </svg>
-                                                        <p className="text-sm font-medium">No Photo</p>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {/* Upload Status Indicator */}
-                                            {isUploadingImage && (
-                                                <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                                {/* LinkedIn-Style Photo Section */}
+                                <div className="relative">
+                                    {/* Cover Photo Section */}
+                                    <div className="relative h-48 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] overflow-hidden">
+                                        {coverPreview ? (
+                                            <img
+                                                src={coverPreview}
+                                                alt="Cover"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                                <div className="w-full h-full bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] flex items-center justify-center">
+                                                <div className="text-center text-white">
+                                                    <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    <p className="text-sm opacity-75">Add a cover photo</p>
                                                 </div>
-                                            )}
+                                            </div>
+                                        )}
 
-                                            <div className="absolute bottom-2 right-2 bg-white rounded-full p-3 shadow-lg cursor-pointer hover:shadow-xl transition-shadow">
-                                                <label className="cursor-pointer">
-                                                    <svg className="w-5 h-5 text-[#457B9D]" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                        {/* Cover Photo Upload Button */}
+                                        <label className="absolute top-4 right-4 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg cursor-pointer transition-all shadow-md border border-gray-200 text-sm font-medium">
+                                            <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            {coverPreview ? 'Change cover' : 'Add cover photo'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleCoverPhotoChange}
+                                                className="hidden"
+                                                disabled={isUploadingCover}
+                                            />
+                                        </label>
+
+                                        {/* Cover Upload Loading */}
+                                        {isUploadingCover && (
+                                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                                <div className="bg-white rounded-lg p-4 flex items-center">
+                                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent mr-3"></div>
+                                                    <span className="text-gray-700 font-medium">Uploading cover photo...</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Profile Photo Section - Centered with info below */}
+                                    <div className="relative px-8 pb-8">
+                                        {/* Profile Photo - Centered */}
+                                        <div className="flex -mt-16 mb-6">
+                                            <div className="relative">
+                                                <div className="w-40 h-40 rounded-4xl overflow-hidden border-4 border-white shadow-lg bg-white">
+                                                    {photoPreview ? (
+                                                        <img
+                                                            src={photoPreview}
+                                                            alt="Profile"
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                                            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Profile Photo Upload Button */}
+                                                <label className="absolute bottom-1 right-1 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white p-2 rounded-full cursor-pointer transition-colors shadow-lg border-2 border-white">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     </svg>
                                                     <input
                                                         type="file"
@@ -383,309 +448,221 @@ const EditProfile = () => {
                                                         disabled={isUploadingImage}
                                                     />
                                                 </label>
+
+                                                {/* Profile Photo Upload Loading */}
+                                                {isUploadingImage && (
+                                                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                                                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
-                                        <label className="cursor-pointer bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-full hover:bg-white/30 transition-colors font-medium disabled:opacity-50">
-                                            <svg className="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                                            </svg>
-                                            {selectedFile ? 'Change Photo' : 'Upload New Photo'}
-                                            <input
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handlePhotoChange}
-                                                className="hidden"
-                                                disabled={isUploadingImage}
-                                            />
-                                        </label>
+                                        {/* User Info - Centered below profile photo */}
+                                        <div className="">
+                                            <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                                                {userData?.name || user?.displayName || 'User Name'}
+                                            </h2>
+                                            <p className="text-gray-600 text-sm mb-2">{user?.email}</p>
+                                            {userData?.profile?.institution && (
+                                                <p className="text-gray-500 text-sm mb-4">{userData.profile.institution}</p>
+                                            )}
 
-                                        <p className="text-white/80 text-sm mt-3">
-                                            Maximum file size: 32MB. Supported: JPG, PNG, GIF, WebP
-                                        </p>
-
-                                        {selectedFile && (
-                                            <p className="text-white/90 text-sm mt-2 bg-white/20 px-3 py-1 rounded-full">
-                                                ✓ New photo selected: {selectedFile.name}
-                                            </p>
-                                        )}
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Rest of your form fields remain the same */}
-                                {/* Form Fields */}
-                                <div className="p-8">
-                                    {/* Personal Information Section */}
-                                    <div className="mb-10">
-                                        <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                                            <svg className="w-6 h-6 mr-3 text-[#457B9D]" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                            </svg>
-                                            Personal Information
-                                        </h3>
+                                {/* Form Content */}
+                                <div className="px-8">
+                                    <div className="space-y-8">
+                                        {/* Personal Information */}
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                                                Personal Information
+                                            </h3>
 
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                                            {/* Name */}
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700">
-                                                    Full Name *
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    {...register('name', { required: 'Name is required' })}
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
-                                                    placeholder="Enter your full name"
-                                                />
-                                                {errors.name && (
-                                                    <span className="text-red-500 text-sm font-medium flex items-center mt-2">
-                                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                        </svg>
-                                                        {errors.name.message}
-                                                    </span>
-                                                )}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Full Name *
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        {...register('name', { required: 'Full name is required' })}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                                                        placeholder="Enter your full name"
+                                                    />
+                                                    {errors.name && (
+                                                        <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Email Address
+                                                    </label>
+                                                    <input
+                                                        type="email"
+                                                        {...register('email')}
+                                                        disabled
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                                                    />
+                                                    <p className="mt-1 text-xs text-gray-500">Email address cannot be changed</p>
+                                                </div>
+
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Institution/Organization
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        {...register('institution')}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        placeholder="Where do you study or work?"
+                                                    />
+                                                </div>
                                             </div>
+                                        </div>
 
-                                            {/* Email (Read-only) */}
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700">
-                                                    Email Address *
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    {...register('email')}
-                                                    disabled
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
-                                                    placeholder="Email cannot be changed"
-                                                />
-                                                <p className="text-xs text-gray-500 flex items-center mt-1">
-                                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                                    </svg>
-                                                    Email address is locked for security
-                                                </p>
+                                        {/* Location - Only Country and State */}
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                                                Location
+                                            </h3>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Country *
+                                                    </label>
+                                                    <select
+                                                        {...register('country', { required: 'Please select a country' })}
+                                                        onChange={handleCountryChange}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                    >
+                                                        <option value="">Select Country</option>
+                                                        {countries.map((country) => (
+                                                            <option key={country.isoCode} value={country.name}>
+                                                                {country.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    {errors.country && (
+                                                        <p className="mt-1 text-sm text-red-600">{errors.country.message}</p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        State/District
+                                                    </label>
+                                                    <select
+                                                        {...register('district')}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50"
+                                                        disabled={!selectedCountryCode}
+                                                    >
+                                                        <option value="">
+                                                            {selectedCountryCode ? 'Select State/District' : 'Select Country First'}
+                                                        </option>
+                                                        {states.map((state) => (
+                                                            <option key={state.isoCode} value={state.name}>
+                                                                {state.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
                                             </div>
+                                        </div>
 
-                                            {/* Institution */}
-                                            <div className="lg:col-span-2 space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700">
-                                                    Institution/School
+                                        {/* About */}
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                                                About
+                                            </h3>
+
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    Bio/Description
                                                 </label>
-                                                <input
-                                                    type="text"
-                                                    {...register('institution')}
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
-                                                    placeholder="Where do you study or work?"
+                                                <textarea
+                                                    {...register('bio')}
+                                                    rows="4"
+                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                    placeholder="Tell us about yourself, your interests, and professional background..."
                                                 />
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Location Section */}
-                                    <div className="mb-10">
-                                        <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                                            <svg className="w-6 h-6 mr-3 text-[#457B9D]" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                            </svg>
-                                            Location Details
-                                        </h3>
+                                        {/* Professional Links */}
+                                        <div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                                                Professional Links
+                                            </h3>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                            {/* Country */}
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700">
-                                                    Country *
-                                                </label>
-                                                <select
-                                                    {...register('country', {
-                                                        required: 'Please select a country'
-                                                    })}
-                                                    onChange={(e) => {
-                                                        handleCountryChange(e);
-                                                    }}
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
-                                                >
-                                                    <option value="">Select Country</option>
-                                                    {countries.map((country) => (
-                                                        <option key={country.isoCode} value={country.name}>
-                                                            {country.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {errors.country && (
-                                                    <span className="text-red-500 text-sm font-medium flex items-center mt-2">
-                                                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                                        </svg>
-                                                        {errors.country.message}
-                                                    </span>
-                                                )}
-                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        LinkedIn Profile
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        {...register('linkedin')}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        placeholder="https://linkedin.com/in/username"
+                                                    />
+                                                </div>
 
-                                            {/* State/District */}
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700">
-                                                    State/District
-                                                </label>
-                                                <select
-                                                    {...register('district')}
-                                                    onChange={handleStateChange}
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                                    disabled={!selectedCountryCode}
-                                                >
-                                                    <option value="">
-                                                        {selectedCountryCode ? 'Select State/District' : 'Select Country First'}
-                                                    </option>
-                                                    {states.map((state) => (
-                                                        <option key={state.isoCode} value={state.name}>
-                                                            {state.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Professional Email
+                                                    </label>
+                                                    <input
+                                                        type="email"
+                                                        {...register('mailLink')}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        placeholder="professional@domain.com"
+                                                    />
+                                                </div>
 
-                                            {/* City */}
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700">
-                                                    City (Optional)
-                                                </label>
-                                                <select
-                                                    {...register('city')}
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
-                                                    disabled={!selectedStateCode}
-                                                >
-                                                    <option value="">
-                                                        {selectedStateCode ? 'Select City' : 'Select State First'}
-                                                    </option>
-                                                    {cities.slice(0, 50).map((city) => (
-                                                        <option key={city.name} value={city.name}>
-                                                            {city.name}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {cities.length > 50 && (
-                                                    <p className="text-xs text-gray-500 mt-1">Showing top 50 cities for better performance</p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Bio Section */}
-                                    <div className="mb-10">
-                                        <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                                            <svg className="w-6 h-6 mr-3 text-[#457B9D]" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clipRule="evenodd" />
-                                            </svg>
-                                            About You
-                                        </h3>
-
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-semibold text-gray-700">
-                                                Bio/Description
-                                            </label>
-                                            <textarea
-                                                {...register('bio')}
-                                                rows="5"
-                                                className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white resize-none"
-                                                placeholder="Tell us about yourself, your interests, goals, and what makes you unique..."
-                                            />
-                                            <p className="text-xs text-gray-500">Share your story, achievements, or anything you'd like others to know about you.</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Social Media Section */}
-                                    <div className="mb-10">
-                                        <h3 className="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
-                                            <svg className="w-6 h-6 mr-3 text-[#457B9D]" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                                            </svg>
-                                            Social & Professional Links
-                                        </h3>
-
-                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                            {/* Facebook */}
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700 flex items-center">
-                                                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M20 10C20 4.477 15.523 0 10 0S0 4.477 0 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V10h2.54V7.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V10h2.773l-.443 2.89h-2.33v6.988C16.343 19.128 20 14.991 20 10z" clipRule="evenodd" />
-                                                    </svg>
-                                                    Facebook Profile
-                                                </label>
-                                                <input
-                                                    type="url"
-                                                    {...register('facebook')}
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
-                                                    placeholder="https://facebook.com/username"
-                                                />
-                                            </div>
-
-                                            {/* LinkedIn */}
-                                            <div className="space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700 flex items-center">
-                                                    <svg className="w-5 h-5 mr-2 text-blue-700" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M16.338 16.338H13.67V12.16c0-.995-.017-2.277-1.387-2.277-1.39 0-1.601 1.086-1.601 2.207v4.248H8.014v-8.59h2.559v1.174h.037c.356-.675 1.227-1.387 2.526-1.387 2.703 0 3.203 1.778 3.203 4.092v4.711zM5.005 6.575a1.548 1.548 0 11-.003-3.096 1.548 1.548 0 01.003 3.096zm-1.337 9.763H6.34v-8.59H3.667v8.59zM17.668 1H2.328C1.595 1 1 1.581 1 2.298v15.403C1 18.418 1.595 19 2.328 19h15.34c.734 0 1.332-.582 1.332-1.299V2.298C19 1.581 18.402 1 17.668 1z" clipRule="evenodd" />
-                                                    </svg>
-                                                    LinkedIn Profile
-                                                </label>
-                                                <input
-                                                    type="url"
-                                                    {...register('linkedin')}
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
-                                                    placeholder="https://linkedin.com/in/username"
-                                                />
-                                            </div>
-
-                                            {/* Professional Email */}
-                                            <div className="lg:col-span-2 space-y-2">
-                                                <label className="block text-sm font-semibold text-gray-700 flex items-center">
-                                                    <svg className="w-5 h-5 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
-                                                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-                                                    </svg>
-                                                    Professional Email
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    {...register('mailLink')}
-                                                    className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all duration-300 bg-gray-50 hover:bg-white"
-                                                    placeholder="professional@email.com"
-                                                />
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                        Facebook Profile
+                                                    </label>
+                                                    <input
+                                                        type="url"
+                                                        {...register('facebook')}
+                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        placeholder="https://facebook.com/username"
+                                                    />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-gray-200">
-                                        <button
-                                            type="submit"
-                                            disabled={isLoading || isUploadingImage}
-                                            className="flex-1 sm:flex-none px-8 py-4 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white rounded-xl hover:from-[#3a6b8a] hover:to-[#2d5a73] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg hover:shadow-xl flex items-center justify-center"
-                                        >
-                                            {isLoading ? (
-                                                <>
-                                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                                                    {isUploadingImage ? 'Uploading Photo...' : 'Updating Profile...'}
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                    </svg>
-                                                    Update Profile
-                                                </>
-                                            )}
-                                        </button>
-
+                                    <div className="flex justify-end space-x-4 pt-8 mt-8 border-t border-gray-200 mb-6">
                                         <button
                                             type="button"
                                             onClick={() => navigate('/dashboard')}
                                             disabled={isLoading}
-                                            className="flex-1 sm:flex-none px-8 py-4 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-semibold flex items-center justify-center disabled:opacity-50"
+                                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
                                         >
-                                            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                            </svg>
                                             Cancel
+                                        </button>
+
+                                        <button
+                                            type="submit"
+                                            disabled={isLoading || isUploadingImage || isUploadingCover}
+                                            className="px-8 py-3 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white rounded-lg hover:bg-gradient-to-r  transition-colors font-medium disabled:opacity-50 flex items-center"
+                                        >
+                                            {isLoading ? (
+                                                <>
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                                    {(isUploadingImage || isUploadingCover) ? 'Uploading...' : 'Saving...'}
+                                                </>
+                                            ) : (
+                                                'Save Changes'
+                                            )}
                                         </button>
                                     </div>
                                 </div>

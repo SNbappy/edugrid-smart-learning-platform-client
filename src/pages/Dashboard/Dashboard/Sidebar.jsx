@@ -100,7 +100,7 @@ const Sidebar = () => {
     );
 
     return (
-        <div className="fixed left-0 top-0 h-full w-[320px] bg-gradient-to-b from-white via-gray-50 to-gray-100 shadow-2xl z-10 text-gray-700 font-poppins">
+        <div className="fixed left-0 top-0 h-full w-[320px] bg-[#DCE8F5] shadow-2xl z-10 text-gray-700 font-poppins">
             {/* Scrollable Container */}
             <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-gray-100 scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400">
                 {/* Profile Section */}
@@ -108,7 +108,7 @@ const Sidebar = () => {
                     {/* Profile Image */}
                     <div className="flex justify-center mb-6">
                         <div className="relative">
-                            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] flex items-center justify-center">
+                            <div className="w-30 h-30 rounded-full overflow-hidden border-6 border-[#457B9D] shadow-lg bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] flex items-center justify-center">
                                 {userData?.photoURL || user?.photoURL ? (
                                     <img
                                         src={userData?.photoURL || user?.photoURL}
@@ -149,14 +149,14 @@ const Sidebar = () => {
                     {userData && (
                         <div className="px-4 space-y-2">
                             {/* Email (always show) */}
-                            <div className="flex items-center text-xs text-gray-600 bg-white/60 rounded-lg px-3 py-2">
+                            <div className="flex items-center text-xs text-gray-600 rounded-lg px-3 pt-2">
                                 <MdEmail className="text-green-500 mr-2 flex-shrink-0" />
                                 <span className="truncate">{userData.email}</span>
                             </div>
 
                             {/* Combined Location */}
                             {getLocationString() && (
-                                <div className="flex items-center text-xs text-gray-600 bg-white/60 rounded-lg px-3 py-2">
+                                <div className="flex items-center text-xs text-gray-600 rounded-lg px-3">
                                     <MdLocationOn className="text-red-500 mr-2 flex-shrink-0" />
                                     <span className="truncate">{getLocationString()}</span>
                                 </div>
@@ -164,7 +164,7 @@ const Sidebar = () => {
 
                             {/* Institution */}
                             {userData.profile?.institution && (
-                                <div className="flex items-center text-xs text-gray-600 bg-white/60 rounded-lg px-3 py-2">
+                                <div className="flex items-center text-xs text-gray-600  rounded-lg px-3">
                                     <MdBusiness className="text-blue-500 mr-2 flex-shrink-0" />
                                     <span className="truncate">{userData.profile.institution}</span>
                                 </div>
@@ -174,10 +174,10 @@ const Sidebar = () => {
 
                     {/* See More Button */}
                     {hasAdditionalInfo && (
-                        <div className="px-4 mt-3">
+                        <div className="px-4 mt-3 mx-2">
                             <button
                                 onClick={() => setShowMoreInfo(!showMoreInfo)}
-                                className="w-full flex items-center justify-center px-3 py-2 text-xs font-medium text-[#457B9D] bg-white/40 rounded-lg hover:bg-white/60 transition-all duration-300 border border-[#457B9D]/10"
+                                className="w-full flex items-center justify-center px-3 text-xs font-medium text-[#457B9D] bg-white/40 rounded-lg hover:bg-white/60 transition-all duration-300 border border-[#457B9D]/10 py-1 shadow-lg"
                             >
                                 {showMoreInfo ? (
                                     <>
@@ -199,7 +199,7 @@ const Sidebar = () => {
                         <div className="px-4 mt-3 space-y-2 animate-fadeIn">
                             {/* Professional Email */}
                             {userData.profile?.mailLink && (
-                                <div className="flex items-center text-xs text-gray-600 bg-white/60 rounded-lg px-3 py-2">
+                                <div className="flex items-center text-xs text-gray-600  rounded-lg px-3">
                                     <FaEnvelope className="text-purple-500 mr-2 flex-shrink-0" />
                                     <span className="truncate">{userData.profile.mailLink}</span>
                                 </div>
@@ -207,13 +207,13 @@ const Sidebar = () => {
 
                             {/* Facebook */}
                             {userData.profile?.facebook && (
-                                <div className="flex items-center text-xs text-gray-600 bg-white/60 rounded-lg px-3 py-2">
+                                <div className="flex items-center text-xs text-gray-600  rounded-lg px-3">
                                     <FaFacebook className="text-blue-600 mr-2 flex-shrink-0" />
                                     <a
                                         href={userData.profile.facebook}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="truncate hover:text-blue-600 transition-colors"
+                                        className="truncate hover:fgtfg transition-colors"
                                     >
                                         Facebook Profile
                                     </a>
@@ -222,7 +222,7 @@ const Sidebar = () => {
 
                             {/* LinkedIn */}
                             {userData.profile?.linkedin && (
-                                <div className="flex items-center text-xs text-gray-600 bg-white/60 rounded-lg px-3 py-2">
+                                <div className="flex items-center text-xs text-gray-600  rounded-lg px-3">
                                     <FaLinkedin className="text-blue-700 mr-2 flex-shrink-0" />
                                     <a
                                         href={userData.profile.linkedin}
@@ -237,7 +237,7 @@ const Sidebar = () => {
 
                             {/* Joined Date */}
                             {userData.createdAt && (
-                                <div className="flex items-center text-xs text-gray-600 bg-white/60 rounded-lg px-3 py-2">
+                                <div className="flex items-center text-xs text-gray-600  rounded-lg px-3">
                                     <MdPerson className="text-gray-500 mr-2 flex-shrink-0" />
                                     <span className="truncate">
                                         Joined: {new Date(userData.createdAt).toLocaleDateString('en-US', {
@@ -255,7 +255,7 @@ const Sidebar = () => {
                 <div className="px-6 mb-6">
                     <Link
                         to="/edit-profile"
-                        className="w-full flex items-center justify-center px-4 py-3 text-sm font-semibold text-[#457B9D] bg-white rounded-xl hover:bg-gray-50 transition-all duration-300 border border-[#457B9D]/20 shadow-sm hover:shadow-md group"
+                        className="w-full flex items-center justify-center px-4 py-1 text-sm font-semibold text-[#457B9D] bg-white rounded-xl hover:bg-gray-50 transition-all duration-300 border border-[#457B9D]/20 shadow-sm hover:shadow-md group"
                     >
                         <MdEdit className="mr-2 text-lg group-hover:scale-110 transition-transform duration-300" />
                         Edit Profile
