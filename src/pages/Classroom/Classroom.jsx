@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import useAxiosPublic from '../../hooks/useAxiosPublic';
 import Sidebar from '../Dashboard/Dashboard/Sidebar';
+import EditClassroomModal from './EditClassroomModal'; // New component we'll create
 import {
     MdPeople,
     MdAssignment,
@@ -11,7 +12,9 @@ import {
     MdGrade,
     MdArrowBack,
     MdCode,
-    MdSchedule
+    MdSchedule,
+    MdEdit,
+    MdImage
 } from 'react-icons/md';
 
 const Classroom = () => {
@@ -22,6 +25,10 @@ const Classroom = () => {
     const [classroom, setClassroom] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+    const [showEditModal, setShowEditModal] = useState(false);
+
+    // Check if current user is the classroom owner
+    const isClassroomOwner = user && classroom && classroom.teacherEmail === user.email;
 
     // Fetch classroom details
     useEffect(() => {
@@ -46,6 +53,13 @@ const Classroom = () => {
         }
     }, [classroomId, user, loading, axiosPublic, navigate]);
 
+    // Handle classroom update
+    const handleClassroomUpdate = (updatedClassroom) => {
+        setClassroom(updatedClassroom);
+        setShowEditModal(false);
+    };
+
+    // Rest of your existing code for classroomOptions, loading states, etc.
     const classroomOptions = [
         {
             id: 'attendance',
@@ -119,7 +133,6 @@ const Classroom = () => {
                 </title>
             </Helmet>
 
-
             <div className="flex">
                 <Sidebar />
 
@@ -138,6 +151,30 @@ const Classroom = () => {
 
                         {/* Classroom Header */}
                         <div className="mb-8 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                            {/* Classroom Image */}
+                            <div className="relative">
+                                <div
+                                    className="h-48 bg-cover bg-center bg-gradient-to-r from-[#457B9D] to-[#3a6b8a]"
+                                    style={{
+                                        backgroundImage: classroom.image
+                                            ? `linear-gradient(rgba(69, 123, 157, 0.8), rgba(58, 107, 138, 0.8)), url(${classroom.image})`
+                                            : undefined
+                                    }}
+                                >
+                                    {/* Edit Button for Owner */}
+                                    {isClassroomOwner && (
+                                        <button
+                                            onClick={() => setShowEditModal(true)}
+                                            className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-white/30 transition-all duration-200 flex items-center gap-2"
+                                            title="Edit Classroom"
+                                        >
+                                            <MdEdit className="text-xl" />
+                                            <span className="hidden md:block font-semibold">Edit Classroom</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
                             <div className="bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] p-8 text-white">
                                 <div className="flex justify-between items-start">
                                     <div>
@@ -169,6 +206,7 @@ const Classroom = () => {
                             )}
                         </div>
 
+                        {/* Rest of your existing code for options grid and stats */}
                         {/* Classroom Options Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                             {classroomOptions.map((option) => {
@@ -233,6 +271,16 @@ const Classroom = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            {showEditModal && (
+                <EditClassroomModal
+                    classroom={classroom}
+                    onClose={() => setShowEditModal(false)}
+                    onUpdate={handleClassroomUpdate}
+                    axiosPublic={axiosPublic}
+                />
+            )}
         </div>
     );
 };

@@ -128,13 +128,13 @@ const MyClasses = () => {
                         <div class="text-center py-4">
                             <p class="mb-4">Your classroom has been created. Share this code with students:</p>
                             <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 mb-4">
-                                <span class="text-2xl font-mono font-bold text-blue-600">${newClassCode}</span>
+                                <span class="text-2xl font-mono font-bold" style="color: #457B9D">${newClassCode}</span>
                             </div>
                             <p class="text-sm text-gray-600">Students can use this code to join your classroom</p>
                         </div>
                     `,
                     confirmButtonText: 'Continue',
-                    confirmButtonColor: '#3B82F6'
+                    confirmButtonColor: '#457B9D'
                 });
 
                 // Refresh teacher classes
@@ -253,7 +253,7 @@ const MyClasses = () => {
         return (
             <div className="min-h-screen flex items-center justify-center bg-slate-50">
                 <div className="text-center space-y-4">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#457B9D] mx-auto"></div>
                     <p className="text-gray-600 font-medium">Loading your classrooms...</p>
                 </div>
             </div>
@@ -288,7 +288,7 @@ const MyClasses = () => {
                                     </button>
                                     <button
                                         onClick={() => setShowCreateForm(true)}
-                                        className="inline-flex items-center px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                                        className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white rounded-lg hover:from-[#3a6b8a] hover:to-[#2d5a73] transition-all font-medium shadow-sm"
                                     >
                                         <HiPlus className="w-4 h-4 mr-2" />
                                         New Classroom
@@ -305,8 +305,8 @@ const MyClasses = () => {
                                     <button
                                         onClick={() => setCurrentView('overview')}
                                         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'overview'
-                                                ? 'bg-white text-blue-700 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900'
+                                            ? 'bg-white text-[#457B9D] shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
                                             }`}
                                     >
                                         All ({teacherClasses.length + enrolledClasses.length})
@@ -314,8 +314,8 @@ const MyClasses = () => {
                                     <button
                                         onClick={() => setCurrentView('teaching')}
                                         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'teaching'
-                                                ? 'bg-white text-purple-700 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900'
+                                            ? 'bg-white text-purple-700 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
                                             }`}
                                     >
                                         Teaching ({teacherClasses.length})
@@ -323,8 +323,8 @@ const MyClasses = () => {
                                     <button
                                         onClick={() => setCurrentView('enrolled')}
                                         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${currentView === 'enrolled'
-                                                ? 'bg-white text-green-700 shadow-sm'
-                                                : 'text-gray-600 hover:text-gray-900'
+                                            ? 'bg-white text-green-700 shadow-sm'
+                                            : 'text-gray-600 hover:text-gray-900'
                                             }`}
                                     >
                                         Enrolled ({enrolledClasses.length})
@@ -338,7 +338,7 @@ const MyClasses = () => {
                                         placeholder="Search classrooms..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
+                                        className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent w-64"
                                     />
                                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                         <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,7 +358,7 @@ const MyClasses = () => {
                                 onJoinClick={() => setShowJoinForm(true)}
                             />
                         ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
                                 {displayedClasses.map((classroom) => (
                                     <ClassroomCard
                                         key={`${classroom._id}-${classroom.role}`}
@@ -415,7 +415,7 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
                     icon: HiAcademicCap,
                     title: 'No teaching assignments yet',
                     description: 'Create your first classroom to start teaching and sharing knowledge with students.',
-                    action: { text: 'Create Classroom', onClick: onCreateClick, color: 'blue' }
+                    action: { text: 'Create Classroom', onClick: onCreateClick, color: 'theme' }
                 };
             case 'enrolled':
                 return {
@@ -430,7 +430,7 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
                     title: 'Welcome to EduGrid',
                     description: 'Start by creating a classroom to teach, or join an existing one as a student.',
                     actions: [
-                        { text: 'Create Classroom', onClick: onCreateClick, color: 'blue' },
+                        { text: 'Create Classroom', onClick: onCreateClick, color: 'theme' },
                         { text: 'Join Class', onClick: onJoinClick, color: 'green' }
                     ]
                 };
@@ -448,9 +448,9 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
                 {action && (
                     <button
                         onClick={action.onClick}
-                        className={`px-6 py-3 rounded-lg font-medium transition-colors ${action.color === 'blue'
-                                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                : 'bg-green-600 text-white hover:bg-green-700'
+                        className={`px-6 py-3 rounded-lg font-medium transition-colors ${action.color === 'theme'
+                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white hover:from-[#3a6b8a] hover:to-[#2d5a73]'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                     >
                         {action.text}
@@ -460,9 +460,9 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
                     <button
                         key={index}
                         onClick={action.onClick}
-                        className={`px-6 py-3 rounded-lg font-medium transition-colors ${action.color === 'blue'
-                                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                : 'bg-green-600 text-white hover:bg-green-700'
+                        className={`px-6 py-3 rounded-lg font-medium transition-colors ${action.color === 'theme'
+                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white hover:from-[#3a6b8a] hover:to-[#2d5a73]'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                     >
                         {action.text}
@@ -473,29 +473,56 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
     );
 };
 
-// Classroom Card Component
+// Classroom Card Component with Consistent Background Image Sizing
 const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
     const isInstructor = classroom.role === 'instructor';
-    const cardColor = isInstructor ? 'blue' : 'green';
+
+    // Array of beautiful education-themed background images
+    const backgroundImages = [
+        'https://images.unsplash.com/photo-1523580494863-6f436d47d1b9?auto=format&fit=crop&w=800&q=80', // Classroom with desks
+        'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80', // Books and learning
+        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80', // Library atmosphere
+        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80', // Modern classroom
+        'https://images.unsplash.com/photo-1497486751825-1233686d5d80?auto=format&fit=crop&w=800&q=80', // Study materials
+        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80', // Academic setting
+    ];
+
+    // Use classroom ID to consistently pick the same background image
+    const getBackgroundImage = () => {
+        if (classroom._id) {
+            const index = classroom._id.slice(-1).charCodeAt(0) % backgroundImages.length;
+            return backgroundImages[index];
+        }
+        return backgroundImages[0];
+    };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-            {/* Header */}
-            <div className={`bg-gradient-to-r ${isInstructor
-                ? 'from-[#457B9D] to-[#3a6b8a]'
-                    : 'from-green-500 to-green-600'
-                } p-6 text-white`}>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
+            {/* Header with Background Image - FIXED HEIGHT FOR CONSISTENCY */}
+            <div
+                className="relative p-6 text-white h-[160px] flex flex-col justify-between"
+                style={{
+                    backgroundImage: `linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.4) 100%), url(${getBackgroundImage()})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                }}
+            >
+                {/* Role-based accent */}
+                <div className={`absolute top-0 left-0 w-full h-1 ${isInstructor ? 'bg-[#457B9D]' : 'bg-green-500'
+                    }`}></div>
+
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold truncate mb-1">
+                        <h3 className="text-lg font-semibold truncate mb-1 text-white drop-shadow-md">
                             {classroom.name || classroom.title}
                         </h3>
-                        <p className="text-white/80 text-sm">{classroom.subject}</p>
+                        <p className="text-white/90 text-sm drop-shadow-sm">{classroom.subject}</p>
                     </div>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isInstructor
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-green-100 text-green-800'
-                        } bg-opacity-20 text-white`}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm ${isInstructor
+                            ? 'bg-[#457B9D]/20 text-white border border-[#457B9D]/30'
+                            : 'bg-green-500/20 text-white border border-green-300/30'
+                        }`}>
                         {isInstructor ? (
                             <>
                                 <HiStar className="w-3 h-3 mr-1" />
@@ -510,18 +537,18 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
                     </span>
                 </div>
 
-                {/* Class Code for instructors */}
+                {/* Class Code for instructors - Fixed positioning */}
                 {isInstructor && (classroom.code || classroom.classCode) && (
-                    <div className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                    <div className="flex items-center justify-between bg-black/20 backdrop-blur-sm rounded-lg p-3 border border-white/10 mt-auto">
                         <div className="flex items-center">
-                            <HiCode className="w-4 h-4 mr-2" />
-                            <span className="font-mono font-medium">
+                            <HiCode className="w-4 h-4 mr-2 text-white" />
+                            <span className="font-mono font-medium text-white">
                                 {classroom.code || classroom.classCode}
                             </span>
                         </div>
                         <button
                             onClick={onCopyCode}
-                            className="p-1 hover:bg-white/10 rounded transition-colors"
+                            className="p-1 hover:bg-white/10 rounded transition-colors text-white"
                             title="Copy class code"
                         >
                             <HiClipboardCopy className="w-4 h-4" />
@@ -530,31 +557,32 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
                 )}
             </div>
 
-            {/* Body */}
-            <div className="p-6">
+            {/* Body - FLEXIBLE HEIGHT */}
+            <div className="p-6 flex-1 flex flex-col">
                 <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
                     <div className="flex items-center">
                         <HiUsers className="w-4 h-4 mr-1" />
                         <span>{classroom.students?.length || 0} students</span>
                     </div>
-                    <div className="flex items-center">
-                        {/* <HiClock className="w-4 h-4 mr-1" /> */}
-                        {/* <span>Active</span> */}
-                    </div>
                 </div>
 
-                {classroom.description && (
-                    <p className="text-gray-700 text-sm mb-6 line-clamp-2">
-                        {classroom.description}
-                    </p>
-                )}
+                {/* Description with consistent height */}
+                <div className="flex-1 mb-6">
+                    {classroom.description ? (
+                        <p className="text-gray-700 text-sm line-clamp-3">
+                            {classroom.description}
+                        </p>
+                    ) : (
+                        <p className="text-gray-500 text-sm italic">No description available</p>
+                    )}
+                </div>
 
-                {/* Actions */}
-                <div className="flex gap-2">
+                {/* Actions - Always at bottom */}
+                <div className="flex gap-2 mt-auto">
                     <button
                         onClick={onEnter}
-                        className={`flex-1 inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-colors ${isInstructor
-                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] hover:bg-blue-700 text-white'
+                        className={`flex-1 inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all ${isInstructor
+                                ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] hover:from-[#3a6b8a] hover:to-[#2d5a73] text-white'
                                 : 'bg-green-600 hover:bg-green-700 text-white'
                             }`}
                     >
@@ -630,7 +658,7 @@ const CreateClassModal = ({ onClose, onSubmit }) => {
                                 type="text"
                                 value={formData.className}
                                 onChange={(e) => handleInputChange('className', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent"
                                 placeholder="e.g., Advanced Mathematics"
                                 required
                             />
@@ -644,7 +672,7 @@ const CreateClassModal = ({ onClose, onSubmit }) => {
                                 type="text"
                                 value={formData.subject}
                                 onChange={(e) => handleInputChange('subject', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent"
                                 placeholder="e.g., Mathematics"
                                 required
                             />
@@ -658,7 +686,7 @@ const CreateClassModal = ({ onClose, onSubmit }) => {
                                 value={formData.description}
                                 onChange={(e) => handleInputChange('description', e.target.value)}
                                 rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent resize-none"
                                 placeholder="Brief description about the classroom..."
                             />
                         </div>
@@ -675,7 +703,7 @@ const CreateClassModal = ({ onClose, onSubmit }) => {
                             <button
                                 type="submit"
                                 disabled={isSubmitting || !formData.className.trim() || !formData.subject.trim()}
-                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white rounded-lg font-medium hover:from-[#3a6b8a] hover:to-[#2d5a73] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                             >
                                 {isSubmitting ? 'Creating...' : 'Create Classroom'}
                             </button>
