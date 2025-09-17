@@ -1,189 +1,124 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
-import { sortMaterialsByDate } from '../utils/materialHelpers';
+import { convertYouTubeUrlToEmbed } from '../utils/youtubeUtils';
+import { uploadFileToCloudinary } from '../utils/fileUpload';
 
 export const useMaterials = (classroomId, user, loading, axiosPublic) => {
     const [classroom, setClassroom] = useState(null);
     const [materials, setMaterials] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const navigate = useNavigate();
 
-    // Fetch classroom and materials
+    // Fetch materials
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchMaterials = async () => {
+            if (!classroomId || loading) return;
+
             try {
                 setIsLoading(true);
 
                 const classroomResponse = await axiosPublic.get(`/classrooms/${classroomId}`);
-
                 if (classroomResponse.data.success) {
                     setClassroom(classroomResponse.data.classroom);
+                }
 
-                    // Handle materials with nested structure
-                    const materialsData = classroomResponse.data.classroom.materials || { files: [], links: [], videos: [] };
-
-                    let allMaterials = [];
-
-                    // If materials is already an array
-                    if (Array.isArray(materialsData)) {
-                        allMaterials = materialsData;
-                    } else {
-                        // If materials has nested structure
-                        allMaterials = [
-                            ...(materialsData.files || []).map(item => ({ ...item, type: 'file' })),
-                            ...(materialsData.links || []).map(item => ({ ...item, type: 'link' })),
-                            ...(materialsData.videos || []).map(item => ({ ...item, type: 'video' }))
-                        ];
-                    }
-
-                    // Filter out null materials and sort
-                    const validMaterials = allMaterials
-                        .filter(material => material != null)
-                        .map(material => ({
-                            ...material,
-                            id: material.id || material._id || Date.now().toString()
-                        }));
-
-                    const sortedMaterials = sortMaterialsByDate(validMaterials);
-
-                    console.log('📋 Loaded materials:', sortedMaterials);
-                    setMaterials(sortedMaterials);
+                const materialsResponse = await axiosPublic.get(`/classrooms/${classroomId}/materials`);
+                if (materialsResponse.data.success) {
+                    const allMaterials = [
+                        ...(materialsResponse.data.materials.files || []),
+                        ...(materialsResponse.data.materials.links || []),
+                        ...(materialsResponse.data.materials.videos || [])
+                    ];
+                    setMaterials(allMaterials);
                 }
             } catch (error) {
-                console.error('Error fetching data:', error);
-                Swal.fire('Error!', 'Failed to load materials.', 'error');
-                navigate(`/classroom/${classroomId}`);
+                console.error('❌ Error fetching materials:', error);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        if (!loading && user && classroomId) {
-            fetchData();
-        }
-    }, [classroomId, user, loading, axiosPublic, navigate]);
+        fetchMaterials();
+    }, [classroomId, user, loading, axiosPublic]);
 
-    // Add new material with proper handling for different types
+    // Add material function
     const addMaterial = async (materialData) => {
         try {
-            console.log('📚 Adding material to classroom:', materialData);
+            console.log('📤 Sending material data:', materialData);
 
-            // Prepare request data based on material type
-            let requestData;
+            let requestData = {
+                title: materialData.title,
+                description: materialData.description || '',
+                type: materialData.type
+            };
 
-            if (materialData.type === 'link' || materialData.type === 'video') {
-                // For web links and videos - use different field structure
-                requestData = {
-                    title: materialData.title,          // Use title field for links
-                    description: materialData.description || '',
-                    url: materialData.url,             // Direct URL field (not fileUrl)
-                    type: materialData.type,           // Keep original type
-                    category: materialData.type,       // Also send as category for backend compatibility
-                    fileName: materialData.title,      // Use title as filename for links
-                    fileType: 'text/html',            // Default type for web links
-                    resourceType: 'link',             // Mark as link resource
-                    uploadedBy: user.email
-                };
+            if (materialData.type === 'youtube') {
+                // YouTube video
+                const embedUrl = convertYouTubeUrlToEmbed(materialData.url);
+                if (!embedUrl) {
+                    return { success: false, error: 'Invalid YouTube URL' };
+                }
 
-                console.log('🔗 Prepared link/video data:', requestData);
-            } else {
-                // For files (existing logic) - use file-specific fields
-                requestData = {
-                    name: materialData.title,          // Backend expects 'name' for files
-                    description: materialData.description || '',
-                    fileUrl: materialData.url,         // Backend expects 'fileUrl' for files
-                    fileName: materialData.fileName,
-                    fileSize: materialData.fileSize,
-                    fileType: materialData.fileType,
-                    category: materialData.category || 'document',
-                    publicId: materialData.publicId,
-                    resourceType: materialData.resourceType || 'raw',
-                    uploadedBy: user.email
-                };
+                requestData.youtubeUrl = materialData.url;
+                requestData.embedUrl = embedUrl;
+            }
+            else if (materialData.type === 'link') {
+                // Web link
+                requestData.url = materialData.url;
+            }
+            else if (materialData.type === 'file') {
+                // File upload - upload to Cloudinary first
+                console.log('📁 Uploading file to Cloudinary...');
+                const uploadResult = await uploadFileToCloudinary(materialData.file);
 
-                console.log('📁 Prepared file data:', requestData);
+                if (!uploadResult.success) {
+                    return { success: false, error: 'File upload failed: ' + uploadResult.error };
+                }
+
+                requestData.url = uploadResult.url;
+                requestData.fileName = materialData.file.name;
+                requestData.fileSize = materialData.file.size;
+                requestData.fileType = materialData.file.type;
+                requestData.publicId = uploadResult.publicId;
             }
 
-            console.log('📤 Sending request to backend with data:', requestData);
+            console.log('📤 Final request data:', requestData);
 
             const response = await axiosPublic.post(`/classrooms/${classroomId}/materials`, requestData);
 
-            console.log('📥 Backend response:', response.data);
-
-            if (response.data.success && response.data.material) {
-                const newMaterial = {
-                    ...response.data.material,
-                    type: response.data.material.type || materialData.type,
-                    createdAt: response.data.material.createdAt || new Date(),
-                    id: response.data.material.id || Date.now().toString()
-                };
-
-                console.log('✅ Adding material to state:', newMaterial);
-                setMaterials(prevMaterials => [newMaterial, ...prevMaterials]);
-
-                Swal.fire('Success!', 'Material added successfully.', 'success');
-                return { success: true };
+            if (response.data && response.data.success) {
+                setMaterials(prev => [...prev, response.data.material]);
+                return { success: true, material: response.data.material };
             } else {
-                console.error('❌ Invalid response from server:', response.data);
-                throw new Error('Invalid response from server');
+                throw new Error(response.data?.message || 'Failed to add material');
             }
+
         } catch (error) {
             console.error('❌ Error adding material:', error);
-            console.error('❌ Error response:', error.response?.data);
-            console.error('❌ Error status:', error.response?.status);
-            console.error('❌ Error details:', {
-                message: error.message,
-                status: error.response?.status,
-                data: error.response?.data
-            });
 
-            // Show more specific error message
-            const errorMessage = error.response?.data?.message || error.message || 'Failed to add material';
-            Swal.fire('Error!', errorMessage, 'error');
+            // Handle different error types
+            let errorMessage = 'Failed to add material';
+            if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
 
-            return { success: false, error: error.message };
+            return { success: false, error: errorMessage };
         }
     };
 
-    // Delete material with enhanced type detection
-    const deleteMaterial = async (materialId) => {
-        const result = await Swal.fire({
-            title: 'Delete Material?',
-            text: 'This action cannot be undone.',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
-        });
+    // Delete material function
+    const deleteMaterial = async (materialId, materialType = 'file') => {
+        try {
+            const response = await axiosPublic.delete(`/classrooms/${classroomId}/materials/${materialId}?type=${materialType}`);
 
-        if (result.isConfirmed) {
-            try {
-                // Find the material to determine its type for proper deletion
-                const materialToDelete = materials.find(m => m.id === materialId);
-                const materialType = materialToDelete?.type || 'file';
-
-                console.log('🗑️ Deleting material:', { materialId, materialType });
-
-                // Use the correct type parameter for deletion
-                await axiosPublic.delete(`/classrooms/${classroomId}/materials/${materialId}?type=${materialType}`);
-
-                setMaterials(prevMaterials =>
-                    prevMaterials.filter(material => material && material.id !== materialId)
-                );
-
-                Swal.fire('Deleted!', 'Material has been deleted.', 'success');
-            } catch (error) {
-                console.error('❌ Error deleting material:', error);
-
-                // Still remove from local state even if backend fails
-                setMaterials(prevMaterials =>
-                    prevMaterials.filter(material => material && material.id !== materialId)
-                );
-
-                Swal.fire('Deleted!', 'Material has been deleted.', 'success');
+            if (response.data && response.data.success) {
+                setMaterials(prev => prev.filter(material => material.id !== materialId));
+                return { success: true };
             }
+            return { success: false, error: 'Delete failed' };
+        } catch (error) {
+            console.error('❌ Error deleting material:', error);
+            return { success: false, error: error.message };
         }
     };
 

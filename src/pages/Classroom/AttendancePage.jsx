@@ -1,4 +1,4 @@
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useCallback } from 'react';
 import { AuthContext } from '../../providers/AuthProvider';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -18,6 +18,7 @@ import AttendanceSessionCard from '../../components/AttendanceSessionCard';
 import CreateAttendanceModal from '../../components/CreateAttendanceModal';
 import SessionDetailsModal from '../../components/SessionDetailsModal';
 import { calculateAttendanceStats } from '../../utils/attendanceUtils';
+import { exportAllSessionsPDF } from '../../utils/attendancePDFExport';
 
 const AttendancePage = () => {
     const { user, loading } = useContext(AuthContext);
@@ -30,9 +31,10 @@ const AttendancePage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showCreateSession, setShowCreateSession] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
+    const [isExporting, setIsExporting] = useState(false);
 
-    // Enhanced owner check function
-    const isOwner = () => {
+    // Enhanced owner check function (memoized to prevent infinite re-renders)
+    const isOwner = useCallback(() => {
         if (!classroom || !user) return false;
 
         // Check multiple possible owner/teacher fields
@@ -82,55 +84,62 @@ const AttendancePage = () => {
                 return emailMatch && teacherRoles.includes(member.role?.toLowerCase());
             });
 
-        const result = isDirectOwner || isInTeachersArray || isInInstructorsArray || hasTeacherRole;
+        return isDirectOwner || isInTeachersArray || isInInstructorsArray || hasTeacherRole;
+    }, [classroom, user]);
 
-        // Debug logging (only in development)
-        if (process.env.NODE_ENV === 'development') {
-            console.log('Owner check details:', {
-                userEmail: user.email,
-                classroomOwner: classroom.owner,
-                classroomTeacher: classroom.teacher,
-                isDirectOwner,
-                isInTeachersArray,
-                isInInstructorsArray,
-                hasTeacherRole,
-                finalResult: result
+    // Handle export all sessions as PDF
+    const handleExportAllSessions = async () => {
+        if (attendanceSessions.length === 0) {
+            Swal.fire({
+                title: 'No Data Available!',
+                text: 'No attendance sessions to export.',
+                icon: 'warning',
+                confirmButtonColor: '#457B9D'
             });
+            return;
         }
 
-        return result;
+        setIsExporting(true);
+
+        try {
+            // Enhanced stats for PDF
+            const enhancedStats = {
+                ...stats,
+                totalStudents: classroom?.students?.length || 0,
+                generatedBy: user?.displayName || user?.email || 'Teacher',
+                generatedAt: new Date().toLocaleString()
+            };
+
+            const success = exportAllSessionsPDF(
+                classroom?.name || 'Classroom',
+                attendanceSessions,
+                enhancedStats
+            );
+
+            if (success) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Complete attendance report exported successfully.',
+                    icon: 'success',
+                    confirmButtonColor: '#457B9D'
+                });
+            } else {
+                throw new Error('PDF generation failed');
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            Swal.fire({
+                title: 'Export Failed!',
+                text: 'Failed to export attendance report. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#457B9D'
+            });
+        } finally {
+            setIsExporting(false);
+        }
     };
 
-    // Debug component for development
-    const DebugInfo = () => {
-        if (process.env.NODE_ENV !== 'development') return null;
-
-        return (
-            <div className="bg-yellow-100 p-4 rounded-lg mb-4 text-sm border border-yellow-300">
-                <h3 className="font-bold mb-2 text-yellow-800">🐛 Debug Info (Development Only)</h3>
-                <div className="space-y-1 text-yellow-700">
-                    <p><strong>User Email:</strong> {user?.email || 'Not available'}</p>
-                    <p><strong>User UID:</strong> {user?.uid || 'Not available'}</p>
-                    <p><strong>Classroom Owner:</strong> {classroom?.owner || 'Not set'}</p>
-                    <p><strong>Classroom Teacher:</strong> {classroom?.teacher || 'Not set'}</p>
-                    <p><strong>Is Owner Result:</strong> {isOwner() ? '✅ Yes' : '❌ No'}</p>
-                    <p><strong>Classroom ID:</strong> {classroom?.id || 'Not available'}</p>
-                    {classroom?.teachers && (
-                        <p><strong>Teachers Array:</strong> {JSON.stringify(classroom.teachers)}</p>
-                    )}
-                    {classroom?.members && (
-                        <p><strong>Members:</strong> {JSON.stringify(classroom.members.map(m => ({
-                            email: m.email,
-                            role: m.role,
-                            userId: m.userId
-                        })))}</p>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
-    // Debug classroom and user data
+    // Debug classroom and user data (memoized to prevent infinite re-renders)
     useEffect(() => {
         if (classroom && user && process.env.NODE_ENV === 'development') {
             console.log('=== ATTENDANCE DEBUG INFO ===');
@@ -139,7 +148,7 @@ const AttendancePage = () => {
             console.log('Owner check result:', isOwner());
             console.log('=============================');
         }
-    }, [classroom, user]);
+    }, [classroom, user, isOwner]);
 
     // Fetch classroom and attendance data
     useEffect(() => {
@@ -176,25 +185,19 @@ const AttendancePage = () => {
                 return;
             }
 
-            const newSession = {
-                id: Date.now().toString(),
+            // Call your backend API
+            const response = await axiosPublic.post(`/classrooms/${classroomId}/attendance/sessions`, {
                 date: sessionData.date,
                 title: sessionData.title,
-                description: sessionData.description,
-                status: 'active',
-                attendance: classroom.students.map(student => ({
-                    studentEmail: student.email,
-                    studentName: student.name,
-                    status: 'unmarked'
-                })),
-                createdAt: new Date(),
-                createdBy: user.email
-            };
+                description: sessionData.description
+            });
 
-            setAttendanceSessions([...attendanceSessions, newSession]);
-            setShowCreateSession(false);
-
-            Swal.fire('Success!', 'Attendance session created successfully.', 'success');
+            if (response.data.success) {
+                // Update local state with the returned session
+                setAttendanceSessions([...attendanceSessions, response.data.session]);
+                setShowCreateSession(false);
+                Swal.fire('Success!', 'Attendance session created successfully.', 'success');
+            }
         } catch (error) {
             console.error('Error creating session:', error);
             Swal.fire('Error!', 'Failed to create attendance session.', 'error');
@@ -210,21 +213,31 @@ const AttendancePage = () => {
                 return;
             }
 
-            const updatedSessions = attendanceSessions.map(session => {
-                if (session.id === sessionId) {
-                    return {
-                        ...session,
-                        attendance: session.attendance.map(record =>
-                            record.studentEmail === studentEmail
-                                ? { ...record, status }
-                                : record
-                        )
-                    };
-                }
-                return session;
+            // Call your backend API
+            const response = await axiosPublic.post(`/classrooms/${classroomId}/attendance/sessions/${sessionId}/mark`, {
+                studentEmail: studentEmail,
+                status: status,
+                markedBy: user.email
             });
 
-            setAttendanceSessions(updatedSessions);
+            if (response.data.success) {
+                // Update local state only after successful API call
+                const updatedSessions = attendanceSessions.map(session => {
+                    if (session.id === sessionId) {
+                        return {
+                            ...session,
+                            attendance: session.attendance.map(record =>
+                                record.studentEmail === studentEmail
+                                    ? { ...record, status, markedAt: new Date(), markedBy: user.email }
+                                    : record
+                            )
+                        };
+                    }
+                    return session;
+                });
+
+                setAttendanceSessions(updatedSessions);
+            }
         } catch (error) {
             console.error('Error updating attendance:', error);
             Swal.fire('Error!', 'Failed to update attendance.', 'error');
@@ -255,9 +268,6 @@ const AttendancePage = () => {
 
                 <div className="flex-1 ml-[320px] p-6">
                     <div className="max-w-7xl mx-auto">
-                        {/* Debug Info */}
-                        <DebugInfo />
-
                         {/* Header */}
                         <div className="mb-6">
                             <button
@@ -280,8 +290,8 @@ const AttendancePage = () => {
                                         {/* Access level indicator */}
                                         <div className="mt-2">
                                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isOwner()
-                                                    ? 'bg-green-100 text-green-800'
-                                                    : 'bg-blue-100 text-blue-800'
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-blue-100 text-blue-800'
                                                 }`}>
                                                 {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
                                             </span>
@@ -344,9 +354,22 @@ const AttendancePage = () => {
 
                             {isOwner() && (
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                    <button className="flex items-center text-purple-600 hover:text-purple-700 transition-colors">
-                                        <MdDownload className="mr-2" />
-                                        <span className="font-semibold">Export Report</span>
+                                    <button
+                                        onClick={handleExportAllSessions}
+                                        disabled={isExporting || attendanceSessions.length === 0}
+                                        className="flex items-center text-purple-600 hover:text-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                                    >
+                                        {isExporting ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
+                                                <span className="font-semibold">Exporting...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <MdDownload className="mr-2" />
+                                                <span className="font-semibold">Export Report</span>
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -382,6 +405,7 @@ const AttendancePage = () => {
                                         onViewDetails={() => setSelectedSession(session)}
                                         isOwner={isOwner()}
                                         currentUserEmail={user?.email}
+                                        classroomName={classroom?.name}
                                     />
                                 ))}
                             </div>
@@ -405,6 +429,7 @@ const AttendancePage = () => {
                     onUpdateAttendance={updateAttendance}
                     isOwner={isOwner()}
                     currentUserEmail={user?.email}
+                    classroomName={classroom?.name}
                 />
             )}
         </div>

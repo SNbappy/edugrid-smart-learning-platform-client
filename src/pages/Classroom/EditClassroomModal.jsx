@@ -1,16 +1,18 @@
 import { useState, useRef } from 'react';
 import { MdClose, MdImage, MdSave, MdDelete } from 'react-icons/md';
+import { uploadImageToImgBB, validateImageFile, compressImage } from '../../services/imageUpload';
 
 const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
     const [formData, setFormData] = useState({
-        title: classroom.title || '',
+        title: classroom.name || '', // Map name to title for form
         subject: classroom.subject || '',
         description: classroom.description || '',
-        image: classroom.image || ''
+        image: classroom.imageUrl || ''
     });
     const [newImage, setNewImage] = useState(null);
-    const [imagePreview, setImagePreview] = useState(classroom.image || '');
+    const [imagePreview, setImagePreview] = useState(classroom.imageUrl || '');
     const [isLoading, setIsLoading] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [errors, setErrors] = useState({});
     const fileInputRef = useRef(null);
 
@@ -34,41 +36,33 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
     // Handle image selection
     const handleImageChange = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                setErrors(prev => ({
-                    ...prev,
-                    image: 'Please select a valid image file'
-                }));
-                return;
-            }
+        if (!file) return;
 
-            // Validate file size (max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                setErrors(prev => ({
-                    ...prev,
-                    image: 'Image size should be less than 5MB'
-                }));
-                return;
-            }
+        // Validate file using your existing validation
+        const validation = validateImageFile(file);
+        if (!validation.valid) {
+            setErrors(prev => ({
+                ...prev,
+                image: validation.error
+            }));
+            return;
+        }
 
-            setNewImage(file);
+        setNewImage(file);
 
-            // Create preview
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                setImagePreview(e.target.result);
-            };
-            reader.readAsDataURL(file);
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setImagePreview(e.target.result);
+        };
+        reader.readAsDataURL(file);
 
-            // Clear error
-            if (errors.image) {
-                setErrors(prev => ({
-                    ...prev,
-                    image: ''
-                }));
-            }
+        // Clear error
+        if (errors.image) {
+            setErrors(prev => ({
+                ...prev,
+                image: ''
+            }));
         }
     };
 
@@ -82,6 +76,38 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
         }));
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
+        }
+    };
+
+    // Upload image to ImgBB using your existing service
+    const uploadImageToImgBBService = async () => {
+        if (!newImage) return null;
+
+        setIsUploadingImage(true);
+        try {
+            console.log('📤 Uploading classroom image to ImgBB...');
+
+            // Compress image before upload using your existing service
+            const compressedFile = await compressImage(newImage, 1200, 0.8);
+
+            // Upload to ImgBB using your existing service
+            const uploadResult = await uploadImageToImgBB(compressedFile);
+
+            if (uploadResult.success) {
+                console.log('✅ Classroom image uploaded successfully:', uploadResult.url);
+                return uploadResult.url;
+            } else {
+                throw new Error(uploadResult.error);
+            }
+        } catch (error) {
+            console.error('❌ Classroom image upload failed:', error);
+            setErrors(prev => ({
+                ...prev,
+                image: 'Failed to upload image. Please try again.'
+            }));
+            return null;
+        } finally {
+            setIsUploadingImage(false);
         }
     };
 
@@ -114,6 +140,8 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
     };
 
     // Handle form submission
+    // In EditClassroomModal.jsx - Update the handleSubmit function
+    // In EditClassroomModal.jsx - Fix the handleSubmit function
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -128,44 +156,70 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
 
             // Upload new image if selected
             if (newImage) {
-                const imageFormData = new FormData();
-                imageFormData.append('image', newImage);
-
-                // You can use Cloudinary or your preferred image upload service
-                const uploadResponse = await axiosPublic.post('/upload/classroom-image', imageFormData, {
-                    headers: {
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-
-                if (uploadResponse.data.success) {
-                    imageUrl = uploadResponse.data.imageUrl;
+                const uploadedImageUrl = await uploadImageToImgBBService();
+                if (uploadedImageUrl) {
+                    imageUrl = uploadedImageUrl;
+                } else {
+                    return;
                 }
             }
 
             // Update classroom data
             const updateData = {
-                ...formData,
-                image: imageUrl
+                name: formData.title.trim(),
+                subject: formData.subject.trim(),
+                description: formData.description.trim(),
+                imageUrl: imageUrl
             };
+
+            console.log('Sending update data:', updateData);
 
             const response = await axiosPublic.put(`/classrooms/${classroom._id}`, updateData);
 
+            console.log('Full update response:', response.data);
+
+            // *** IMPROVED ERROR HANDLING ***
             if (response.data.success) {
-                onUpdate(response.data.classroom);
-                // Optional: Show success message
-                alert('Classroom updated successfully!');
+                if (response.data.classroom) {
+                    // We have the updated classroom data
+                    console.log('✅ Classroom updated with data:', response.data.classroom);
+                    onUpdate(response.data.classroom);
+                } else {
+                    // Success but no classroom data - fetch it manually
+                    console.log('✅ Update successful, fetching fresh data...');
+                    try {
+                        const fetchResponse = await axiosPublic.get(`/classrooms/${classroom._id}`);
+                        if (fetchResponse.data.success) {
+                            onUpdate(fetchResponse.data.classroom);
+                        }
+                    } catch (fetchError) {
+                        console.error('Error fetching updated classroom:', fetchError);
+                        // Still close the modal even if fetch fails
+                    }
+                }
             } else {
-                throw new Error('Failed to update classroom');
+                throw new Error(response.data.message || 'Failed to update classroom');
             }
 
         } catch (error) {
-            console.error('Error updating classroom:', error);
-            setErrors({ submit: 'Failed to update classroom. Please try again.' });
+            console.error('❌ Error updating classroom:', error);
+
+            // Better error handling
+            if (error.response) {
+                const errorMessage = error.response.data?.message || 'Failed to update classroom';
+                console.error('API Error:', error.response.data);
+                setErrors({ submit: errorMessage });
+            } else if (error.message) {
+                setErrors({ submit: error.message });
+            } else {
+                setErrors({ submit: 'Network error. Please check your connection and try again.' });
+            }
         } finally {
             setIsLoading(false);
         }
     };
+
+
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -227,7 +281,8 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current.click()}
-                                className="mt-3 w-full bg-gray-100 border border-gray-300 rounded-lg p-3 text-gray-700 hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                                disabled={isUploadingImage}
+                                className="mt-3 w-full bg-gray-100 border border-gray-300 rounded-lg p-3 text-gray-700 hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                             >
                                 <MdImage className="text-xl" />
                                 {imagePreview ? 'Change Image' : 'Upload Image'}
@@ -324,19 +379,19 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
                             type="button"
                             onClick={onClose}
                             className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-                            disabled={isLoading}
+                            disabled={isLoading || isUploadingImage}
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || isUploadingImage}
                             className="flex-1 px-6 py-3 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white rounded-lg hover:from-[#3a6b8a] hover:to-[#2d5a7a] transition-all duration-200 font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                         >
-                            {isLoading ? (
+                            {isLoading || isUploadingImage ? (
                                 <>
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    Saving...
+                                    {isUploadingImage ? 'Uploading...' : 'Saving...'}
                                 </>
                             ) : (
                                 <>

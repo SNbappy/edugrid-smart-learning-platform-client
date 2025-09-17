@@ -473,26 +473,34 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
     );
 };
 
-// Classroom Card Component with Consistent Background Image Sizing
+// Updated Classroom Card Component with Dynamic Image Support
 const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
     const isInstructor = classroom.role === 'instructor';
 
-    // Array of beautiful education-themed background images
+    // Array of beautiful education-themed background images (fallback only)
     const backgroundImages = [
-        'https://images.unsplash.com/photo-1523580494863-6f436d47d1b9?auto=format&fit=crop&w=800&q=80', // Classroom with desks
-        'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80', // Books and learning
-        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80', // Library atmosphere
-        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80', // Modern classroom
-        'https://images.unsplash.com/photo-1497486751825-1233686d5d80?auto=format&fit=crop&w=800&q=80', // Study materials
-        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80', // Academic setting
+        'https://images.unsplash.com/photo-1523580494863-6f436d47d1b9?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1497486751825-1233686d5d80?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80',
     ];
 
-    // Use classroom ID to consistently pick the same background image
+    // Use actual classroom image or fallback to generated background
     const getBackgroundImage = () => {
+        // Priority 1: Use uploaded classroom image if available
+        if (classroom.imageUrl) {
+            return classroom.imageUrl;
+        }
+
+        // Priority 2: Fallback to consistent generated background
         if (classroom._id) {
             const index = classroom._id.slice(-1).charCodeAt(0) % backgroundImages.length;
             return backgroundImages[index];
         }
+
+        // Priority 3: Default fallback
         return backgroundImages[0];
     };
 
@@ -502,7 +510,7 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
             <div
                 className="relative p-6 text-white h-[160px] flex flex-col justify-between"
                 style={{
-                    backgroundImage: `linear-gradient(135deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.4) 100%), url(${getBackgroundImage()})`,
+                    backgroundImage: `linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.4) 100%), url(${getBackgroundImage()})`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     backgroundRepeat: 'no-repeat'
@@ -520,8 +528,8 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
                         <p className="text-white/90 text-sm drop-shadow-sm">{classroom.subject}</p>
                     </div>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm ${isInstructor
-                            ? 'bg-[#457B9D]/20 text-white border border-[#457B9D]/30'
-                            : 'bg-green-500/20 text-white border border-green-300/30'
+                        ? 'bg-[#457B9D]/20 text-white border border-[#457B9D]/30'
+                        : 'bg-green-500/20 text-white border border-green-300/30'
                         }`}>
                         {isInstructor ? (
                             <>
@@ -582,8 +590,8 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
                     <button
                         onClick={onEnter}
                         className={`flex-1 inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-all ${isInstructor
-                                ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] hover:from-[#3a6b8a] hover:to-[#2d5a73] text-white'
-                                : 'bg-green-600 hover:bg-green-700 text-white'
+                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] hover:from-[#3a6b8a] hover:to-[#2d5a73] text-white'
+                            : 'bg-green-600 hover:bg-green-700 text-white'
                             }`}
                     >
                         {isInstructor ? (

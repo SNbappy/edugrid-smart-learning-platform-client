@@ -10,7 +10,7 @@ import { MdArrowBack, MdAdd } from 'react-icons/md';
 import { useMaterials } from './hooks/useMaterials';
 import MaterialStats from './components/MaterialStats';
 import MaterialsGrid from './components/MaterialsGrid';
-import AddMaterialModal from './components/AddMterialModal';
+import AddMaterialModal from './components/AddMaterialModal';
 import { calculateMaterialStats, filterMaterialsByType } from './utils/materialHelpers';
 
 const MaterialsPage = () => {
@@ -25,23 +25,84 @@ const MaterialsPage = () => {
     // Use custom hook for materials management
     const {
         classroom,
-        materials,
+        materials = [], // ✅ Default empty array to prevent undefined errors
         isLoading,
         addMaterial,
         deleteMaterial
     } = useMaterials(classroomId, user, loading, axiosPublic);
 
-    // Handle adding material and closing modal
+    // Enhanced handle adding material with proper state update
     const handleAddMaterial = async (materialData) => {
-        const result = await addMaterial(materialData);
-        if (result.success) {
-            setShowAddMaterial(false);
+        console.log('🔄 Adding material:', materialData);
+
+        try {
+            const result = await addMaterial(materialData);
+
+            console.log('📥 Add material result:', result);
+
+            if (result && (result.success || result.material)) {
+                // Force close modal only after successful addition
+                setShowAddMaterial(false);
+
+                // Optional: Force a small delay to ensure state has updated
+                setTimeout(() => {
+                    console.log('📊 Updated materials count:', materials?.length || 0);
+                    console.log('📊 Materials by type:', (materials || []).map(m => ({ id: m.id, type: m.type, title: m.title })));
+                }, 100);
+
+                return result;
+            } else {
+                console.error('❌ Failed to add material:', result);
+                return result; // Return result so modal can show error
+            }
+        } catch (error) {
+            console.error('❌ Error adding material:', error);
+            return { success: false, error: error.message };
         }
     };
 
-    // Calculate filtered materials and stats
-    const filteredMaterials = filterMaterialsByType(materials, filterType);
-    const materialStats = calculateMaterialStats(materials);
+    // Enhanced filtered materials and stats with safe array handling
+    const filteredMaterials = React.useMemo(() => {
+        // ✅ Safe array handling with default empty array
+        const safeMaterials = materials || [];
+        const filtered = filterMaterialsByType(safeMaterials, filterType);
+
+        console.log('🔍 Filtered materials:', {
+            totalMaterials: safeMaterials.length,
+            filterType,
+            filteredCount: filtered.length,
+            materialTypes: safeMaterials.reduce((acc, m) => {
+                acc[m.type] = (acc[m.type] || 0) + 1;
+                return acc;
+            }, {})
+        });
+        return filtered;
+    }, [materials, filterType]);
+
+    const materialStats = React.useMemo(() => {
+        // ✅ Safe array handling with default empty array
+        const safeMaterials = materials || [];
+        const stats = calculateMaterialStats(safeMaterials);
+
+        console.log('📊 Calculated stats:', stats);
+        console.log('📊 Materials used for stats:', safeMaterials.map(m => ({ type: m.type, id: m.id })));
+        return stats;
+    }, [materials]);
+
+    // Debug effect to track materials changes with safe handling
+    React.useEffect(() => {
+        // ✅ Safe array access with optional chaining and default values
+        const safeMaterials = materials || [];
+
+        console.log('📈 Materials state updated:', {
+            count: safeMaterials.length,
+            types: safeMaterials.reduce((acc, m) => {
+                acc[m.type] = (acc[m.type] || 0) + 1;
+                return acc;
+            }, {}),
+            materials: safeMaterials.map(m => ({ id: m.id, type: m.type, title: m.title }))
+        });
+    }, [materials]);
 
     if (loading || isLoading) {
         return (
@@ -81,7 +142,12 @@ const MaterialsPage = () => {
                                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
                                             Class Materials - {classroom?.name || 'Loading...'}
                                         </h1>
-                                        <p className="text-gray-600">Share and manage course resources</p>
+                                        <p className="text-gray-600">
+                                            Share and manage course resources
+                                            <span className="ml-2 text-sm bg-gray-100 px-2 py-1 rounded">
+                                                {materials?.length || 0} total materials
+                                            </span>
+                                        </p>
                                     </div>
                                     <button
                                         onClick={() => setShowAddMaterial(true)}
@@ -93,6 +159,18 @@ const MaterialsPage = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Debug Info (Remove in production) */}
+                        {process.env.NODE_ENV === 'development' && (
+                            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p className="text-sm font-mono">
+                                    Debug: Total Materials: {materials?.length || 0} |
+                                    YouTube: {(materials || []).filter(m => m.type === 'youtube').length} |
+                                    Files: {(materials || []).filter(m => m.type === 'file').length} |
+                                    Links: {(materials || []).filter(m => m.type === 'link').length}
+                                </p>
+                            </div>
+                        )}
 
                         {/* Stats and Filters */}
                         <MaterialStats
