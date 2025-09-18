@@ -96,7 +96,7 @@ const Classroom = () => {
             iconColor: 'text-teal-600',
             bgColor: 'bg-teal-50',
             borderColor: 'border-teal-200',
-            stats: `${(classroom?.materials?.files?.length || 0) + (classroom?.materials?.links?.length || 0)} Resources`
+            stats: `${(classroom?.materials?.files?.length || 0) + (classroom?.materials?.links?.length || 0) + (classroom?.materials?.videos?.length || 0)} Resources`
         },
         {
             id: 'tasks',
