@@ -108,16 +108,16 @@ const Classroom = () => {
             borderColor: 'border-violet-200',
             stats: `${classroom?.tasks?.assignments?.length || 0} Active Tasks`
         },
-        {
-            id: 'marks',
-            title: 'Grade Center',
-            icon: MdGrade,
-            path: `/classroom/${classroomId}/marks`,
-            iconColor: 'text-amber-600',
-            bgColor: 'bg-amber-50',
-            borderColor: 'border-amber-200',
-            stats: 'Grade Analytics'
-        }
+        // {
+        //     id: 'marks',
+        //     title: 'Grade Center',
+        //     icon: MdGrade,
+        //     path: `/classroom/${classroomId}/marks`,
+        //     iconColor: 'text-amber-600',
+        //     bgColor: 'bg-amber-50',
+        //     borderColor: 'border-amber-200',
+        //     stats: 'Grade Analytics'
+        // }
     ];
 
     // Loading state with modern spinner
