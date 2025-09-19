@@ -1,4 +1,4 @@
-import { useContext, useMemo, useEffect, useState } from 'react';
+import { useContext, useMemo, useEffect, useState, useCallback } from 'react';
 import { AuthContext } from '../../../providers/AuthProvider';
 import { useParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -10,6 +10,7 @@ import TasksList from './TasksList';
 import CreateTaskModal from './CreateTaskModal';
 import SubmissionViewModal from './SubmissionViewModal';
 import AllSubmissionsModal from './AllSubmissionsModal';
+import ViewSubmissionModal from './ViewSubmissionModal'; // 🆕 IMPORT UPDATED MODAL
 import { useTasksLogic } from '../hooks/useTasksLogic';
 
 const TasksPage = () => {
@@ -32,6 +33,7 @@ const TasksPage = () => {
         deleteTask,
         submitTask,
         isOwner,
+        refreshTasks, // 🆕 ENSURE THIS IS AVAILABLE FROM useTasksLogic
         // Submission-related returns
         showSubmissionView,
         setShowSubmissionView,
@@ -48,8 +50,10 @@ const TasksPage = () => {
         allowsResubmission
     } = useTasksLogic(user, classroomId, axiosPublic, loading);
 
-    // Additional state for enhanced submission handling
+    // 🆕 ENHANCED STATE MANAGEMENT FOR GRADE SYNCHRONIZATION
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [showViewSubmissionModal, setShowViewSubmissionModal] = useState(false);
+    const [selectedTaskForSubmissions, setSelectedTaskForSubmissions] = useState(null);
 
     // Permission check using backend data
     const canCreateTask = useMemo(() => {
@@ -59,17 +63,85 @@ const TasksPage = () => {
         return isOwner?.() || userRole === 'teacher';
     }, [user, classroom, userRole, isOwner]);
 
-    // Enhanced submit task handler
+    // 🆕 ENHANCED SUBMIT TASK HANDLER WITH REFRESH
     const handleSubmitTask = async (taskId, submissionData, isResubmission = false) => {
         try {
+            console.log('🎯 TasksPage: Submitting task', { taskId, isResubmission });
+
             const result = await submitTask(taskId, submissionData, isResubmission);
             if (result?.success) {
+                console.log('✅ TasksPage: Task submitted, triggering refresh');
+                setRefreshTrigger(prev => prev + 1);
+
+                // Refresh tasks to get updated submission data
+                if (refreshTasks) {
+                    await refreshTasks();
+                }
+            }
+            return result;
+        } catch (error) {
+            console.error('❌ TasksPage: Error in handleSubmitTask:', error);
+            return { success: false, error: error.message };
+        }
+    };
+
+    // 🆕 GRADE SUBMISSION CALLBACK - KEY FOR SYNCHRONIZATION
+    const handleGradeSubmitted = useCallback(async (gradeData) => {
+        console.log('📢 TasksPage: Grade submitted callback received:', gradeData);
+
+        try {
+            // Trigger tasks refresh to update TaskCard displays
+            if (refreshTasks) {
+                console.log('🔄 TasksPage: Refreshing tasks after grading');
+                await refreshTasks();
+            }
+
+            // Update refresh trigger for any other components
+            setRefreshTrigger(prev => prev + 1);
+
+            console.log('✅ TasksPage: Grade synchronization completed');
+
+        } catch (error) {
+            console.error('❌ TasksPage: Error in grade callback:', error);
+        }
+    }, [refreshTasks]);
+
+    // 🆕 TASK UPDATE CALLBACK FOR GENERAL TASK REFRESH
+    const handleTaskUpdate = useCallback(async (taskId, classroomId) => {
+        console.log('🔄 TasksPage: Task update callback', { taskId, classroomId });
+
+        try {
+            if (refreshTasks) {
+                await refreshTasks();
+            }
+            setRefreshTrigger(prev => prev + 1);
+        } catch (error) {
+            console.error('❌ TasksPage: Error in task update callback:', error);
+        }
+    }, [refreshTasks]);
+
+    // 🆕 VIEW SUBMISSIONS HANDLER FOR NEW MODAL
+    const handleViewSubmissions = useCallback((task) => {
+        console.log('👁️ TasksPage: Opening ViewSubmissionModal for task:', task._id || task.id);
+        setSelectedTaskForSubmissions(task);
+        setShowViewSubmissionModal(true);
+    }, []);
+
+    // 🆕 ENHANCED DELETE TASK WITH REFRESH
+    const handleDeleteTask = async (taskId) => {
+        try {
+            const result = await deleteTask(taskId);
+            if (result?.success) {
+                console.log('✅ TasksPage: Task deleted, refreshing');
+                if (refreshTasks) {
+                    await refreshTasks();
+                }
                 setRefreshTrigger(prev => prev + 1);
             }
             return result;
         } catch (error) {
-            console.error('Error in handleSubmitTask:', error);
-            return { success: false };
+            console.error('❌ TasksPage: Error deleting task:', error);
+            return { success: false, error: error.message };
         }
     };
 
@@ -120,20 +192,21 @@ const TasksPage = () => {
                             classroom={classroom}
                             classroomId={classroomId}
                             canCreateTask={canCreateTask}
-                            isOwner={isOwner} // Make sure this is the function result, not the function itself
+                            isOwner={isOwner?.()}
                             onCreateTask={() => setShowCreateTask(true)}
-                            onDeleteTask={deleteTask}
-                            onSubmitTask={handleSubmitTask}
+                            onDeleteTask={handleDeleteTask} // 🔄 ENHANCED HANDLER
+                            onSubmitTask={handleSubmitTask} // 🔄 ENHANCED HANDLER
                             userEmail={user?.email}
                             onViewSubmission={viewSubmission}
                             onViewAllSubmissions={viewAllSubmissions}
+                            onViewSubmissions={handleViewSubmissions} // 🆕 NEW HANDLER FOR UPDATED MODAL
                             canViewSubmission={canViewSubmission}
                             hasUserSubmitted={hasUserSubmitted}
                             getUserSubmission={getUserSubmission}
                             getSubmissionCount={getSubmissionCount}
                             allowsResubmission={allowsResubmission}
+                            refreshTrigger={refreshTrigger} // 🆕 PASS REFRESH TRIGGER
                         />
-
                     </div>
                 </div>
             </div>
@@ -142,10 +215,38 @@ const TasksPage = () => {
             {showCreateTask && canCreateTask && (
                 <CreateTaskModal
                     onClose={() => setShowCreateTask(false)}
-                    onSubmit={createTask}
+                    onSubmit={async (taskData) => {
+                        const result = await createTask(taskData);
+                        if (result?.success) {
+                            setShowCreateTask(false);
+                            if (refreshTasks) {
+                                await refreshTasks();
+                            }
+                        }
+                        return result;
+                    }}
                 />
             )}
 
+            {/* 🆕 NEW VIEW SUBMISSION MODAL WITH GRADE CALLBACKS */}
+            {showViewSubmissionModal && selectedTaskForSubmissions && (
+                <ViewSubmissionModal
+                    taskId={selectedTaskForSubmissions._id || selectedTaskForSubmissions.id}
+                    classroomId={classroomId}
+                    task={selectedTaskForSubmissions}
+                    isOpen={showViewSubmissionModal}
+                    onClose={() => {
+                        setShowViewSubmissionModal(false);
+                        setSelectedTaskForSubmissions(null);
+                    }}
+                    userRole={userRole}
+                    userEmail={user?.email}
+                    onGradeSubmitted={handleGradeSubmitted} // 🔑 PASS GRADE CALLBACK
+                    onTaskUpdate={handleTaskUpdate} // 🔑 PASS TASK UPDATE CALLBACK
+                />
+            )}
+
+            {/* LEGACY MODALS - KEEP FOR COMPATIBILITY */}
             {showSubmissionView && selectedSubmission && (
                 <SubmissionViewModal
                     submission={selectedSubmission}

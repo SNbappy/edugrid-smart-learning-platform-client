@@ -1,4 +1,4 @@
-// ViewSubmissionModal.jsx - Updated to work without axiosPublic
+// ViewSubmissionModal.jsx - Complete Updated Version
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
@@ -15,10 +15,11 @@ import {
     MdWarning,
     MdVideoLibrary,
     MdAudiotrack,
-    MdRefresh
+    MdRefresh,
+    MdCheckCircle
 } from 'react-icons/md';
 
-// Dynamic API Configuration (built-in)
+// Dynamic API Configuration
 class APIConfig {
     constructor() {
         this.baseURL = this.getBaseURL();
@@ -72,7 +73,9 @@ const ViewSubmissionModal = ({
     isOpen,
     onClose,
     userRole,
-    userEmail
+    userEmail,
+    onGradeSubmitted, // 🆕 NEW PROP FOR GRADE CALLBACK
+    onTaskUpdate // 🆕 NEW PROP FOR TASK DATA REFRESH
 }) => {
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -81,6 +84,7 @@ const ViewSubmissionModal = ({
     const [grading, setGrading] = useState({ grade: '', feedback: '' });
     const [debugInfo, setDebugInfo] = useState({});
     const [imageErrors, setImageErrors] = useState({});
+    const [gradingInProgress, setGradingInProgress] = useState(false);
 
     // Create axios instance with auth
     const createAxiosInstance = () => {
@@ -92,7 +96,6 @@ const ViewSubmissionModal = ({
             }
         });
 
-        // Add auth headers
         instance.interceptors.request.use(
             (config) => {
                 const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -131,7 +134,6 @@ const ViewSubmissionModal = ({
                     isHTML: typeof response.data === 'string' && response.data.includes('<!doctype html>')
                 });
 
-                // Check if we received HTML instead of JSON
                 if (typeof response.data === 'string' && response.data.includes('<!doctype html>')) {
                     console.error('❌ RECEIVED HTML INSTEAD OF JSON');
                     throw new Error('API returned HTML instead of JSON. Backend server may not be running or route may not exist.');
@@ -162,6 +164,8 @@ const ViewSubmissionModal = ({
             isOpen,
             userRole,
             userEmail,
+            hasGradeCallback: !!onGradeSubmitted,
+            hasTaskUpdateCallback: !!onTaskUpdate,
             apiConfig: apiConfig.getDebugInfo()
         });
     }, []);
@@ -203,14 +207,10 @@ const ViewSubmissionModal = ({
                 apiConfig: apiConfig.getDebugInfo()
             });
 
-            // Build URL using the dynamic config
             const apiUrl = apiConfig.buildURL(`classrooms/${classroomId}/tasks/${taskId}/submissions`);
             console.log('🌐 FULL API URL:', apiUrl);
 
-            // Create axios instance with auth
             const axiosInstance = createAxiosInstance();
-
-            // Make the API call
             const response = await axiosInstance.get(apiUrl);
 
             console.log('📥 SUBMISSIONS RESPONSE:', {
@@ -294,8 +294,10 @@ const ViewSubmissionModal = ({
         }
     };
 
+    // 🆕 ENHANCED GRADE SUBMISSION WITH CALLBACK
     const handleGradeSubmission = async (submissionId) => {
         try {
+            setGradingInProgress(true);
             console.log('📝 GRADING SUBMISSION:', {
                 submissionId,
                 grade: grading.grade,
@@ -315,11 +317,57 @@ const ViewSubmissionModal = ({
             console.log('✅ GRADING RESPONSE:', response.data);
 
             if (response.data.success) {
-                console.log('✅ GRADING SUCCESSFUL');
-                // Refresh submissions to show updated grade
+                console.log('✅ GRADING SUCCESSFUL - INITIATING CALLBACKS');
+
+                // Find the graded submission details
+                const gradedSubmission = submissions.find(s =>
+                    s.id?.toString() === submissionId || s._id?.toString() === submissionId
+                );
+
+                const gradeUpdateData = {
+                    taskId,
+                    submissionId,
+                    studentEmail: gradedSubmission?.studentEmail,
+                    studentName: gradedSubmission?.studentName,
+                    grade: parseFloat(grading.grade),
+                    feedback: grading.feedback,
+                    gradedBy: userEmail,
+                    gradedAt: new Date().toISOString(),
+                    classroomId
+                };
+
+                // 1. Refresh submissions in this modal
                 await fetchSubmissions();
+
+                // 2. 🔑 NOTIFY PARENT COMPONENT ABOUT GRADE UPDATE
+                if (onGradeSubmitted) {
+                    console.log('📢 CALLING onGradeSubmitted CALLBACK:', gradeUpdateData);
+                    try {
+                        await onGradeSubmitted(gradeUpdateData);
+                        console.log('✅ onGradeSubmitted CALLBACK COMPLETED');
+                    } catch (callbackError) {
+                        console.error('❌ onGradeSubmitted CALLBACK ERROR:', callbackError);
+                    }
+                }
+
+                // 3. 🔑 TRIGGER TASK DATA REFRESH IN PARENT
+                if (onTaskUpdate) {
+                    console.log('🔄 CALLING onTaskUpdate CALLBACK');
+                    try {
+                        await onTaskUpdate(taskId, classroomId);
+                        console.log('✅ onTaskUpdate CALLBACK COMPLETED');
+                    } catch (callbackError) {
+                        console.error('❌ onTaskUpdate CALLBACK ERROR:', callbackError);
+                    }
+                }
+
+                // Reset grading form
                 setGrading({ grade: '', feedback: '' });
-                setError(null); // Clear any previous errors
+                setError(null);
+
+                // Show success feedback
+                console.log('🎉 GRADE SUBMITTED AND CALLBACKS EXECUTED');
+
             } else {
                 console.error('❌ GRADING FAILED:', response.data.message);
                 setError(response.data.message || 'Failed to grade submission');
@@ -337,9 +385,10 @@ const ViewSubmissionModal = ({
             }
 
             setError(errorMessage);
+        } finally {
+            setGradingInProgress(false);
         }
     };
-
 
     const handleImageError = (attachmentIndex) => {
         setImageErrors(prev => ({
@@ -352,7 +401,6 @@ const ViewSubmissionModal = ({
         try {
             console.log('⬇️ DOWNLOADING FILE:', { fileUrl, fileName });
 
-            // For Cloudinary URLs, add download flag
             let downloadUrl = fileUrl;
             if (fileUrl.includes('cloudinary.com')) {
                 downloadUrl = fileUrl.includes('?')
@@ -360,7 +408,6 @@ const ViewSubmissionModal = ({
                     : `${fileUrl}?fl_attachment=true`;
             }
 
-            // Create download link
             const link = document.createElement('a');
             link.href = downloadUrl;
             link.download = fileName || 'download';
@@ -370,7 +417,6 @@ const ViewSubmissionModal = ({
             document.body.removeChild(link);
         } catch (error) {
             console.error('❌ DOWNLOAD ERROR:', error);
-            // Fallback - open in new tab
             window.open(fileUrl, '_blank');
         }
     };
@@ -566,7 +612,7 @@ const ViewSubmissionModal = ({
                     </div>
                 )}
 
-                {/* File Attachments - KEY SECTION FOR DISPLAYING FILES */}
+                {/* File Attachments */}
                 {submission.attachments && submission.attachments.length > 0 ? (
                     <div className="border rounded-lg p-4">
                         <h5 className="font-medium text-gray-900 mb-4">
@@ -596,7 +642,7 @@ const ViewSubmissionModal = ({
                     </div>
                 )}
 
-                {/* Grading Section */}
+                {/* 🆕 ENHANCED GRADING SECTION WITH BETTER UX */}
                 {userRole === 'teacher' && (
                     <div className="border rounded-lg p-4 bg-purple-50">
                         <h5 className="font-medium text-purple-900 mb-4 flex items-center">
@@ -606,42 +652,71 @@ const ViewSubmissionModal = ({
 
                         {submission.grade !== null && submission.grade !== undefined ? (
                             <div className="bg-green-100 border border-green-200 rounded p-3">
-                                <p className="text-green-800 font-medium">
-                                    Grade: {submission.grade}
-                                </p>
+                                <div className="flex items-center space-x-3 mb-2">
+                                    <MdCheckCircle className="text-green-600 text-xl" />
+                                    <div>
+                                        <p className="text-green-800 font-medium">
+                                            Grade: {submission.grade}/100
+                                        </p>
+                                        <p className="text-green-600 text-sm">
+                                            Graded by {submission.gradedBy} on {submission.gradedAt ? new Date(submission.gradedAt).toLocaleString() : 'Unknown date'}
+                                        </p>
+                                    </div>
+                                </div>
                                 {submission.feedback && (
-                                    <p className="text-green-700 mt-1">
-                                        Feedback: {submission.feedback}
-                                    </p>
+                                    <div className="mt-2 p-2 bg-green-50 rounded">
+                                        <p className="text-green-700 text-sm">
+                                            <strong>Feedback:</strong> {submission.feedback}
+                                        </p>
+                                    </div>
                                 )}
-                                <p className="text-green-600 text-sm mt-1">
-                                    Graded by {submission.gradedBy} on {submission.gradedAt ? new Date(submission.gradedAt).toLocaleString() : 'Unknown date'}
-                                </p>
                             </div>
                         ) : (
                             <div className="space-y-3">
-                                <input
-                                    type="number"
-                                    placeholder="Enter grade (0-100)"
-                                    value={grading.grade}
-                                    onChange={(e) => setGrading({ ...grading, grade: e.target.value })}
-                                    className="w-full border border-gray-300 rounded px-3 py-2"
-                                    min="0"
-                                    max="100"
-                                />
-                                <textarea
-                                    placeholder="Enter feedback (optional)"
-                                    value={grading.feedback}
-                                    onChange={(e) => setGrading({ ...grading, feedback: e.target.value })}
-                                    rows={3}
-                                    className="w-full border border-gray-300 rounded px-3 py-2"
-                                />
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Grade (0-100) *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        placeholder="Enter grade (0-100)"
+                                        value={grading.grade}
+                                        onChange={(e) => setGrading({ ...grading, grade: e.target.value })}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                        min="0"
+                                        max="100"
+                                        disabled={gradingInProgress}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Feedback (optional)
+                                    </label>
+                                    <textarea
+                                        placeholder="Enter feedback for the student..."
+                                        value={grading.feedback}
+                                        onChange={(e) => setGrading({ ...grading, feedback: e.target.value })}
+                                        rows={3}
+                                        className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                        disabled={gradingInProgress}
+                                    />
+                                </div>
                                 <button
                                     onClick={() => handleGradeSubmission(submission.id || submission._id)}
-                                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors disabled:opacity-50"
-                                    disabled={!grading.grade}
+                                    className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                    disabled={!grading.grade || gradingInProgress}
                                 >
-                                    Submit Grade
+                                    {gradingInProgress ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                            Submitting Grade...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <MdGrade className="mr-2" />
+                                            Submit Grade
+                                        </>
+                                    )}
                                 </button>
                             </div>
                         )}
@@ -681,6 +756,16 @@ const ViewSubmissionModal = ({
                     </button>
                 </div>
 
+                {/* 🆕 GRADE SUCCESS NOTIFICATION */}
+                {gradingInProgress && (
+                    <div className="bg-blue-100 border-b p-3">
+                        <div className="flex items-center justify-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                            <span className="text-blue-700 font-medium">Processing grade submission...</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Debug Panel (Development Only) */}
                 {process.env.NODE_ENV === 'development' && (
                     <div className="bg-yellow-100 border-b p-3 text-xs">
@@ -695,6 +780,7 @@ const ViewSubmissionModal = ({
                                 <div><strong>Loading:</strong> {String(loading)}</div>
                                 <div><strong>Error:</strong> {error || 'None'}</div>
                                 <div><strong>API Base URL:</strong> {apiConfig.baseURL}</div>
+                                <div><strong>Callbacks:</strong> Grade: {!!onGradeSubmitted ? 'Yes' : 'No'}, Task: {!!onTaskUpdate ? 'Yes' : 'No'}</div>
                                 {debugInfo.timestamp && (
                                     <div><strong>Last Fetch:</strong> {debugInfo.timestamp}</div>
                                 )}
@@ -791,6 +877,7 @@ const ViewSubmissionModal = ({
                     <button
                         onClick={onClose}
                         className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                        disabled={gradingInProgress}
                     >
                         Close
                     </button>
