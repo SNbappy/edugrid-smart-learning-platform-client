@@ -296,7 +296,13 @@ const ViewSubmissionModal = ({
 
     const handleGradeSubmission = async (submissionId) => {
         try {
-            console.log('📝 GRADING SUBMISSION:', { submissionId, grade: grading.grade, feedback: grading.feedback });
+            console.log('📝 GRADING SUBMISSION:', {
+                submissionId,
+                grade: grading.grade,
+                feedback: grading.feedback,
+                classroomId,
+                taskId
+            });
 
             const apiUrl = apiConfig.buildURL(`classrooms/${classroomId}/tasks/${taskId}/submissions/${submissionId}/grade`);
             const axiosInstance = createAxiosInstance();
@@ -306,19 +312,34 @@ const ViewSubmissionModal = ({
                 feedback: grading.feedback
             });
 
+            console.log('✅ GRADING RESPONSE:', response.data);
+
             if (response.data.success) {
                 console.log('✅ GRADING SUCCESSFUL');
+                // Refresh submissions to show updated grade
                 await fetchSubmissions();
                 setGrading({ grade: '', feedback: '' });
+                setError(null); // Clear any previous errors
             } else {
                 console.error('❌ GRADING FAILED:', response.data.message);
                 setError(response.data.message || 'Failed to grade submission');
             }
         } catch (error) {
             console.error('❌ GRADING ERROR:', error);
-            setError('Failed to grade submission: ' + error.message);
+            let errorMessage = 'Failed to grade submission';
+
+            if (error.response?.status === 404) {
+                errorMessage = 'Grading endpoint not found. Please check backend routes.';
+            } else if (error.response?.status === 403) {
+                errorMessage = 'Access denied. Only instructors can grade submissions.';
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            }
+
+            setError(errorMessage);
         }
     };
+
 
     const handleImageError = (attachmentIndex) => {
         setImageErrors(prev => ({
