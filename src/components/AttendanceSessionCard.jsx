@@ -1,12 +1,13 @@
 import { MdDateRange, MdPeople, MdTrendingUp, MdVisibility, MdFileDownload, MdCheckCircle, MdCancel, MdSchedule } from 'react-icons/md';
-import { getStatusStyle } from '../utils/attendanceUtils';
 
 const AttendanceSessionCard = ({
     session,
     onUpdateAttendance,
     onViewDetails,
+    onSessionUpdate, // NEW: Add callback for session updates
     isOwner,
-    currentUserEmail
+    currentUserEmail,
+    refreshTrigger = 0 // NEW: Add refresh trigger prop
 }) => {
     const presentCount = session.attendance.filter(record => record.status === 'present').length;
     const absentCount = session.attendance.filter(record => record.status === 'absent').length;
@@ -17,6 +18,11 @@ const AttendanceSessionCard = ({
     // Get current user's attendance status for this session
     const userAttendance = session.attendance.find(record => record.studentEmail === currentUserEmail);
     const userStatus = userAttendance?.status || 'unmarked';
+
+    // Handle view details with callback for updates
+    const handleViewDetails = () => {
+        onViewDetails(session, onSessionUpdate); // Pass the update callback
+    };
 
     return (
         <div className="bg-white rounded-lg border border-slate-200 hover:border-slate-300 transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md">
@@ -48,7 +54,7 @@ const AttendanceSessionCard = ({
                         {isOwner ? (
                             <div className="text-right">
                                 <div className={`text-2xl font-bold ${attendancePercentage >= 80 ? 'text-green-600' :
-                                        attendancePercentage >= 60 ? 'text-amber-600' : 'text-red-600'
+                                    attendancePercentage >= 60 ? 'text-amber-600' : 'text-red-600'
                                     }`}>
                                     {attendancePercentage}%
                                 </div>
@@ -57,8 +63,8 @@ const AttendanceSessionCard = ({
                         ) : (
                             <div className="text-right">
                                 <div className={`inline-flex items-center justify-center w-10 h-10 rounded-full ${userStatus === 'present' ? 'bg-green-100 text-green-600' :
-                                        userStatus === 'absent' ? 'bg-red-100 text-red-600' :
-                                            'bg-slate-100 text-slate-500'
+                                    userStatus === 'absent' ? 'bg-red-100 text-red-600' :
+                                        'bg-slate-100 text-slate-500'
                                     }`}>
                                     {userStatus === 'present' ? <MdCheckCircle className="w-5 h-5" /> :
                                         userStatus === 'absent' ? <MdCancel className="w-5 h-5" /> :
@@ -97,8 +103,8 @@ const AttendanceSessionCard = ({
                             <span>{totalStudents} students in session</span>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-xs font-medium ${userStatus === 'present' ? 'bg-green-50 text-green-700 border border-green-200' :
-                                userStatus === 'absent' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                    'bg-slate-50 text-slate-700 border border-slate-200'
+                            userStatus === 'absent' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                'bg-slate-50 text-slate-700 border border-slate-200'
                             }`}>
                             Your Status: {userStatus.charAt(0).toUpperCase() + userStatus.slice(1)}
                         </div>
@@ -110,7 +116,7 @@ const AttendanceSessionCard = ({
             <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
                 <div className="flex gap-3">
                     <button
-                        onClick={onViewDetails}
+                        onClick={handleViewDetails}
                         className="flex-1 inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors duration-200"
                     >
                         <MdVisibility className="w-4 h-4 mr-2" />
@@ -124,6 +130,15 @@ const AttendanceSessionCard = ({
                     )}
                 </div>
             </div>
+
+            {/* Update indicator */}
+            {refreshTrigger > 0 && (
+                <div className="absolute top-2 right-2 z-10">
+                    <div className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                        Updated ✓
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

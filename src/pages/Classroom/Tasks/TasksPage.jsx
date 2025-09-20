@@ -5,7 +5,6 @@ import { Helmet } from 'react-helmet-async';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 import Sidebar from '../../Dashboard/Dashboard/Sidebar';
 import TasksHeader from './TasksHeader';
-import TasksStats from './TasksStats';
 import TasksList from './TasksList';
 import CreateTaskModal from './CreateTaskModal';
 import SubmissionViewModal from './SubmissionViewModal';
@@ -17,8 +16,12 @@ import {
     MdAdd,
     MdAssignment,
     MdPeople,
-    MdTrendingUp,
-    MdSchool
+    MdSchedule,
+    MdCheckCircle,
+    MdGrade,
+    MdWarning,
+    MdHourglassEmpty,
+    MdPlayArrow
 } from 'react-icons/md';
 
 const TasksPage = () => {
@@ -36,8 +39,6 @@ const TasksPage = () => {
         filterStatus,
         setFilterStatus,
         userRole,
-        taskStats,
-        filteredTasks,
         createTask,
         deleteTask,
         submitTask,
@@ -71,6 +72,86 @@ const TasksPage = () => {
         }
         return isOwner?.() || userRole === 'teacher';
     }, [user, classroom, userRole, isOwner]);
+
+    // Task status determination function - UPDATED FOR ROLE-SPECIFIC LOGIC
+    const getTaskStatus = useCallback((task, userEmail, userRole) => {
+        const now = new Date();
+        const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+        const isOverdue = dueDate ? now > dueDate : false;
+        const submissionCount = getSubmissionCount ? getSubmissionCount(task) : (task.submissions?.length || 0);
+
+        if (userRole === 'student') {
+            // Student-specific status logic
+            const userSubmission = getUserSubmission ? getUserSubmission(task, userEmail) : null;
+            const hasSubmitted = hasUserSubmitted ? hasUserSubmitted(task, userEmail) : false;
+            const isGraded = userSubmission?.grade !== null && userSubmission?.grade !== undefined;
+
+            if (isOverdue) {
+                return 'overdue';
+            } else if (isGraded) {
+                return 'graded';
+            } else if (hasSubmitted) {
+                return 'completed';
+            } else {
+                return 'pending';
+            }
+        } else {
+            // Teacher-specific status logic
+            if (isOverdue) {
+                return 'overdue';
+            } else if (submissionCount === 0) {
+                return 'active'; // No submissions yet, still active
+            } else {
+                // Check if any submissions need grading
+                const hasUngradedSubmissions = task.submissions?.some(sub =>
+                    sub.grade === null || sub.grade === undefined
+                ) || false;
+
+                if (hasUngradedSubmissions) {
+                    return 'needs-grading';
+                } else {
+                    return 'graded'; // All submissions are graded
+                }
+            }
+        }
+    }, [getUserSubmission, hasUserSubmitted, getSubmissionCount]);
+
+    // Updated filteredTasks logic
+    const filteredTasks = useMemo(() => {
+        if (!tasks || !Array.isArray(tasks)) return [];
+
+        return tasks.filter(task => {
+            if (filterStatus === 'all') return true;
+
+            const taskStatus = getTaskStatus(task, user?.email, userRole);
+            return taskStatus === filterStatus;
+        });
+    }, [tasks, filterStatus, getTaskStatus, user?.email, userRole]);
+
+    // Updated taskStats calculation with role-specific stats
+    const taskStats = useMemo(() => {
+        if (!tasks || !Array.isArray(tasks)) {
+            if (userRole === 'student') {
+                return { total: 0, pending: 0, completed: 0, graded: 0, overdue: 0 };
+            } else {
+                return { total: 0, active: 0, 'needs-grading': 0, graded: 0, overdue: 0 };
+            }
+        }
+
+        let stats;
+        if (userRole === 'student') {
+            stats = { total: tasks.length, pending: 0, completed: 0, graded: 0, overdue: 0 };
+        } else {
+            stats = { total: tasks.length, active: 0, 'needs-grading': 0, graded: 0, overdue: 0 };
+        }
+
+        tasks.forEach(task => {
+            const status = getTaskStatus(task, user?.email, userRole);
+            stats[status] = (stats[status] || 0) + 1;
+        });
+
+        return stats;
+    }, [tasks, getTaskStatus, user?.email, userRole]);
 
     // Enhanced submit task handler with refresh
     const handleSubmitTask = async (taskId, submissionData, isResubmission = false) => {
@@ -244,86 +325,209 @@ const TasksPage = () => {
 
                     {/* Main Content */}
                     <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-                        {/* Professional Stats Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        {/* Professional Stats Grid - ONE LINE LAYOUT */}
+                        <div className="grid grid-cols-5 gap-4 mb-8">
                             {/* Total Tasks Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                                        <MdAssignment className="w-6 h-6 text-purple-600" />
+                            {/* Total Tasks Card */}
+                            <div
+                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'all' ? 'border-purple-300 ring-2 ring-purple-200' : 'border-slate-200'
+                                    }`}
+                                onClick={() => setFilterStatus('all')}
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <MdAssignment className="w-5 h-5 text-purple-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
+                                        <div className="text-xl font-bold text-slate-900">
                                             {taskStats?.total || 0}
                                         </div>
-                                        <div className="text-xs text-slate-500 font-medium">Total Tasks</div>
+                                        <div className="text-xs text-slate-500 font-medium">Total</div>
                                     </div>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2">
-                                    <div className="bg-purple-600 h-2 rounded-full" style={{ width: '100%' }}></div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                    <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: '100%' }}></div>
                                 </div>
                             </div>
 
-                            {/* Pending Tasks Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                                        <MdTrendingUp className="w-6 h-6 text-amber-600" />
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
-                                            {taskStats?.pending || 0}
-                                        </div>
-                                        <div className="text-xs text-slate-500 font-medium">
-                                            {isOwner?.() ? 'Active Tasks' : 'Pending'}
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2">
+
+                            {/* Conditional Stats Cards Based on Role */}
+                            {userRole === 'student' ? (
+                                <>
+                                    {/* Pending Tasks Card - Student */}
                                     <div
-                                        className="bg-amber-600 h-2 rounded-full transition-all duration-500"
-                                        style={{ width: `${taskStats?.total ? (taskStats.pending / taskStats.total) * 100 : 0}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            {/* Completed Tasks Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                                        <MdSchool className="w-6 h-6 text-emerald-600" />
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
-                                            {taskStats?.completed || 0}
+                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'pending' ? 'border-amber-300 ring-2 ring-amber-200' : 'border-slate-200'
+                                            }`}
+                                        onClick={() => setFilterStatus(filterStatus === 'pending' ? 'all' : 'pending')}
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                                <MdSchedule className="w-5 h-5 text-amber-600" />
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xl font-bold text-slate-900">
+                                                    {taskStats?.pending || 0}
+                                                </div>
+                                                <div className="text-xs text-slate-500 font-medium">Pending</div>
+                                            </div>
                                         </div>
-                                        <div className="text-xs text-slate-500 font-medium">Completed</div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div
+                                                className="bg-amber-600 h-1.5 rounded-full transition-all duration-500"
+                                                style={{ width: `${taskStats?.total ? (taskStats.pending / taskStats.total) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
-                                        style={{ width: `${taskStats?.total ? (taskStats.completed / taskStats.total) * 100 : 0}%` }}
-                                    ></div>
-                                </div>
-                            </div>
 
-                            {/* Overdue Tasks Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                                        <MdTrendingUp className="w-6 h-6 text-red-600" />
+                                    {/* Completed Tasks Card - Student */}
+                                    <div
+                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'completed' ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-200'
+                                            }`}
+                                        onClick={() => setFilterStatus(filterStatus === 'completed' ? 'all' : 'completed')}
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                                <MdCheckCircle className="w-5 h-5 text-emerald-600" />
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xl font-bold text-slate-900">
+                                                    {taskStats?.completed || 0}
+                                                </div>
+                                                <div className="text-xs text-slate-500 font-medium">Submitted</div>
+                                            </div>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div
+                                                className="bg-emerald-600 h-1.5 rounded-full transition-all duration-500"
+                                                style={{ width: `${taskStats?.total ? (taskStats.completed / taskStats.total) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Graded Tasks Card - Student */}
+                                    <div
+                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'graded' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
+                                            }`}
+                                        onClick={() => setFilterStatus(filterStatus === 'graded' ? 'all' : 'graded')}
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                <MdGrade className="w-5 h-5 text-blue-600" />
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xl font-bold text-slate-900">
+                                                    {taskStats?.graded || 0}
+                                                </div>
+                                                <div className="text-xs text-slate-500 font-medium">Graded</div>
+                                            </div>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div
+                                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
+                                                style={{ width: `${taskStats?.total ? (taskStats.graded / taskStats.total) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Active Tasks Card - Teacher */}
+                                    <div
+                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'active' ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-200'
+                                            }`}
+                                        onClick={() => setFilterStatus(filterStatus === 'active' ? 'all' : 'active')}
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                                <MdPlayArrow className="w-5 h-5 text-emerald-600" />
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xl font-bold text-slate-900">
+                                                    {taskStats?.active || 0}
+                                                </div>
+                                                <div className="text-xs text-slate-500 font-medium">Active</div>
+                                            </div>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div
+                                                className="bg-emerald-600 h-1.5 rounded-full transition-all duration-500"
+                                                style={{ width: `${taskStats?.total ? (taskStats.active / taskStats.total) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Needs Grading Tasks Card - Teacher */}
+                                    <div
+                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'needs-grading' ? 'border-amber-300 ring-2 ring-amber-200' : 'border-slate-200'
+                                            }`}
+                                        onClick={() => setFilterStatus(filterStatus === 'needs-grading' ? 'all' : 'needs-grading')}
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                                <MdHourglassEmpty className="w-5 h-5 text-amber-600" />
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xl font-bold text-slate-900">
+                                                    {taskStats?.['needs-grading'] || 0}
+                                                </div>
+                                                <div className="text-xs text-slate-500 font-medium">To Grade</div>
+                                            </div>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div
+                                                className="bg-amber-600 h-1.5 rounded-full transition-all duration-500"
+                                                style={{ width: `${taskStats?.total ? (taskStats['needs-grading'] / taskStats.total) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Graded Tasks Card - Teacher */}
+                                    <div
+                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'graded' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
+                                            }`}
+                                        onClick={() => setFilterStatus(filterStatus === 'graded' ? 'all' : 'graded')}
+                                    >
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                <MdGrade className="w-5 h-5 text-blue-600" />
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-xl font-bold text-slate-900">
+                                                    {taskStats?.graded || 0}
+                                                </div>
+                                                <div className="text-xs text-slate-500 font-medium">Graded</div>
+                                            </div>
+                                        </div>
+                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                            <div
+                                                className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
+                                                style={{ width: `${taskStats?.total ? (taskStats.graded / taskStats.total) * 100 : 0}%` }}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Overdue Tasks Card - Common for Both Roles */}
+                            <div
+                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'overdue' ? 'border-red-300 ring-2 ring-red-200' : 'border-slate-200'
+                                    }`}
+                                onClick={() => setFilterStatus(filterStatus === 'overdue' ? 'all' : 'overdue')}
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                        <MdWarning className="w-5 h-5 text-red-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
+                                        <div className="text-xl font-bold text-slate-900">
                                             {taskStats?.overdue || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Overdue</div>
                                     </div>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2">
+                                <div className="w-full bg-slate-100 rounded-full h-1.5">
                                     <div
-                                        className="bg-red-600 h-2 rounded-full transition-all duration-500"
+                                        className="bg-red-600 h-1.5 rounded-full transition-all duration-500"
                                         style={{ width: `${taskStats?.total ? (taskStats.overdue / taskStats.total) * 100 : 0}%` }}
                                     ></div>
                                 </div>
@@ -349,8 +553,19 @@ const TasksPage = () => {
                                                 className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                                             >
                                                 <option value="all">All Tasks</option>
-                                                <option value="pending">Pending</option>
-                                                <option value="completed">Completed</option>
+                                                {userRole === 'student' ? (
+                                                    <>
+                                                        <option value="pending">Pending (Not Submitted)</option>
+                                                        <option value="completed">Submitted (Awaiting Grade)</option>
+                                                        <option value="graded">Graded (Has Marks)</option>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <option value="active">Active (Accepting Submissions)</option>
+                                                        <option value="needs-grading">Needs Grading</option>
+                                                        <option value="graded">Fully Graded</option>
+                                                    </>
+                                                )}
                                                 <option value="overdue">Overdue</option>
                                             </select>
                                         </div>

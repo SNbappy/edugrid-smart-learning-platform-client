@@ -1,17 +1,24 @@
-import React, { useContext, useState, useCallback, useEffect } from 'react';
+import React, { useContext, useState, useCallback, useMemo } from 'react';
 import { AuthContext } from '../../../providers/AuthProvider';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 import Sidebar from '../../Dashboard/Dashboard/Sidebar';
-import { MdArrowBack, MdAdd } from 'react-icons/md';
+import {
+    MdArrowBack,
+    MdAdd,
+    MdLibraryBooks,
+    MdPeople,
+    MdVideoLibrary,
+    MdAttachFile,
+    MdLink
+} from 'react-icons/md';
 
 // Import custom hooks and components
 import { useMaterials } from './hooks/useMaterials';
 import MaterialStats from './components/MaterialStats';
 import MaterialsGrid from './components/MaterialsGrid';
 import AddMaterialModal from './components/AddMaterialModal';
-import { calculateMaterialStats, filterMaterialsByType } from './utils/materialHelpers';
 
 const MaterialsPage = () => {
     const { user, loading } = useContext(AuthContext);
@@ -31,7 +38,7 @@ const MaterialsPage = () => {
         deleteMaterial
     } = useMaterials(classroomId, user, loading, axiosPublic);
 
-    // Enhanced owner check function (same as AttendancePage)
+    // Enhanced owner check function
     const isOwner = useCallback(() => {
         if (!classroom || !user) return false;
 
@@ -85,184 +92,367 @@ const MaterialsPage = () => {
         return isDirectOwner || isInTeachersArray || isInInstructorsArray || hasTeacherRole;
     }, [classroom, user]);
 
-    // Debug classroom and user data
-    useEffect(() => {
-        if (classroom && user && process.env.NODE_ENV === 'development') {
-            console.log('=== MATERIALS DEBUG INFO ===');
-            console.log('Classroom data:', classroom);
-            console.log('Current user:', user);
-            console.log('Owner check result:', isOwner());
-            console.log('============================');
-        }
-    }, [classroom, user, isOwner]);
-
-    // Enhanced handle adding material with proper state update
+    // Handle adding material with proper state update
     const handleAddMaterial = async (materialData) => {
-        console.log('🔄 Adding material:', materialData);
-
         try {
             const result = await addMaterial(materialData);
 
-            console.log('📥 Add material result:', result);
-
             if (result && (result.success || result.material)) {
                 setShowAddMaterial(false);
-
-                setTimeout(() => {
-                    console.log('📊 Updated materials count:', materials?.length || 0);
-                    console.log('📊 Materials by type:', (materials || []).map(m => ({ id: m.id, type: m.type, title: m.title })));
-                }, 100);
-
                 return result;
             } else {
-                console.error('❌ Failed to add material:', result);
                 return result;
             }
         } catch (error) {
-            console.error('❌ Error adding material:', error);
             return { success: false, error: error.message };
         }
     };
 
-    // Enhanced filtered materials and stats with safe array handling
-    const filteredMaterials = React.useMemo(() => {
-        const safeMaterials = materials || [];
-        const filtered = filterMaterialsByType(safeMaterials, filterType);
+    // Updated material filtering and counting logic
+    const filterMaterialsByType = useCallback((materials, filterType) => {
+        if (!materials || !Array.isArray(materials)) return [];
 
-        console.log('🔍 Filtered materials:', {
-            totalMaterials: safeMaterials.length,
-            filterType,
-            filteredCount: filtered.length,
-            materialTypes: safeMaterials.reduce((acc, m) => {
-                acc[m.type] = (acc[m.type] || 0) + 1;
-                return acc;
-            }, {})
+        if (filterType === 'all') {
+            return materials;
+        }
+
+        if (filterType === 'youtube' || filterType === 'video') {
+            return materials.filter(material =>
+                material.type === 'youtube' ||
+                material.type === 'video' ||
+                (material.url && material.url.includes('youtube.com')) ||
+                (material.url && material.url.includes('youtu.be'))
+            );
+        }
+
+        if (filterType === 'file' || filterType === 'files') {
+            return materials.filter(material =>
+                material.type === 'file' ||
+                material.type === 'document' ||
+                material.type === 'ppt' ||
+                material.type === 'pdf' ||
+                material.type === 'doc' ||
+                material.type === 'docx' ||
+                material.type === 'presentation' ||
+                // Check file extensions if available
+                (material.fileName && /\.(pdf|doc|docx|ppt|pptx|txt|rtf|xls|xlsx)$/i.test(material.fileName)) ||
+                (material.name && /\.(pdf|doc|docx|ppt|pptx|txt|rtf|xls|xlsx)$/i.test(material.name))
+            );
+        }
+
+        if (filterType === 'link' || filterType === 'links') {
+            return materials.filter(material =>
+                material.type === 'link' ||
+                (material.url &&
+                    !material.url.includes('youtube.com') &&
+                    !material.url.includes('youtu.be') &&
+                    material.type !== 'file' &&
+                    material.type !== 'document')
+            );
+        }
+
+        return materials.filter(material => material.type === filterType);
+    }, []);
+
+    // Calculate material stats with corrected counting
+    const calculateMaterialStats = useCallback((materials) => {
+        if (!materials || !Array.isArray(materials)) {
+            return { total: 0, youtube: 0, file: 0, link: 0 };
+        }
+
+        const stats = {
+            total: materials.length,
+            youtube: 0,
+            file: 0,
+            link: 0
+        };
+
+        materials.forEach(material => {
+            // Count YouTube videos
+            if (material.type === 'youtube' ||
+                material.type === 'video' ||
+                (material.url && material.url.includes('youtube.com')) ||
+                (material.url && material.url.includes('youtu.be'))) {
+                stats.youtube++;
+            }
+            // Count files (including documents, PPTs, PDFs, etc.)
+            else if (material.type === 'file' ||
+                material.type === 'document' ||
+                material.type === 'ppt' ||
+                material.type === 'pdf' ||
+                material.type === 'doc' ||
+                material.type === 'docx' ||
+                material.type === 'presentation' ||
+                // Check file extensions
+                (material.fileName && /\.(pdf|doc|docx|ppt|pptx|txt|rtf|xls|xlsx)$/i.test(material.fileName)) ||
+                (material.name && /\.(pdf|doc|docx|ppt|pptx|txt|rtf|xls|xlsx)$/i.test(material.name))) {
+                stats.file++;
+            }
+            // Count external links
+            else if (material.type === 'link' ||
+                (material.url &&
+                    !material.url.includes('youtube.com') &&
+                    !material.url.includes('youtu.be') &&
+                    material.type !== 'file' &&
+                    material.type !== 'document')) {
+                stats.link++;
+            }
+            // Default fallback - if type is not recognized, count as file if it has a file-like property
+            else if (material.fileName || material.fileUrl || material.attachment) {
+                stats.file++;
+            }
+            // Otherwise count as link if it has a URL
+            else if (material.url) {
+                stats.link++;
+            }
         });
-        return filtered;
-    }, [materials, filterType]);
 
-    const materialStats = React.useMemo(() => {
-        const safeMaterials = materials || [];
-        const stats = calculateMaterialStats(safeMaterials);
-
-        console.log('📊 Calculated stats:', stats);
-        console.log('📊 Materials used for stats:', safeMaterials.map(m => ({ type: m.type, id: m.id })));
         return stats;
-    }, [materials]);
+    }, []);
 
-    // Debug effect to track materials changes with safe handling
-    React.useEffect(() => {
+    // Enhanced filtered materials and stats with safe array handling
+    const filteredMaterials = useMemo(() => {
         const safeMaterials = materials || [];
+        return filterMaterialsByType(safeMaterials, filterType);
+    }, [materials, filterType, filterMaterialsByType]);
 
-        console.log('📈 Materials state updated:', {
-            count: safeMaterials.length,
-            types: safeMaterials.reduce((acc, m) => {
-                acc[m.type] = (acc[m.type] || 0) + 1;
-                return acc;
-            }, {}),
-            materials: safeMaterials.map(m => ({ id: m.id, type: m.type, title: m.title }))
-        });
-    }, [materials]);
+    const materialStats = useMemo(() => {
+        const safeMaterials = materials || [];
+        return calculateMaterialStats(safeMaterials);
+    }, [materials, calculateMaterialStats]);
 
     if (loading || isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#457B9D] mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Loading materials...</p>
+            <div className="min-h-screen bg-slate-50">
+                <div className="flex">
+                    <Sidebar />
+                    <div className="flex-1 ml-[320px] flex items-center justify-center">
+                        <div className="text-center py-20">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg mx-auto mb-6">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-900 mb-2">Loading Materials</h3>
+                            <p className="text-slate-600">Please wait while we fetch your classroom materials...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] font-poppins">
+        <div className="min-h-screen bg-slate-50">
             <Helmet>
-                <title>EduGrid | Materials - {classroom?.name}</title>
+                <title>Materials - {classroom?.name} | EduGrid</title>
+                <meta name="description" content={`Manage materials for ${classroom?.name} classroom`} />
             </Helmet>
 
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px] p-6">
-                    <div className="max-w-7xl mx-auto">
-                        {/* Header */}
-                        <div className="mb-6">
-                            <button
-                                onClick={() => navigate(`/classroom/${classroomId}`)}
-                                className="flex items-center text-gray-600 hover:text-gray-800 transition-colors mb-4"
-                            >
-                                <MdArrowBack className="mr-2" />
-                                Back to Classroom
-                            </button>
+                <div className="flex-1 ml-[320px]">
+                    {/* Professional Header */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
+                        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+                            <div className="flex items-center justify-between h-16">
+                                <div className="flex items-center space-x-6">
+                                    <button
+                                        onClick={() => navigate(`/classroom/${classroomId}`)}
+                                        className="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors duration-200 group"
+                                    >
+                                        <MdArrowBack className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
+                                        <span className="text-sm font-medium">Back to Classroom</span>
+                                    </button>
 
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                                            Materials - {classroom?.name}
-                                        </h1>
-                                        <p className="text-gray-600">
-                                            {isOwner() ? 'Manage and share course materials' : 'Access course materials and resources'}
-                                        </p>
-                                        {/* Access level indicator */}
-                                        <div className="mt-2">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isOwner()
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
-                                            </span>
-                                            <span className="ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                                📚 {materials?.length || 0} Materials Available
-                                            </span>
+                                    <div className="h-6 w-px bg-slate-300"></div>
+
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                                            <MdLibraryBooks className="w-5 h-5 text-teal-600" />
+                                        </div>
+                                        <div>
+                                            <h1 className="text-xl font-bold text-slate-900">
+                                                {classroom?.name}
+                                            </h1>
+                                            <p className="text-xs text-slate-500 -mt-0.5">Materials Library</p>
                                         </div>
                                     </div>
+                                </div>
+
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-3">
+                                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isOwner()
+                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            }`}>
+                                            {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
+                                        </span>
+
+                                        <div className="flex items-center text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                                            <MdPeople className="w-4 h-4 mr-2" />
+                                            <span className="font-medium">{classroom?.students?.length || 0}</span>
+                                            <span className="ml-1">students</span>
+                                        </div>
+                                    </div>
+
                                     {isOwner() && (
                                         <button
                                             onClick={() => setShowAddMaterial(true)}
-                                            className="flex items-center px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold shadow-lg"
+                                            className="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-teal-600/25"
                                         >
-                                            <MdAdd className="mr-2" />
+                                            <MdAdd className="w-4 h-4 mr-2" />
                                             Add Material
                                         </button>
                                     )}
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Debug Info (Remove in production) */}
-                        {process.env.NODE_ENV === 'development' && (
-                            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <p className="text-sm font-mono">
-                                    Debug: Total Materials: {materials?.length || 0} |
-                                    YouTube: {(materials || []).filter(m => m.type === 'youtube').length} |
-                                    Files: {(materials || []).filter(m => m.type === 'file').length} |
-                                    Links: {(materials || []).filter(m => m.type === 'link').length} |
-                                    Role: {isOwner() ? 'Teacher' : 'Student'}
-                                </p>
+                    {/* Main Content */}
+                    <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
+                        {/* Professional Stats Grid - 4 Cards */}
+                        <div className="grid grid-cols-4 gap-4 mb-8">
+                            {/* Total Materials Card */}
+                            <div
+                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'all' ? 'border-teal-300 ring-2 ring-teal-200' : 'border-slate-200'
+                                    }`}
+                                onClick={() => setFilterType('all')}
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                                        <MdLibraryBooks className="w-5 h-5 text-teal-600" />
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-bold text-slate-900">
+                                            {materialStats?.total || 0}
+                                        </div>
+                                        <div className="text-xs text-slate-500 font-medium">Total</div>
+                                    </div>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                    <div className="bg-teal-600 h-1.5 rounded-full" style={{ width: '100%' }}></div>
+                                </div>
                             </div>
-                        )}
 
-                        {/* Stats and Filters */}
-                        <MaterialStats
-                            materialStats={materialStats}
-                            filterType={filterType}
-                            setFilterType={setFilterType}
-                        />
+                            {/* Videos Card */}
+                            <div
+                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'youtube' || filterType === 'video' ? 'border-purple-300 ring-2 ring-purple-200' : 'border-slate-200'
+                                    }`}
+                                onClick={() => setFilterType(filterType === 'youtube' || filterType === 'video' ? 'all' : 'youtube')}
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <MdVideoLibrary className="w-5 h-5 text-purple-600" />
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-bold text-slate-900">
+                                            {materialStats?.youtube || 0}
+                                        </div>
+                                        <div className="text-xs text-slate-500 font-medium">Videos</div>
+                                    </div>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                    <div
+                                        className="bg-purple-600 h-1.5 rounded-full transition-all duration-500"
+                                        style={{ width: `${materialStats?.total ? (materialStats.youtube / materialStats.total) * 100 : 0}%` }}
+                                    ></div>
+                                </div>
+                            </div>
 
-                        {/* Materials Grid */}
-                        <MaterialsGrid
-                            materials={filteredMaterials}
-                            onDelete={deleteMaterial}
-                            onAddMaterial={() => setShowAddMaterial(true)}
-                            isOwner={isOwner()} // Pass isOwner to control delete permissions
-                        />
+                            {/* Files Card (includes all documents, PPTs, PDFs, etc.) */}
+                            <div
+                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'file' || filterType === 'files' ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-200'
+                                    }`}
+                                onClick={() => setFilterType(filterType === 'file' || filterType === 'files' ? 'all' : 'file')}
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                        <MdAttachFile className="w-5 h-5 text-emerald-600" />
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-bold text-slate-900">
+                                            {materialStats?.file || 0}
+                                        </div>
+                                        <div className="text-xs text-slate-500 font-medium">Files</div>
+                                    </div>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                    <div
+                                        className="bg-emerald-600 h-1.5 rounded-full transition-all duration-500"
+                                        style={{ width: `${materialStats?.total ? (materialStats.file / materialStats.total) * 100 : 0}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            {/* Links Card */}
+                            <div
+                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'link' || filterType === 'links' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
+                                    }`}
+                                onClick={() => setFilterType(filterType === 'link' || filterType === 'links' ? 'all' : 'link')}
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <MdLink className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xl font-bold text-slate-900">
+                                            {materialStats?.link || 0}
+                                        </div>
+                                        <div className="text-xs text-slate-500 font-medium">Links</div>
+                                    </div>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                    <div
+                                        className="bg-blue-600 h-1.5 rounded-full transition-all duration-500"
+                                        style={{ width: `${materialStats?.total ? (materialStats.link / materialStats.total) * 100 : 0}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Materials Section */}
+                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-lg font-semibold text-slate-900">Course Materials</h2>
+                                    <div className="flex items-center space-x-4">
+                                        {materials && materials.length > 0 && (
+                                            <span className="text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                                {filteredMaterials?.length || 0} material{filteredMaterials?.length !== 1 ? 's' : ''}
+                                            </span>
+                                        )}
+                                        <div className="flex items-center space-x-2">
+                                            <label className="text-sm text-slate-600">Filter:</label>
+                                            <select
+                                                value={filterType}
+                                                onChange={(e) => setFilterType(e.target.value)}
+                                                className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                                            >
+                                                <option value="all">All Materials</option>
+                                                <option value="youtube">Videos</option>
+                                                <option value="file">Files (PDFs, Docs, PPTs)</option>
+                                                <option value="link">External Links</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6">
+                                <MaterialsGrid
+                                    materials={filteredMaterials}
+                                    onDelete={deleteMaterial}
+                                    onAddMaterial={() => setShowAddMaterial(true)}
+                                    isOwner={isOwner()}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {/* Add Material Modal - Only show if teacher */}
+            {/* Add Material Modal */}
             {isOwner() && showAddMaterial && (
                 <AddMaterialModal
                     onClose={() => setShowAddMaterial(false)}

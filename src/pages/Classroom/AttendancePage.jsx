@@ -33,12 +33,12 @@ const AttendancePage = () => {
     const [showCreateSession, setShowCreateSession] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
+    const [updateTrigger, setUpdateTrigger] = useState(0); // Add trigger for force updates
 
     // Enhanced owner check function (memoized to prevent infinite re-renders)
     const isOwner = useCallback(() => {
         if (!classroom || !user) return false;
 
-        // Check multiple possible owner/teacher fields
         const possibleOwnerFields = [
             classroom.owner,
             classroom.teacher,
@@ -47,12 +47,10 @@ const AttendancePage = () => {
             classroom.teacherEmail
         ];
 
-        // Check if user email matches any owner field (case insensitive)
         const isDirectOwner = possibleOwnerFields.some(field =>
             field && field.toLowerCase().trim() === user.email?.toLowerCase().trim()
         );
 
-        // Check if user is in teachers array (if it exists)
         const isInTeachersArray = classroom.teachers && Array.isArray(classroom.teachers) &&
             classroom.teachers.some(teacher => {
                 if (typeof teacher === 'string') {
@@ -64,7 +62,6 @@ const AttendancePage = () => {
                 return false;
             });
 
-        // Check if user is in instructors array (if it exists)
         const isInInstructorsArray = classroom.instructors && Array.isArray(classroom.instructors) &&
             classroom.instructors.some(instructor => {
                 if (typeof instructor === 'string') {
@@ -76,7 +73,6 @@ const AttendancePage = () => {
                 return false;
             });
 
-        // Check if user has teacher/owner role in members array
         const hasTeacherRole = classroom.members && Array.isArray(classroom.members) &&
             classroom.members.some(member => {
                 const emailMatch = member.email?.toLowerCase().trim() === user.email?.toLowerCase().trim() ||
@@ -103,16 +99,12 @@ const AttendancePage = () => {
         const totalSessions = attendanceSessions.length;
 
         if (isOwner()) {
-            // Calculate class average attendance for teachers
             let totalPossible = 0;
             let totalPresent = 0;
 
             attendanceSessions.forEach(session => {
                 if (session.attendance && Array.isArray(session.attendance)) {
-                    // Count total possible attendance (all students who could attend)
                     totalPossible += session.attendance.length;
-
-                    // Count actual attendance (students marked as present)
                     const presentCount = session.attendance.filter(
                         record => record.status === 'present'
                     ).length;
@@ -132,7 +124,6 @@ const AttendancePage = () => {
                 totalActualAttendance: totalPresent
             };
         } else {
-            // Calculate individual student attendance
             if (!user?.email) {
                 return {
                     totalSessions,
@@ -148,7 +139,6 @@ const AttendancePage = () => {
 
             attendanceSessions.forEach(session => {
                 if (session.attendance && Array.isArray(session.attendance)) {
-                    // Find this student's attendance record in each session
                     const studentRecord = session.attendance.find(
                         record => record.studentEmail?.toLowerCase() === user.email.toLowerCase()
                     );
@@ -176,6 +166,195 @@ const AttendancePage = () => {
         }
     }, [attendanceSessions, classroom, user, isOwner]);
 
+    // Fetch classroom and attendance data
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setIsLoading(true);
+                const classroomResponse = await axiosPublic.get(`/classrooms/${classroomId}`);
+                if (classroomResponse.data.success) {
+                    setClassroom(classroomResponse.data.classroom);
+                    setAttendanceSessions(classroomResponse.data.classroom.attendance?.sessions || []);
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to load attendance data.',
+                    icon: 'error',
+                    confirmButtonColor: '#3B82F6',
+                });
+                navigate(`/classroom/${classroomId}`);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (!loading && user && classroomId) {
+            fetchData();
+        }
+    }, [classroomId, user, loading, axiosPublic, navigate]);
+
+    // Enhanced update attendance function with immediate state updates
+    const updateAttendance = async (sessionId, studentEmail, status) => {
+        try {
+            if (!isOwner()) {
+                Swal.fire({
+                    title: 'Access Denied!',
+                    text: 'Only the classroom teacher can update attendance.',
+                    icon: 'error',
+                    confirmButtonColor: '#3B82F6',
+                });
+                return false;
+            }
+
+            // Show loading state
+            Swal.fire({
+                title: 'Updating...',
+                text: 'Please wait while we update the attendance.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            const response = await axiosPublic.post(`/classrooms/${classroomId}/attendance/sessions/${sessionId}/mark`, {
+                studentEmail: studentEmail,
+                status: status,
+                markedBy: user.email
+            });
+
+            if (response.data.success) {
+                // Update local state immediately for better UX
+                setAttendanceSessions(prevSessions =>
+                    prevSessions.map(session => {
+                        if (session.id === sessionId) {
+                            return {
+                                ...session,
+                                attendance: session.attendance.map(record =>
+                                    record.studentEmail === studentEmail
+                                        ? {
+                                            ...record,
+                                            status,
+                                            markedAt: new Date().toISOString(),
+                                            markedBy: user.email
+                                        }
+                                        : record
+                                )
+                            };
+                        }
+                        return session;
+                    })
+                );
+
+                // Update the selected session if it's the one being modified
+                if (selectedSession && selectedSession.id === sessionId) {
+                    setSelectedSession(prevSession => ({
+                        ...prevSession,
+                        attendance: prevSession.attendance.map(record =>
+                            record.studentEmail === studentEmail
+                                ? {
+                                    ...record,
+                                    status,
+                                    markedAt: new Date().toISOString(),
+                                    markedBy: user.email
+                                }
+                                : record
+                        )
+                    }));
+                }
+
+                // Trigger update indicator
+                setUpdateTrigger(prev => prev + 1);
+
+                Swal.fire({
+                    title: 'Success!',
+                    text: `Attendance marked as ${status}`,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+
+                return true;
+            }
+        } catch (error) {
+            console.error('Error updating attendance:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to update attendance.',
+                icon: 'error',
+                confirmButtonColor: '#3B82F6',
+            });
+            return false;
+        }
+    };
+
+    // Enhanced session details close handler
+    const handleSessionDetailsClose = (updatedSession = null) => {
+        if (updatedSession) {
+            // Update the sessions array with the modified session
+            setAttendanceSessions(prevSessions =>
+                prevSessions.map(session =>
+                    session.id === updatedSession.id ? updatedSession : session
+                )
+            );
+            // Trigger update indicator
+            setUpdateTrigger(prev => prev + 1);
+        }
+        setSelectedSession(null);
+    };
+
+    // Enhanced session details open handler
+    const handleViewSessionDetails = (session) => {
+        // Pass the latest session data
+        const latestSession = attendanceSessions.find(s => s.id === session.id) || session;
+        setSelectedSession(latestSession);
+    };
+
+    // Create new attendance session
+    const createAttendanceSession = async (sessionData) => {
+        try {
+            if (!isOwner()) {
+                Swal.fire({
+                    title: 'Access Denied!',
+                    text: 'Only the classroom teacher can create attendance sessions.',
+                    icon: 'error',
+                    confirmButtonColor: '#3B82F6',
+                });
+                return;
+            }
+
+            const response = await axiosPublic.post(`/classrooms/${classroomId}/attendance/sessions`, {
+                date: sessionData.date,
+                title: sessionData.title,
+                description: sessionData.description
+            });
+
+            if (response.data.success) {
+                setAttendanceSessions(prevSessions => [...prevSessions, response.data.session]);
+                setShowCreateSession(false);
+                setUpdateTrigger(prev => prev + 1);
+
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Attendance session created successfully.',
+                    icon: 'success',
+                    confirmButtonColor: '#3B82F6',
+                });
+            }
+        } catch (error) {
+            console.error('Error creating session:', error);
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to create attendance session.',
+                icon: 'error',
+                confirmButtonColor: '#3B82F6',
+            });
+        }
+    };
+
     // Handle export all sessions as PDF
     const handleExportAllSessions = async () => {
         const stats = calculateRealAttendanceStats();
@@ -186,10 +365,6 @@ const AttendancePage = () => {
                 text: 'No attendance sessions to export.',
                 icon: 'warning',
                 confirmButtonColor: '#3B82F6',
-                customClass: {
-                    popup: 'rounded-xl',
-                    confirmButton: 'rounded-lg'
-                }
             });
             return;
         }
@@ -197,7 +372,6 @@ const AttendancePage = () => {
         setIsExporting(true);
 
         try {
-            // Enhanced stats for PDF
             const enhancedStats = {
                 ...stats,
                 totalStudents: classroom?.students?.length || 0,
@@ -217,10 +391,6 @@ const AttendancePage = () => {
                     text: 'Complete attendance report exported successfully.',
                     icon: 'success',
                     confirmButtonColor: '#3B82F6',
-                    customClass: {
-                        popup: 'rounded-xl',
-                        confirmButton: 'rounded-lg'
-                    }
                 });
             } else {
                 throw new Error('PDF generation failed');
@@ -232,173 +402,9 @@ const AttendancePage = () => {
                 text: 'Failed to export attendance report. Please try again.',
                 icon: 'error',
                 confirmButtonColor: '#3B82F6',
-                customClass: {
-                    popup: 'rounded-xl',
-                    confirmButton: 'rounded-lg'
-                }
             });
         } finally {
             setIsExporting(false);
-        }
-    };
-
-    // Debug classroom and user data (memoized to prevent infinite re-renders)
-    useEffect(() => {
-        if (classroom && user && process.env.NODE_ENV === 'development') {
-            console.log('=== ATTENDANCE DEBUG INFO ===');
-            console.log('Classroom data:', classroom);
-            console.log('Current user:', user);
-            console.log('Owner check result:', isOwner());
-            console.log('Calculated stats:', calculateRealAttendanceStats());
-            console.log('=============================');
-        }
-    }, [classroom, user, isOwner, calculateRealAttendanceStats]);
-
-    // Fetch classroom and attendance data
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setIsLoading(true);
-
-                // Fetch classroom details
-                const classroomResponse = await axiosPublic.get(`/classrooms/${classroomId}`);
-                if (classroomResponse.data.success) {
-                    setClassroom(classroomResponse.data.classroom);
-                    setAttendanceSessions(classroomResponse.data.classroom.attendance?.sessions || []);
-                }
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                Swal.fire({
-                    title: 'Error!',
-                    text: 'Failed to load attendance data.',
-                    icon: 'error',
-                    confirmButtonColor: '#3B82F6',
-                    customClass: {
-                        popup: 'rounded-xl',
-                        confirmButton: 'rounded-lg'
-                    }
-                });
-                navigate(`/classroom/${classroomId}`);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        if (!loading && user && classroomId) {
-            fetchData();
-        }
-    }, [classroomId, user, loading, axiosPublic, navigate]);
-
-    // Create new attendance session
-    const createAttendanceSession = async (sessionData) => {
-        try {
-            // Verify ownership before creating
-            if (!isOwner()) {
-                Swal.fire({
-                    title: 'Access Denied!',
-                    text: 'Only the classroom teacher can create attendance sessions.',
-                    icon: 'error',
-                    confirmButtonColor: '#3B82F6',
-                    customClass: {
-                        popup: 'rounded-xl',
-                        confirmButton: 'rounded-lg'
-                    }
-                });
-                return;
-            }
-
-            // Call your backend API
-            const response = await axiosPublic.post(`/classrooms/${classroomId}/attendance/sessions`, {
-                date: sessionData.date,
-                title: sessionData.title,
-                description: sessionData.description
-            });
-
-            if (response.data.success) {
-                // Update local state with the returned session
-                setAttendanceSessions([...attendanceSessions, response.data.session]);
-                setShowCreateSession(false);
-                Swal.fire({
-                    title: 'Success!',
-                    text: 'Attendance session created successfully.',
-                    icon: 'success',
-                    confirmButtonColor: '#3B82F6',
-                    customClass: {
-                        popup: 'rounded-xl',
-                        confirmButton: 'rounded-lg'
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error creating session:', error);
-            Swal.fire({
-                title: 'Error!',
-                text: 'Failed to create attendance session.',
-                icon: 'error',
-                confirmButtonColor: '#3B82F6',
-                customClass: {
-                    popup: 'rounded-xl',
-                    confirmButton: 'rounded-lg'
-                }
-            });
-        }
-    };
-
-    // Update attendance for a student
-    const updateAttendance = async (sessionId, studentEmail, status) => {
-        try {
-            // Verify ownership before updating
-            if (!isOwner()) {
-                Swal.fire({
-                    title: 'Access Denied!',
-                    text: 'Only the classroom teacher can update attendance.',
-                    icon: 'error',
-                    confirmButtonColor: '#3B82F6',
-                    customClass: {
-                        popup: 'rounded-xl',
-                        confirmButton: 'rounded-lg'
-                    }
-                });
-                return;
-            }
-
-            // Call your backend API
-            const response = await axiosPublic.post(`/classrooms/${classroomId}/attendance/sessions/${sessionId}/mark`, {
-                studentEmail: studentEmail,
-                status: status,
-                markedBy: user.email
-            });
-
-            if (response.data.success) {
-                // Update local state only after successful API call
-                const updatedSessions = attendanceSessions.map(session => {
-                    if (session.id === sessionId) {
-                        return {
-                            ...session,
-                            attendance: session.attendance.map(record =>
-                                record.studentEmail === studentEmail
-                                    ? { ...record, status, markedAt: new Date(), markedBy: user.email }
-                                    : record
-                            )
-                        };
-                    }
-                    return session;
-                });
-
-                setAttendanceSessions(updatedSessions);
-            }
-        } catch (error) {
-            console.error('Error updating attendance:', error);
-            Swal.fire({
-                title: 'Error!',
-                text: 'Failed to update attendance.',
-                icon: 'error',
-                confirmButtonColor: '#3B82F6',
-                customClass: {
-                    popup: 'rounded-xl',
-                    confirmButton: 'rounded-lg'
-                }
-            });
         }
     };
 
@@ -466,8 +472,8 @@ const AttendancePage = () => {
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center space-x-3">
                                         <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isOwner()
-                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                             }`}>
                                             {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
                                         </span>
@@ -546,7 +552,7 @@ const AttendancePage = () => {
                                     </div>
                                     <div className="text-right">
                                         <div className={`text-2xl font-bold ${stats.averageAttendance >= 80 ? 'text-emerald-600' :
-                                                stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
+                                            stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
                                             }`}>
                                             {stats.averageAttendance}%
                                         </div>
@@ -558,7 +564,7 @@ const AttendancePage = () => {
                                 <div className="w-full bg-slate-100 rounded-full h-2">
                                     <div
                                         className={`h-2 rounded-full transition-all duration-500 ${stats.averageAttendance >= 80 ? 'bg-emerald-600' :
-                                                stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
+                                            stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
                                             }`}
                                         style={{ width: `${stats.averageAttendance}%` }}
                                     ></div>
@@ -639,13 +645,14 @@ const AttendancePage = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                         {attendanceSessions.map((session) => (
                                             <AttendanceSessionCard
-                                                key={session.id}
+                                                key={`${session.id}-${updateTrigger}`}
                                                 session={session}
                                                 onUpdateAttendance={updateAttendance}
-                                                onViewDetails={() => setSelectedSession(session)}
+                                                onViewDetails={handleViewSessionDetails}
                                                 isOwner={isOwner()}
                                                 currentUserEmail={user?.email}
                                                 classroomName={classroom?.name}
+                                                updateTrigger={updateTrigger}
                                             />
                                         ))}
                                     </div>
@@ -667,7 +674,7 @@ const AttendancePage = () => {
             {selectedSession && (
                 <SessionDetailsModal
                     session={selectedSession}
-                    onClose={() => setSelectedSession(null)}
+                    onClose={handleSessionDetailsClose}
                     onUpdateAttendance={updateAttendance}
                     isOwner={isOwner()}
                     currentUserEmail={user?.email}
