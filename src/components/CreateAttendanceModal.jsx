@@ -14,10 +14,9 @@ const CreateAttendanceModal = ({ onClose, onSubmit }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation
+        // Validation - Description is now optional
         const newErrors = {};
         if (!formData.title.trim()) newErrors.title = 'Title is required';
-        if (!formData.description.trim()) newErrors.description = 'Description is required';
         if (!formData.date) newErrors.date = 'Date is required';
 
         if (Object.keys(newErrors).length > 0) {
@@ -88,8 +87,8 @@ const CreateAttendanceModal = ({ onClose, onSubmit }) => {
                                 value={formData.title}
                                 onChange={handleChange}
                                 className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.title
-                                        ? 'border-red-300 bg-red-50'
-                                        : 'border-slate-300 hover:border-slate-400 focus:border-blue-500'
+                                    ? 'border-red-300 bg-red-50'
+                                    : 'border-slate-300 hover:border-slate-400 focus:border-blue-500'
                                     }`}
                                 placeholder="e.g., Week 5 Lecture"
                             />
@@ -99,10 +98,11 @@ const CreateAttendanceModal = ({ onClose, onSubmit }) => {
                         )}
                     </div>
 
-                    {/* Description Field */}
+                    {/* Description Field - Now Optional */}
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-2">
                             Description
+                            <span className="text-slate-400 text-xs ml-1">(optional)</span>
                         </label>
                         <div className="relative">
                             <MdDescription className="absolute left-3 top-3 text-slate-400 w-5 h-5" />
@@ -111,16 +111,10 @@ const CreateAttendanceModal = ({ onClose, onSubmit }) => {
                                 value={formData.description}
                                 onChange={handleChange}
                                 rows={3}
-                                className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none ${errors.description
-                                        ? 'border-red-300 bg-red-50'
-                                        : 'border-slate-300 hover:border-slate-400 focus:border-blue-500'
-                                    }`}
-                                placeholder="Describe what this session covers..."
+                                className="w-full pl-11 pr-4 py-3 border border-slate-300 hover:border-slate-400 focus:border-blue-500 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
+                                placeholder="Describe what this session covers... (optional)"
                             />
                         </div>
-                        {errors.description && (
-                            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                        )}
                     </div>
 
                     {/* Date Field */}
@@ -136,8 +130,8 @@ const CreateAttendanceModal = ({ onClose, onSubmit }) => {
                                 value={formData.date}
                                 onChange={handleChange}
                                 className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 ${errors.date
-                                        ? 'border-red-300 bg-red-50'
-                                        : 'border-slate-300 hover:border-slate-400 focus:border-blue-500'
+                                    ? 'border-red-300 bg-red-50'
+                                    : 'border-slate-300 hover:border-slate-400 focus:border-blue-500'
                                     }`}
                             />
                         </div>

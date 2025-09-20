@@ -4,7 +4,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import useAxiosPublic from '../../../hooks/useAxiosPublic';
 import Sidebar from '../../Dashboard/Dashboard/Sidebar';
-import TasksHeader from './TasksHeader';
 import TasksList from './TasksList';
 import CreateTaskModal from './CreateTaskModal';
 import SubmissionViewModal from './SubmissionViewModal';
@@ -21,7 +20,8 @@ import {
     MdGrade,
     MdWarning,
     MdHourglassEmpty,
-    MdPlayArrow
+    MdPlayArrow,
+    MdDelete
 } from 'react-icons/md';
 
 const TasksPage = () => {
@@ -65,6 +65,11 @@ const TasksPage = () => {
     const [showViewSubmissionModal, setShowViewSubmissionModal] = useState(false);
     const [selectedTaskForSubmissions, setSelectedTaskForSubmissions] = useState(null);
 
+    // Delete confirmation modal states
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [taskToDelete, setTaskToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
     // Permission check using backend data
     const canCreateTask = useMemo(() => {
         if (!user || !classroom) {
@@ -96,11 +101,11 @@ const TasksPage = () => {
                 return 'pending';
             }
         } else {
-            // Teacher-specific status logic
+            // Teacher-specific status logic - REMOVED ACTIVE STATUS
             if (isOverdue) {
                 return 'overdue';
             } else if (submissionCount === 0) {
-                return 'active'; // No submissions yet, still active
+                return 'needs-grading'; // Changed from 'active' to 'needs-grading'
             } else {
                 // Check if any submissions need grading
                 const hasUngradedSubmissions = task.submissions?.some(sub =>
@@ -128,13 +133,13 @@ const TasksPage = () => {
         });
     }, [tasks, filterStatus, getTaskStatus, user?.email, userRole]);
 
-    // Updated taskStats calculation with role-specific stats
+    // Updated taskStats calculation with role-specific stats - REMOVED ACTIVE
     const taskStats = useMemo(() => {
         if (!tasks || !Array.isArray(tasks)) {
             if (userRole === 'student') {
                 return { total: 0, pending: 0, completed: 0, graded: 0, overdue: 0 };
             } else {
-                return { total: 0, active: 0, 'needs-grading': 0, graded: 0, overdue: 0 };
+                return { total: 0, 'needs-grading': 0, graded: 0, overdue: 0 }; // Removed active
             }
         }
 
@@ -142,7 +147,7 @@ const TasksPage = () => {
         if (userRole === 'student') {
             stats = { total: tasks.length, pending: 0, completed: 0, graded: 0, overdue: 0 };
         } else {
-            stats = { total: tasks.length, active: 0, 'needs-grading': 0, graded: 0, overdue: 0 };
+            stats = { total: tasks.length, 'needs-grading': 0, graded: 0, overdue: 0 }; // Removed active
         }
 
         tasks.forEach(task => {
@@ -217,24 +222,76 @@ const TasksPage = () => {
         setShowViewSubmissionModal(true);
     }, []);
 
-    // Enhanced delete task with refresh
-    const handleDeleteTask = async (taskId) => {
+    // ✅ IMPROVED DELETE TASK HANDLER - PREVENTS DUPLICATE MODALS
+    const handleDeleteTask = useCallback((taskId) => {
+        // Input validation
+        if (!taskId) {
+            console.error('❌ TasksPage: Invalid taskId provided');
+            return;
+        }
+
+        // Prevent duplicate calls
+        if (isDeleting || showDeleteConfirm) {
+            console.log('🚫 TasksPage: Delete already in progress or modal already shown');
+            return;
+        }
+
+        // Find the task to show in confirmation
+        const task = tasks.find(t => (t._id || t.id) === taskId);
+        if (!task) {
+            console.error('❌ TasksPage: Task not found');
+            return;
+        }
+
+        console.log('🗑️ TasksPage: Initiating delete confirmation for task:', task.title);
+        setTaskToDelete({ id: taskId, title: task.title });
+        setShowDeleteConfirm(true);
+    }, [tasks, isDeleting, showDeleteConfirm]);
+
+    // ✅ EXECUTE DELETE WITH PROPER ERROR HANDLING
+    const executeDelete = async () => {
+        if (!taskToDelete) return;
+
         try {
-            const result = await deleteTask(taskId);
+            setIsDeleting(true);
+            console.log('🗑️ TasksPage: Executing delete for task:', taskToDelete.id);
+
+            const result = await deleteTask(taskToDelete.id);
+
             if (result?.success) {
-                console.log('✅ TasksPage: Task deleted, refreshing');
+                console.log('✅ TasksPage: Task deleted successfully');
+
+                // Close modal and reset state
+                setShowDeleteConfirm(false);
+                setTaskToDelete(null);
+
+                // Refresh data
                 if (refreshTasks) {
                     await refreshTasks();
                 }
                 setRefreshTrigger(prev => prev + 1);
+
+                console.log('✅ Task deleted successfully!');
+            } else {
+                const errorMessage = result?.error || 'Failed to delete task';
+                console.error('❌ TasksPage: Delete failed:', errorMessage);
             }
-            return result;
+
         } catch (error) {
-            console.error('❌ TasksPage: Error deleting task:', error);
-            return { success: false, error: error.message };
+            console.error('❌ TasksPage: Delete error:', error);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
+    // ✅ CANCEL DELETE
+    const cancelDelete = () => {
+        if (isDeleting) return; // Prevent canceling during deletion
+        setShowDeleteConfirm(false);
+        setTaskToDelete(null);
+    };
+
+    // Loading state
     if (loading || isLoading) {
         return (
             <div className="min-h-screen bg-slate-50">
@@ -296,8 +353,8 @@ const TasksPage = () => {
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center space-x-3">
                                         <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isOwner?.()
-                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                             }`}>
                                             {isOwner?.() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
                                         </span>
@@ -325,10 +382,9 @@ const TasksPage = () => {
 
                     {/* Main Content */}
                     <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-                        {/* Professional Stats Grid - ONE LINE LAYOUT */}
-                        <div className="grid grid-cols-5 gap-4 mb-8">
-                            {/* Total Tasks Card */}
-                            {/* Total Tasks Card */}
+                        {/* Professional Stats Grid - ONE LINE LAYOUT WITH 4 CARDS FOR TEACHERS */}
+                        <div className={`grid ${userRole === 'student' ? 'grid-cols-5' : 'grid-cols-4'} gap-4 mb-8`}>
+                            {/* Total Tasks Card - Clickable */}
                             <div
                                 className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'all' ? 'border-purple-300 ring-2 ring-purple-200' : 'border-slate-200'
                                     }`}
@@ -349,7 +405,6 @@ const TasksPage = () => {
                                     <div className="bg-purple-600 h-1.5 rounded-full" style={{ width: '100%' }}></div>
                                 </div>
                             </div>
-
 
                             {/* Conditional Stats Cards Based on Role */}
                             {userRole === 'student' ? (
@@ -431,31 +486,6 @@ const TasksPage = () => {
                                 </>
                             ) : (
                                 <>
-                                    {/* Active Tasks Card - Teacher */}
-                                    <div
-                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'active' ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-200'
-                                            }`}
-                                        onClick={() => setFilterStatus(filterStatus === 'active' ? 'all' : 'active')}
-                                    >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                                                <MdPlayArrow className="w-5 h-5 text-emerald-600" />
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-xl font-bold text-slate-900">
-                                                    {taskStats?.active || 0}
-                                                </div>
-                                                <div className="text-xs text-slate-500 font-medium">Active</div>
-                                            </div>
-                                        </div>
-                                        <div className="w-full bg-slate-100 rounded-full h-1.5">
-                                            <div
-                                                className="bg-emerald-600 h-1.5 rounded-full transition-all duration-500"
-                                                style={{ width: `${taskStats?.total ? (taskStats.active / taskStats.total) * 100 : 0}%` }}
-                                            ></div>
-                                        </div>
-                                    </div>
-
                                     {/* Needs Grading Tasks Card - Teacher */}
                                     <div
                                         className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'needs-grading' ? 'border-amber-300 ring-2 ring-amber-200' : 'border-slate-200'
@@ -561,7 +591,6 @@ const TasksPage = () => {
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <option value="active">Active (Accepting Submissions)</option>
                                                         <option value="needs-grading">Needs Grading</option>
                                                         <option value="graded">Fully Graded</option>
                                                     </>
@@ -602,7 +631,46 @@ const TasksPage = () => {
                 </div>
             </div>
 
-            {/* Modals */}
+            {/* ✅ DELETE CONFIRMATION MODAL - PREVENTS DUPLICATE MODALS */}
+            {showDeleteConfirm && taskToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div
+                        className="fixed inset-0 bg-black/30 backdrop-blur-sm"
+                        onClick={cancelDelete}
+                    />
+                    <div className="relative bg-white rounded-2xl shadow-xl p-6 m-4 max-w-sm w-full">
+                        <div className="text-center">
+                            <div className="w-12 h-12 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+                                <MdDelete className="w-6 h-6 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                                Delete Task
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-6">
+                                Are you sure you want to delete "<strong>{taskToDelete.title}</strong>"? This action cannot be undone.
+                            </p>
+                            <div className="flex space-x-3">
+                                <button
+                                    onClick={cancelDelete}
+                                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                                    disabled={isDeleting}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={executeDelete}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                                    disabled={isDeleting}
+                                >
+                                    {isDeleting ? 'Deleting...' : 'Delete'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Create Task Modal */}
             {showCreateTask && canCreateTask && (
                 <CreateTaskModal
                     onClose={() => setShowCreateTask(false)}

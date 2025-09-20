@@ -28,7 +28,6 @@ const MyClasses = () => {
     const [teacherClasses, setTeacherClasses] = useState([]);
     const [enrolledClasses, setEnrolledClasses] = useState([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
-    const [showCreateForm, setShowCreateForm] = useState(false);
     const [showJoinForm, setShowJoinForm] = useState(false);
     const [currentView, setCurrentView] = useState('overview');
     const [searchTerm, setSearchTerm] = useState('');
@@ -104,53 +103,9 @@ const MyClasses = () => {
 
     const displayedClasses = getDisplayedClasses();
 
-    // Create a new classroom
-    const createNewClassroom = async (formData) => {
-        try {
-            const payload = {
-                name: formData.className,
-                subject: formData.subject,
-                description: formData.description,
-                teacherEmail: user.email,
-                teacherName: user.displayName || user.email.split('@')[0]
-            };
-
-            const response = await axiosPublic.post('/classrooms', payload);
-
-            if (response.data.success) {
-                const newClassCode = response.data.classCode || response.data.classroom?.code;
-
-                // Show success with class code
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Classroom Created Successfully!',
-                    html: `
-                        <div class="text-center py-4">
-                            <p class="mb-4">Your classroom has been created. Share this code with students:</p>
-                            <div class="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-4 mb-4">
-                                <span class="text-2xl font-mono font-bold" style="color: #457B9D">${newClassCode}</span>
-                            </div>
-                            <p class="text-sm text-gray-600">Students can use this code to join your classroom</p>
-                        </div>
-                    `,
-                    confirmButtonText: 'Continue',
-                    confirmButtonColor: '#457B9D'
-                });
-
-                // Refresh teacher classes
-                const updatedRes = await axiosPublic.get(`/classrooms/teacher/${user.email}`);
-                if (updatedRes.data.success) {
-                    setTeacherClasses(updatedRes.data.classrooms);
-                }
-            }
-        } catch (error) {
-            console.error('Classroom creation failed:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Creation Failed',
-                text: error.response?.data?.message || 'Unable to create classroom. Please try again.'
-            });
-        }
+    // Navigate to create class page
+    const handleCreateClass = () => {
+        navigate('/create-class');
     };
 
     // Join a classroom using class code
@@ -287,7 +242,7 @@ const MyClasses = () => {
                                         Join Class
                                     </button>
                                     <button
-                                        onClick={() => setShowCreateForm(true)}
+                                        onClick={handleCreateClass}
                                         className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white rounded-lg hover:from-[#3a6b8a] hover:to-[#2d5a73] transition-all font-medium shadow-sm"
                                     >
                                         <HiPlus className="w-4 h-4 mr-2" />
@@ -354,7 +309,7 @@ const MyClasses = () => {
                             <EmptyState
                                 currentView={currentView}
                                 searchTerm={searchTerm}
-                                onCreateClick={() => setShowCreateForm(true)}
+                                onCreateClick={handleCreateClass}
                                 onJoinClick={() => setShowJoinForm(true)}
                             />
                         ) : (
@@ -374,14 +329,7 @@ const MyClasses = () => {
                 </div>
             </div>
 
-            {/* Modals */}
-            {showCreateForm && (
-                <CreateClassModal
-                    onClose={() => setShowCreateForm(false)}
-                    onSubmit={createNewClassroom}
-                />
-            )}
-
+            {/* Join Class Modal - Only keep the join modal */}
             {showJoinForm && (
                 <JoinClassModal
                     onClose={() => setShowJoinForm(false)}
@@ -622,108 +570,7 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
     );
 };
 
-// Create Classroom Modal
-const CreateClassModal = ({ onClose, onSubmit }) => {
-    const [formData, setFormData] = useState({
-        className: '',
-        subject: '',
-        description: ''
-    });
-
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!formData.className.trim() || !formData.subject.trim()) return;
-
-        setIsSubmitting(true);
-        await onSubmit(formData);
-        setIsSubmitting(false);
-        onClose();
-    };
-
-    const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <div className="fixed inset-0 bg-black/50 transition-opacity" onClick={onClose}></div>
-
-                <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-                    <div className="mb-6">
-                        <h3 className="text-xl font-semibold text-gray-900">Create New Classroom</h3>
-                        <p className="mt-1 text-sm text-gray-600">Set up a new classroom for your students</p>
-                    </div>
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Class Name *
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.className}
-                                onChange={(e) => handleInputChange('className', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent"
-                                placeholder="e.g., Advanced Mathematics"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Subject *
-                            </label>
-                            <input
-                                type="text"
-                                value={formData.subject}
-                                onChange={(e) => handleInputChange('subject', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent"
-                                placeholder="e.g., Mathematics"
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Description (optional)
-                            </label>
-                            <textarea
-                                value={formData.description}
-                                onChange={(e) => handleInputChange('description', e.target.value)}
-                                rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent resize-none"
-                                placeholder="Brief description about the classroom..."
-                            />
-                        </div>
-
-                        <div className="flex gap-3 pt-4">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
-                                disabled={isSubmitting}
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={isSubmitting || !formData.className.trim() || !formData.subject.trim()}
-                                className="flex-1 px-4 py-2 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white rounded-lg font-medium hover:from-[#3a6b8a] hover:to-[#2d5a73] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                            >
-                                {isSubmitting ? 'Creating...' : 'Create Classroom'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Join Classroom Modal
+// Join Classroom Modal (keeping only this modal)
 const JoinClassModal = ({ onClose, onSubmit }) => {
     const [classCode, setClassCode] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);

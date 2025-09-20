@@ -52,11 +52,11 @@ const Sidebar = () => {
     const mainMenuItems = [
         { name: 'Dashboard', icon: MdDashboard, path: '/dashboard' },
         { name: 'My Classes', icon: MdSchool, path: '/my-classes' },
-        { name: 'My Progress', icon: MdTrendingUp, path: '/my-progress' },
+
     ];
 
     const classManagementItems = [
-        { name: 'Create Class', icon: MdAdd, path: '/create-class' }, // ✅ Added Create Class
+        { name: 'Create Class', icon: MdAdd, path: '/create-class' },
     ];
 
     const secondaryMenuItems = [
@@ -277,13 +277,13 @@ const Sidebar = () => {
                                     key={index}
                                     to={item.path}
                                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 group ${isActive
-                                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white shadow-lg transform scale-[1.02]'
-                                            : 'hover:bg-white hover:shadow-md text-gray-700'
+                                        ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white shadow-lg transform scale-[1.02]'
+                                        : 'hover:bg-white hover:shadow-md text-gray-700'
                                         }`}
                                 >
                                     <IconComponent className={`mr-3 text-lg transition-all duration-300 ${isActive
-                                            ? 'text-white'
-                                            : 'text-[#457B9D] group-hover:scale-110'
+                                        ? 'text-white'
+                                        : 'text-[#457B9D] group-hover:scale-110'
                                         }`} />
                                     {item.name}
                                     {isActive && (
@@ -295,7 +295,7 @@ const Sidebar = () => {
                     </nav>
                 </div>
 
-                {/* ✅ Class Management Section */}
+                {/* Class Management Section - Updated to use same blue color scheme */}
                 <div className="px-4 mb-6">
                     <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider px-2 mb-3">
                         Class Management
@@ -310,13 +310,13 @@ const Sidebar = () => {
                                     key={index}
                                     to={item.path}
                                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 group ${isActive
-                                            ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg transform scale-[1.02]'
-                                            : 'hover:bg-white hover:shadow-md text-gray-700'
+                                        ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white shadow-lg transform scale-[1.02]'
+                                        : 'hover:bg-white hover:shadow-md text-gray-700'
                                         }`}
                                 >
                                     <IconComponent className={`mr-3 text-lg transition-all duration-300 ${isActive
-                                            ? 'text-white'
-                                            : 'text-green-500 group-hover:scale-110'
+                                        ? 'text-white'
+                                        : 'text-[#457B9D] group-hover:scale-110'
                                         }`} />
                                     {item.name}
                                     {isActive && (
@@ -343,13 +343,13 @@ const Sidebar = () => {
                                     key={index}
                                     to={item.path}
                                     className={`flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 group ${isActive
-                                            ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg'
-                                            : 'hover:bg-white hover:shadow-md text-gray-600'
+                                        ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg'
+                                        : 'hover:bg-white hover:shadow-md text-gray-600'
                                         }`}
                                 >
                                     <IconComponent className={`mr-3 text-lg transition-all duration-300 ${isActive
-                                            ? 'text-white'
-                                            : 'text-gray-500 group-hover:scale-110'
+                                        ? 'text-white'
+                                        : 'text-gray-500 group-hover:scale-110'
                                         }`} />
                                     {item.name}
                                 </Link>
