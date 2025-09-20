@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MdVideoLibrary, MdImage, MdDescription, MdLink, MdDelete, MdOpenInNew, MdDownload } from 'react-icons/md';
 
-const MaterialCard = ({ material, onDelete }) => {
+const MaterialCard = ({ material, onDelete, isOwner = false }) => {
     const [imageError, setImageError] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
 
@@ -338,7 +338,8 @@ const MaterialCard = ({ material, onDelete }) => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
+                <div className={`flex items-center mt-4 pt-4 border-t border-gray-100 ${isOwner ? 'justify-between' : 'justify-start'
+                    }`}>
                     <div className="flex items-center space-x-2">
                         {material.type === 'youtube' ? (
                             <button
@@ -373,13 +374,16 @@ const MaterialCard = ({ material, onDelete }) => {
                         )}
                     </div>
 
-                    <button
-                        onClick={() => onDelete(material.id)}
-                        className="flex items-center px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
-                    >
-                        <MdDelete size={16} className="mr-1" />
-                        Delete
-                    </button>
+                    {/* Conditional Delete Button - Only show for teachers/owners */}
+                    {isOwner && (
+                        <button
+                            onClick={() => onDelete(material.id)}
+                            className="flex items-center px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm"
+                        >
+                            <MdDelete size={16} className="mr-1" />
+                            Delete
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useCallback, useEffect } from 'react';
 import { AuthContext } from '../../../providers/AuthProvider';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -25,11 +25,76 @@ const MaterialsPage = () => {
     // Use custom hook for materials management
     const {
         classroom,
-        materials = [], // ✅ Default empty array to prevent undefined errors
+        materials = [],
         isLoading,
         addMaterial,
         deleteMaterial
     } = useMaterials(classroomId, user, loading, axiosPublic);
+
+    // Enhanced owner check function (same as AttendancePage)
+    const isOwner = useCallback(() => {
+        if (!classroom || !user) return false;
+
+        // Check multiple possible owner/teacher fields
+        const possibleOwnerFields = [
+            classroom.owner,
+            classroom.teacher,
+            classroom.instructor,
+            classroom.createdBy,
+            classroom.teacherEmail
+        ];
+
+        // Check if user email matches any owner field (case insensitive)
+        const isDirectOwner = possibleOwnerFields.some(field =>
+            field && field.toLowerCase().trim() === user.email?.toLowerCase().trim()
+        );
+
+        // Check if user is in teachers array (if it exists)
+        const isInTeachersArray = classroom.teachers && Array.isArray(classroom.teachers) &&
+            classroom.teachers.some(teacher => {
+                if (typeof teacher === 'string') {
+                    return teacher.toLowerCase().trim() === user.email?.toLowerCase().trim();
+                }
+                if (typeof teacher === 'object' && teacher.email) {
+                    return teacher.email.toLowerCase().trim() === user.email?.toLowerCase().trim();
+                }
+                return false;
+            });
+
+        // Check if user is in instructors array (if it exists)
+        const isInInstructorsArray = classroom.instructors && Array.isArray(classroom.instructors) &&
+            classroom.instructors.some(instructor => {
+                if (typeof instructor === 'string') {
+                    return instructor.toLowerCase().trim() === user.email?.toLowerCase().trim();
+                }
+                if (typeof instructor === 'object' && instructor.email) {
+                    return instructor.email.toLowerCase().trim() === user.email?.toLowerCase().trim();
+                }
+                return false;
+            });
+
+        // Check if user has teacher/owner role in members array
+        const hasTeacherRole = classroom.members && Array.isArray(classroom.members) &&
+            classroom.members.some(member => {
+                const emailMatch = member.email?.toLowerCase().trim() === user.email?.toLowerCase().trim() ||
+                    member.userId === user.uid;
+                const teacherRoles = ['owner', 'teacher', 'instructor', 'admin'];
+                return emailMatch && teacherRoles.includes(member.role?.toLowerCase());
+            });
+
+        return isDirectOwner || isInTeachersArray || isInInstructorsArray || hasTeacherRole;
+    }, [classroom, user]);
+
+    // Debug classroom and user data
+    useEffect(() => {
+        if (classroom && user && process.env.NODE_ENV === 'development') {
+            console.log('=== MATERIALS DEBUG INFO ===');
+            console.log('Classroom data:', classroom);
+            console.log('Current user:', user);
+            console.log('Owner check result:', isOwner());
+            console.log('============================');
+        }
+    }, [classroom, user, isOwner]);
 
     // Enhanced handle adding material with proper state update
     const handleAddMaterial = async (materialData) => {
@@ -41,10 +106,8 @@ const MaterialsPage = () => {
             console.log('📥 Add material result:', result);
 
             if (result && (result.success || result.material)) {
-                // Force close modal only after successful addition
                 setShowAddMaterial(false);
 
-                // Optional: Force a small delay to ensure state has updated
                 setTimeout(() => {
                     console.log('📊 Updated materials count:', materials?.length || 0);
                     console.log('📊 Materials by type:', (materials || []).map(m => ({ id: m.id, type: m.type, title: m.title })));
@@ -53,7 +116,7 @@ const MaterialsPage = () => {
                 return result;
             } else {
                 console.error('❌ Failed to add material:', result);
-                return result; // Return result so modal can show error
+                return result;
             }
         } catch (error) {
             console.error('❌ Error adding material:', error);
@@ -63,7 +126,6 @@ const MaterialsPage = () => {
 
     // Enhanced filtered materials and stats with safe array handling
     const filteredMaterials = React.useMemo(() => {
-        // ✅ Safe array handling with default empty array
         const safeMaterials = materials || [];
         const filtered = filterMaterialsByType(safeMaterials, filterType);
 
@@ -80,7 +142,6 @@ const MaterialsPage = () => {
     }, [materials, filterType]);
 
     const materialStats = React.useMemo(() => {
-        // ✅ Safe array handling with default empty array
         const safeMaterials = materials || [];
         const stats = calculateMaterialStats(safeMaterials);
 
@@ -91,7 +152,6 @@ const MaterialsPage = () => {
 
     // Debug effect to track materials changes with safe handling
     React.useEffect(() => {
-        // ✅ Safe array access with optional chaining and default values
         const safeMaterials = materials || [];
 
         console.log('📈 Materials state updated:', {
@@ -118,7 +178,7 @@ const MaterialsPage = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] font-poppins">
             <Helmet>
-                <title>{classroom?.name ? `EduGrid | Materials - ${classroom.name}` : 'EduGrid | Materials'}</title>
+                <title>EduGrid | Materials - {classroom?.name}</title>
             </Helmet>
 
             <div className="flex">
@@ -140,22 +200,33 @@ const MaterialsPage = () => {
                                 <div className="flex justify-between items-center">
                                     <div>
                                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                                            Class Materials - {classroom?.name || 'Loading...'}
+                                            Materials - {classroom?.name}
                                         </h1>
                                         <p className="text-gray-600">
-                                            Share and manage course resources
-                                            <span className="ml-2 text-sm bg-gray-100 px-2 py-1 rounded">
-                                                {materials?.length || 0} total materials
-                                            </span>
+                                            {isOwner() ? 'Manage and share course materials' : 'Access course materials and resources'}
                                         </p>
+                                        {/* Access level indicator */}
+                                        <div className="mt-2">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isOwner()
+                                                ? 'bg-green-100 text-green-800'
+                                                : 'bg-blue-100 text-blue-800'
+                                                }`}>
+                                                {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
+                                            </span>
+                                            <span className="ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                📚 {materials?.length || 0} Materials Available
+                                            </span>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => setShowAddMaterial(true)}
-                                        className="flex items-center px-6 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-colors font-semibold shadow-lg"
-                                    >
-                                        <MdAdd className="mr-2" />
-                                        Add Material
-                                    </button>
+                                    {isOwner() && (
+                                        <button
+                                            onClick={() => setShowAddMaterial(true)}
+                                            className="flex items-center px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold shadow-lg"
+                                        >
+                                            <MdAdd className="mr-2" />
+                                            Add Material
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -167,7 +238,8 @@ const MaterialsPage = () => {
                                     Debug: Total Materials: {materials?.length || 0} |
                                     YouTube: {(materials || []).filter(m => m.type === 'youtube').length} |
                                     Files: {(materials || []).filter(m => m.type === 'file').length} |
-                                    Links: {(materials || []).filter(m => m.type === 'link').length}
+                                    Links: {(materials || []).filter(m => m.type === 'link').length} |
+                                    Role: {isOwner() ? 'Teacher' : 'Student'}
                                 </p>
                             </div>
                         )}
@@ -184,13 +256,14 @@ const MaterialsPage = () => {
                             materials={filteredMaterials}
                             onDelete={deleteMaterial}
                             onAddMaterial={() => setShowAddMaterial(true)}
+                            isOwner={isOwner()} // Pass isOwner to control delete permissions
                         />
                     </div>
                 </div>
             </div>
 
-            {/* Add Material Modal */}
-            {showAddMaterial && (
+            {/* Add Material Modal - Only show if teacher */}
+            {isOwner() && showAddMaterial && (
                 <AddMaterialModal
                     onClose={() => setShowAddMaterial(false)}
                     onSubmit={handleAddMaterial}

@@ -268,39 +268,41 @@ const AttendancePage = () => {
 
                 <div className="flex-1 ml-[320px] p-6">
                     <div className="max-w-7xl mx-auto">
-                        {/* Header */}
+                        {/* Compact Professional Header */}
                         <div className="mb-6">
-                            <button
-                                onClick={() => navigate(`/classroom/${classroomId}`)}
-                                className="flex items-center text-gray-600 hover:text-gray-800 transition-colors mb-4"
-                            >
-                                <MdArrowBack className="mr-2" />
-                                Back to Classroom
-                            </button>
+                            <div className="flex items-center justify-between mb-3">
+                                <button
+                                    onClick={() => navigate(`/classroom/${classroomId}`)}
+                                    className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+                                >
+                                    <MdArrowBack className="mr-2" />
+                                    Back to Classroom
+                                </button>
 
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                                <div className="flex justify-between items-center">
-                                    <div>
-                                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                                            Attendance - {classroom?.name}
-                                        </h1>
-                                        <p className="text-gray-600">
-                                            {isOwner() ? 'Track and manage student attendance' : 'View your attendance record'}
-                                        </p>
-                                        {/* Access level indicator */}
-                                        <div className="mt-2">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isOwner()
-                                                ? 'bg-green-100 text-green-800'
-                                                : 'bg-blue-100 text-blue-800'
-                                                }`}>
-                                                {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
-                                            </span>
-                                        </div>
-                                    </div>
+                                <div className="flex items-center space-x-3 text-sm">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${isOwner()
+                                            ? 'bg-green-100 text-green-700'
+                                            : 'bg-blue-100 text-blue-700'
+                                        }`}>
+                                        {isOwner() ? '👨‍🏫 Teacher' : '👨‍🎓 Student'}
+                                    </span>
+                                    <span className="text-gray-500 flex items-center">
+                                        <MdPeople className="mr-1 text-base" />
+                                        {classroom?.students?.length || 0} students
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+                                <div className="flex items-center justify-between">
+                                    <h1 className="text-xl font-semibold text-gray-900">
+                                        {classroom?.name} - Attendance
+                                    </h1>
+
                                     {isOwner() && (
                                         <button
                                             onClick={() => setShowCreateSession(true)}
-                                            className="flex items-center px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold shadow-lg"
+                                            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
                                         >
                                             <MdAdd className="mr-2" />
                                             New Session
