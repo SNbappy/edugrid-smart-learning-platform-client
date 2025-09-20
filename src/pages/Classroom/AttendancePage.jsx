@@ -10,14 +10,15 @@ import {
     MdAdd,
     MdPeople,
     MdCalendarToday,
-    MdCheckCircle,
-    MdDownload
+    MdTrendingUp,
+    MdFileDownload,
+    MdSchool,
+    MdBarChart
 } from 'react-icons/md';
 
 import AttendanceSessionCard from '../../components/AttendanceSessionCard';
 import CreateAttendanceModal from '../../components/CreateAttendanceModal';
 import SessionDetailsModal from '../../components/SessionDetailsModal';
-import { calculateAttendanceStats } from '../../utils/attendanceUtils';
 import { exportAllSessionsPDF } from '../../utils/attendancePDFExport';
 
 const AttendancePage = () => {
@@ -87,14 +88,108 @@ const AttendancePage = () => {
         return isDirectOwner || isInTeachersArray || isInInstructorsArray || hasTeacherRole;
     }, [classroom, user]);
 
+    // Real Attendance Calculation Function
+    const calculateRealAttendanceStats = useCallback(() => {
+        if (!attendanceSessions || attendanceSessions.length === 0) {
+            return {
+                totalSessions: 0,
+                totalStudents: classroom?.students?.length || 0,
+                averageAttendance: 0,
+                totalPossibleAttendance: 0,
+                totalActualAttendance: 0
+            };
+        }
+
+        const totalSessions = attendanceSessions.length;
+
+        if (isOwner()) {
+            // Calculate class average attendance for teachers
+            let totalPossible = 0;
+            let totalPresent = 0;
+
+            attendanceSessions.forEach(session => {
+                if (session.attendance && Array.isArray(session.attendance)) {
+                    // Count total possible attendance (all students who could attend)
+                    totalPossible += session.attendance.length;
+
+                    // Count actual attendance (students marked as present)
+                    const presentCount = session.attendance.filter(
+                        record => record.status === 'present'
+                    ).length;
+                    totalPresent += presentCount;
+                }
+            });
+
+            const averageAttendance = totalPossible > 0
+                ? Math.round((totalPresent / totalPossible) * 100)
+                : 0;
+
+            return {
+                totalSessions,
+                totalStudents: classroom?.students?.length || 0,
+                averageAttendance,
+                totalPossibleAttendance: totalPossible,
+                totalActualAttendance: totalPresent
+            };
+        } else {
+            // Calculate individual student attendance
+            if (!user?.email) {
+                return {
+                    totalSessions,
+                    totalStudents: classroom?.students?.length || 0,
+                    averageAttendance: 0,
+                    totalPossibleAttendance: 0,
+                    totalActualAttendance: 0
+                };
+            }
+
+            let studentPossible = 0;
+            let studentPresent = 0;
+
+            attendanceSessions.forEach(session => {
+                if (session.attendance && Array.isArray(session.attendance)) {
+                    // Find this student's attendance record in each session
+                    const studentRecord = session.attendance.find(
+                        record => record.studentEmail?.toLowerCase() === user.email.toLowerCase()
+                    );
+
+                    if (studentRecord) {
+                        studentPossible += 1;
+                        if (studentRecord.status === 'present') {
+                            studentPresent += 1;
+                        }
+                    }
+                }
+            });
+
+            const averageAttendance = studentPossible > 0
+                ? Math.round((studentPresent / studentPossible) * 100)
+                : 0;
+
+            return {
+                totalSessions,
+                totalStudents: classroom?.students?.length || 0,
+                averageAttendance,
+                totalPossibleAttendance: studentPossible,
+                totalActualAttendance: studentPresent
+            };
+        }
+    }, [attendanceSessions, classroom, user, isOwner]);
+
     // Handle export all sessions as PDF
     const handleExportAllSessions = async () => {
+        const stats = calculateRealAttendanceStats();
+
         if (attendanceSessions.length === 0) {
             Swal.fire({
                 title: 'No Data Available!',
                 text: 'No attendance sessions to export.',
                 icon: 'warning',
-                confirmButtonColor: '#457B9D'
+                confirmButtonColor: '#3B82F6',
+                customClass: {
+                    popup: 'rounded-xl',
+                    confirmButton: 'rounded-lg'
+                }
             });
             return;
         }
@@ -121,7 +216,11 @@ const AttendancePage = () => {
                     title: 'Success!',
                     text: 'Complete attendance report exported successfully.',
                     icon: 'success',
-                    confirmButtonColor: '#457B9D'
+                    confirmButtonColor: '#3B82F6',
+                    customClass: {
+                        popup: 'rounded-xl',
+                        confirmButton: 'rounded-lg'
+                    }
                 });
             } else {
                 throw new Error('PDF generation failed');
@@ -132,7 +231,11 @@ const AttendancePage = () => {
                 title: 'Export Failed!',
                 text: 'Failed to export attendance report. Please try again.',
                 icon: 'error',
-                confirmButtonColor: '#457B9D'
+                confirmButtonColor: '#3B82F6',
+                customClass: {
+                    popup: 'rounded-xl',
+                    confirmButton: 'rounded-lg'
+                }
             });
         } finally {
             setIsExporting(false);
@@ -146,9 +249,10 @@ const AttendancePage = () => {
             console.log('Classroom data:', classroom);
             console.log('Current user:', user);
             console.log('Owner check result:', isOwner());
+            console.log('Calculated stats:', calculateRealAttendanceStats());
             console.log('=============================');
         }
-    }, [classroom, user, isOwner]);
+    }, [classroom, user, isOwner, calculateRealAttendanceStats]);
 
     // Fetch classroom and attendance data
     useEffect(() => {
@@ -164,7 +268,16 @@ const AttendancePage = () => {
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
-                Swal.fire('Error!', 'Failed to load attendance data.', 'error');
+                Swal.fire({
+                    title: 'Error!',
+                    text: 'Failed to load attendance data.',
+                    icon: 'error',
+                    confirmButtonColor: '#3B82F6',
+                    customClass: {
+                        popup: 'rounded-xl',
+                        confirmButton: 'rounded-lg'
+                    }
+                });
                 navigate(`/classroom/${classroomId}`);
             } finally {
                 setIsLoading(false);
@@ -181,7 +294,16 @@ const AttendancePage = () => {
         try {
             // Verify ownership before creating
             if (!isOwner()) {
-                Swal.fire('Access Denied!', 'Only the classroom teacher can create attendance sessions.', 'error');
+                Swal.fire({
+                    title: 'Access Denied!',
+                    text: 'Only the classroom teacher can create attendance sessions.',
+                    icon: 'error',
+                    confirmButtonColor: '#3B82F6',
+                    customClass: {
+                        popup: 'rounded-xl',
+                        confirmButton: 'rounded-lg'
+                    }
+                });
                 return;
             }
 
@@ -196,11 +318,29 @@ const AttendancePage = () => {
                 // Update local state with the returned session
                 setAttendanceSessions([...attendanceSessions, response.data.session]);
                 setShowCreateSession(false);
-                Swal.fire('Success!', 'Attendance session created successfully.', 'success');
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Attendance session created successfully.',
+                    icon: 'success',
+                    confirmButtonColor: '#3B82F6',
+                    customClass: {
+                        popup: 'rounded-xl',
+                        confirmButton: 'rounded-lg'
+                    }
+                });
             }
         } catch (error) {
             console.error('Error creating session:', error);
-            Swal.fire('Error!', 'Failed to create attendance session.', 'error');
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to create attendance session.',
+                icon: 'error',
+                confirmButtonColor: '#3B82F6',
+                customClass: {
+                    popup: 'rounded-xl',
+                    confirmButton: 'rounded-lg'
+                }
+            });
         }
     };
 
@@ -209,7 +349,16 @@ const AttendancePage = () => {
         try {
             // Verify ownership before updating
             if (!isOwner()) {
-                Swal.fire('Access Denied!', 'Only the classroom teacher can update attendance.', 'error');
+                Swal.fire({
+                    title: 'Access Denied!',
+                    text: 'Only the classroom teacher can update attendance.',
+                    icon: 'error',
+                    confirmButtonColor: '#3B82F6',
+                    customClass: {
+                        popup: 'rounded-xl',
+                        confirmButton: 'rounded-lg'
+                    }
+                });
                 return;
             }
 
@@ -240,178 +389,269 @@ const AttendancePage = () => {
             }
         } catch (error) {
             console.error('Error updating attendance:', error);
-            Swal.fire('Error!', 'Failed to update attendance.', 'error');
+            Swal.fire({
+                title: 'Error!',
+                text: 'Failed to update attendance.',
+                icon: 'error',
+                confirmButtonColor: '#3B82F6',
+                customClass: {
+                    popup: 'rounded-xl',
+                    confirmButton: 'rounded-lg'
+                }
+            });
         }
     };
 
-    const stats = calculateAttendanceStats(attendanceSessions, classroom, user, isOwner());
+    // Calculate real stats
+    const stats = calculateRealAttendanceStats();
 
     if (loading || isLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#f8fafc]">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#457B9D] mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Loading attendance data...</p>
+            <div className="min-h-screen bg-slate-50">
+                <div className="flex">
+                    <Sidebar />
+                    <div className="flex-1 ml-[320px] flex items-center justify-center">
+                        <div className="text-center py-20">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg mx-auto mb-6">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            </div>
+                            <h3 className="text-lg font-semibold text-slate-900 mb-2">Loading Attendance Data</h3>
+                            <p className="text-slate-600">Please wait while we fetch your classroom information...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] via-[#f1f5f9] to-[#e2e8f0] font-poppins">
+        <div className="min-h-screen bg-slate-50">
             <Helmet>
-                <title>EduGrid | Attendance - {classroom?.name}</title>
+                <title>Attendance - {classroom?.name} | EduGrid</title>
+                <meta name="description" content={`Manage attendance for ${classroom?.name} classroom`} />
             </Helmet>
 
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px] p-6">
-                    <div className="max-w-7xl mx-auto">
-                        {/* Compact Professional Header */}
-                        <div className="mb-6">
-                            <div className="flex items-center justify-between mb-3">
-                                <button
-                                    onClick={() => navigate(`/classroom/${classroomId}`)}
-                                    className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
-                                >
-                                    <MdArrowBack className="mr-2" />
-                                    Back to Classroom
-                                </button>
+                <div className="flex-1 ml-[320px]">
+                    {/* Professional Header */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
+                        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+                            <div className="flex items-center justify-between h-16">
+                                <div className="flex items-center space-x-6">
+                                    <button
+                                        onClick={() => navigate(`/classroom/${classroomId}`)}
+                                        className="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors duration-200 group"
+                                    >
+                                        <MdArrowBack className="w-5 h-5 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
+                                        <span className="text-sm font-medium">Back to Classroom</span>
+                                    </button>
 
-                                <div className="flex items-center space-x-3 text-sm">
-                                    <span className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${isOwner()
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-blue-100 text-blue-700'
-                                        }`}>
-                                        {isOwner() ? '👨‍🏫 Teacher' : '👨‍🎓 Student'}
-                                    </span>
-                                    <span className="text-gray-500 flex items-center">
-                                        <MdPeople className="mr-1 text-base" />
-                                        {classroom?.students?.length || 0} students
-                                    </span>
+                                    <div className="h-6 w-px bg-slate-300"></div>
+
+                                    <div className="flex items-center space-x-3">
+                                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                            <MdBarChart className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <h1 className="text-xl font-bold text-slate-900">
+                                                {classroom?.name}
+                                            </h1>
+                                            <p className="text-xs text-slate-500 -mt-0.5">Attendance Management</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-                                <div className="flex items-center justify-between">
-                                    <h1 className="text-xl font-semibold text-gray-900">
-                                        {classroom?.name} - Attendance
-                                    </h1>
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-3">
+                                        <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isOwner()
+                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            }`}>
+                                            {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
+                                        </span>
+
+                                        <div className="flex items-center text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                                            <MdPeople className="w-4 h-4 mr-2" />
+                                            <span className="font-medium">{classroom?.students?.length || 0}</span>
+                                            <span className="ml-1">students</span>
+                                        </div>
+                                    </div>
 
                                     {isOwner() && (
                                         <button
                                             onClick={() => setShowCreateSession(true)}
-                                            className="flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                                            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-blue-600/25"
                                         >
-                                            <MdAdd className="mr-2" />
+                                            <MdAdd className="w-4 h-4 mr-2" />
                                             New Session
                                         </button>
                                     )}
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                <div className="flex items-center">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <MdPeople className="text-blue-600 text-xl" />
+                    {/* Main Content */}
+                    <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
+                        {/* Professional Stats Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            {/* Total Students Card */}
+                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                        <MdSchool className="w-6 h-6 text-blue-600" />
                                     </div>
-                                    <div className="ml-3">
-                                        <p className="text-sm text-gray-600">
+                                    <div className="text-right">
+                                        <div className="text-2xl font-bold text-slate-900">
+                                            {classroom?.students?.length || 0}
+                                        </div>
+                                        <div className="text-xs text-slate-500 font-medium">
                                             {isOwner() ? 'Total Students' : 'Class Size'}
-                                        </p>
-                                        <p className="text-2xl font-bold text-gray-900">{classroom?.students?.length || 0}</p>
+                                        </div>
                                     </div>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-2">
+                                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '100%' }}></div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                <div className="flex items-center">
-                                    <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                        <MdCalendarToday className="text-green-600 text-xl" />
+                            {/* Total Sessions Card */}
+                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                        <MdCalendarToday className="w-6 h-6 text-emerald-600" />
                                     </div>
-                                    <div className="ml-3">
-                                        <p className="text-sm text-gray-600">Total Sessions</p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats.totalSessions}</p>
+                                    <div className="text-right">
+                                        <div className="text-2xl font-bold text-slate-900">
+                                            {stats.totalSessions}
+                                        </div>
+                                        <div className="text-xs text-slate-500 font-medium">Total Sessions</div>
                                     </div>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-2">
+                                    <div
+                                        className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
+                                        style={{ width: `${Math.min((stats.totalSessions / 20) * 100, 100)}%` }}
+                                    ></div>
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                <div className="flex items-center">
-                                    <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                        <MdCheckCircle className="text-yellow-600 text-xl" />
+                            {/* Attendance Rate Card */}
+                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                                        <MdTrendingUp className="w-6 h-6 text-amber-600" />
                                     </div>
-                                    <div className="ml-3">
-                                        <p className="text-sm text-gray-600">
+                                    <div className="text-right">
+                                        <div className={`text-2xl font-bold ${stats.averageAttendance >= 80 ? 'text-emerald-600' :
+                                                stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
+                                            }`}>
+                                            {stats.averageAttendance}%
+                                        </div>
+                                        <div className="text-xs text-slate-500 font-medium">
                                             {isOwner() ? 'Average Attendance' : 'Your Attendance'}
-                                        </p>
-                                        <p className="text-2xl font-bold text-gray-900">{stats.averageAttendance}%</p>
+                                        </div>
                                     </div>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-2">
+                                    <div
+                                        className={`h-2 rounded-full transition-all duration-500 ${stats.averageAttendance >= 80 ? 'bg-emerald-600' :
+                                                stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
+                                            }`}
+                                        style={{ width: `${stats.averageAttendance}%` }}
+                                    ></div>
                                 </div>
                             </div>
 
+                            {/* Export Report Card - Only for Teachers */}
                             {isOwner() && (
-                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                                <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
                                     <button
                                         onClick={handleExportAllSessions}
                                         disabled={isExporting || attendanceSessions.length === 0}
-                                        className="flex items-center text-purple-600 hover:text-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full"
+                                        className="w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
                                     >
-                                        {isExporting ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600 mr-2"></div>
-                                                <span className="font-semibold">Exporting...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <MdDownload className="mr-2" />
-                                                <span className="font-semibold">Export Report</span>
-                                            </>
-                                        )}
+                                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                                            {isExporting ? (
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                                            ) : (
+                                                <MdFileDownload className="w-6 h-6 text-purple-600" />
+                                            )}
+                                        </div>
+                                        <div className="text-sm font-semibold text-slate-900 mb-1">
+                                            {isExporting ? 'Exporting...' : 'Export Report'}
+                                        </div>
+                                        <div className="text-xs text-slate-500">
+                                            {isExporting ? 'Please wait' : 'Download PDF'}
+                                        </div>
                                     </button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Attendance Sessions */}
-                        {attendanceSessions.length === 0 ? (
-                            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
-                                <MdCalendarToday className="text-6xl text-gray-300 mx-auto mb-4" />
-                                <h3 className="text-2xl font-semibold text-gray-600 mb-2">No Attendance Sessions</h3>
-                                <p className="text-gray-500 mb-6">
-                                    {isOwner()
-                                        ? 'Create your first attendance session to start tracking student presence.'
-                                        : 'No attendance sessions have been created yet.'
-                                    }
-                                </p>
-                                {isOwner() && (
-                                    <button
-                                        onClick={() => setShowCreateSession(true)}
-                                        className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-semibold"
-                                    >
-                                        Create First Session
-                                    </button>
+                        {/* Sessions Section with Grid Layout */}
+                        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-lg font-semibold text-slate-900">Attendance Sessions</h2>
+                                    {attendanceSessions.length > 0 && (
+                                        <div className="flex items-center space-x-4">
+                                            <span className="text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                                {attendanceSessions.length} session{attendanceSessions.length !== 1 ? 's' : ''}
+                                            </span>
+                                            {isOwner() && stats.totalPossibleAttendance > 0 && (
+                                                <span className="text-xs text-slate-500">
+                                                    {stats.totalActualAttendance}/{stats.totalPossibleAttendance} total attendance
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="p-6">
+                                {attendanceSessions.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                            <MdCalendarToday className="w-8 h-8 text-slate-400" />
+                                        </div>
+                                        <h3 className="text-lg font-semibold text-slate-900 mb-3">No Attendance Sessions Yet</h3>
+                                        <p className="text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
+                                            {isOwner()
+                                                ? 'Start tracking student attendance by creating your first session. You can manage attendance for each class meeting.'
+                                                : 'Your teacher hasn\'t created any attendance sessions yet. Sessions will appear here once they\'re created.'
+                                            }
+                                        </p>
+                                        {isOwner() && (
+                                            <button
+                                                onClick={() => setShowCreateSession(true)}
+                                                className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-blue-600/25"
+                                            >
+                                                <MdAdd className="w-4 h-4 mr-2" />
+                                                Create Your First Session
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    // Grid Layout for Attendance Sessions
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                        {attendanceSessions.map((session) => (
+                                            <AttendanceSessionCard
+                                                key={session.id}
+                                                session={session}
+                                                onUpdateAttendance={updateAttendance}
+                                                onViewDetails={() => setSelectedSession(session)}
+                                                isOwner={isOwner()}
+                                                currentUserEmail={user?.email}
+                                                classroomName={classroom?.name}
+                                            />
+                                        ))}
+                                    </div>
                                 )}
                             </div>
-                        ) : (
-                            <div className="space-y-6">
-                                {attendanceSessions.map((session) => (
-                                    <AttendanceSessionCard
-                                        key={session.id}
-                                        session={session}
-                                        onUpdateAttendance={updateAttendance}
-                                        onViewDetails={() => setSelectedSession(session)}
-                                        isOwner={isOwner()}
-                                        currentUserEmail={user?.email}
-                                        classroomName={classroom?.name}
-                                    />
-                                ))}
-                            </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
