@@ -358,8 +358,21 @@ const Dashboard = () => {
                                 {/* Profile Card */}
                                 <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                     <div className="relative">
-                                        {/* Simple header background */}
-                                        <div className="h-20 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] relative">
+                                        {/* UPDATED: Cover photo or gradient background */}
+                                        <div className="h-20 relative overflow-hidden">
+                                            {dashboardData.userData?.coverPhotoURL ? (
+                                                <>
+                                                    <img
+                                                        src={dashboardData.userData.coverPhotoURL}
+                                                        alt="Cover"
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <div className="absolute inset-0 bg-black/20"></div>
+                                                </>
+                                            ) : (
+                                                <div className="w-full h-full bg-gradient-to-r from-[#457B9D] to-[#3a6b8a]"></div>
+                                            )}
+
                                             <button
                                                 onClick={() => navigate('/edit-profile')}
                                                 className="absolute top-4 right-4 p-2 bg-white/20 rounded-lg text-white hover:bg-white/30 transition-colors"

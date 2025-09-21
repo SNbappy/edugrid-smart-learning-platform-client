@@ -65,7 +65,7 @@ const EditProfile = () => {
         }
     };
 
-    // Fetch user data when component loads
+    // Fetch user data when component loads - with debugging
     useEffect(() => {
         const fetchUserData = async () => {
             if (user?.email) {
@@ -75,6 +75,10 @@ const EditProfile = () => {
 
                     if (response.data.success) {
                         const fetchedUser = response.data.user;
+                        console.log('🔍 Full fetched user data:', fetchedUser);
+                        console.log('🔍 Profile photo URL:', fetchedUser.photoURL);
+                        console.log('🔍 Cover photo URL:', fetchedUser.coverPhotoURL);
+
                         setUserData(fetchedUser);
 
                         // Populate form with existing data
@@ -90,12 +94,16 @@ const EditProfile = () => {
 
                         // Set photo preview if exists
                         if (fetchedUser.photoURL) {
+                            console.log('✅ Setting profile photo preview:', fetchedUser.photoURL);
                             setPhotoPreview(fetchedUser.photoURL);
                         }
 
-                        // FIXED: Cover photo should be at root level, same as profile picture
+                        // Set cover photo preview if exists
                         if (fetchedUser.coverPhotoURL) {
+                            console.log('✅ Setting cover photo preview:', fetchedUser.coverPhotoURL);
                             setCoverPreview(fetchedUser.coverPhotoURL);
+                        } else {
+                            console.log('❌ No cover photo URL found in user data');
                         }
 
                         // Set selected country code for existing data
@@ -108,7 +116,7 @@ const EditProfile = () => {
                             }
                         }
 
-                        console.log('✅ User data loaded:', fetchedUser);
+                        console.log('✅ User data loaded successfully');
                     }
                 } catch (error) {
                     console.error('❌ Error fetching user data:', error);
@@ -131,6 +139,8 @@ const EditProfile = () => {
         const file = event.target.files[0];
         if (!file) return;
 
+        console.log('📷 Profile photo selected:', file.name);
+
         // Validate file
         const validation = validateImageFile(file);
         if (!validation.valid) {
@@ -148,6 +158,7 @@ const EditProfile = () => {
         const reader = new FileReader();
         reader.onloadend = () => {
             setPhotoPreview(reader.result);
+            console.log('✅ Profile photo preview set');
         };
         reader.readAsDataURL(file);
     };
@@ -156,6 +167,8 @@ const EditProfile = () => {
     const handleCoverPhotoChange = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
+
+        console.log('🖼️ Cover photo selected:', file.name);
 
         // Validate file
         const validation = validateImageFile(file);
@@ -174,28 +187,40 @@ const EditProfile = () => {
         const reader = new FileReader();
         reader.onloadend = () => {
             setCoverPreview(reader.result);
+            console.log('✅ Cover photo preview set');
         };
         reader.readAsDataURL(file);
     };
 
     // Upload profile photo to ImgBB
     const uploadPhoto = async () => {
-        if (!selectedFile) return null;
+        if (!selectedFile) {
+            console.log('❌ No profile file selected');
+            return null;
+        }
 
         setIsUploadingImage(true);
         try {
-            console.log('📤 Uploading profile photo to ImgBB...');
+            console.log('📤 Starting profile photo upload to ImgBB...');
+            console.log('📤 Profile file details:', {
+                name: selectedFile.name,
+                size: selectedFile.size,
+                type: selectedFile.type
+            });
 
             // Compress image before upload
             const compressedFile = await compressImage(selectedFile, 800, 0.8);
+            console.log('🗜️ Profile photo compressed successfully');
 
             // Upload to ImgBB
             const uploadResult = await uploadImageToImgBB(compressedFile);
+            console.log('📤 ImgBB upload result:', uploadResult);
 
             if (uploadResult.success) {
-                console.log('✅ Profile photo uploaded successfully:', uploadResult.url);
+                console.log('✅ Profile photo uploaded successfully to:', uploadResult.url);
                 return uploadResult.url;
             } else {
+                console.log('❌ ImgBB upload failed:', uploadResult.error);
                 throw new Error(uploadResult.error);
             }
         } catch (error) {
@@ -211,24 +236,35 @@ const EditProfile = () => {
         }
     };
 
-    // Upload cover photo to ImgBB
+    // Upload cover photo to ImgBB with debugging
     const uploadCoverPhoto = async () => {
-        if (!selectedCoverFile) return null;
+        if (!selectedCoverFile) {
+            console.log('❌ No cover file selected');
+            return null;
+        }
 
         setIsUploadingCover(true);
         try {
-            console.log('📤 Uploading cover photo to ImgBB...');
+            console.log('📤 Starting cover photo upload to ImgBB...');
+            console.log('📤 Cover file details:', {
+                name: selectedCoverFile.name,
+                size: selectedCoverFile.size,
+                type: selectedCoverFile.type
+            });
 
             // Compress image before upload
             const compressedFile = await compressImage(selectedCoverFile, 1200, 0.8);
+            console.log('🗜️ Cover photo compressed successfully');
 
             // Upload to ImgBB
             const uploadResult = await uploadImageToImgBB(compressedFile);
+            console.log('📤 ImgBB upload result:', uploadResult);
 
             if (uploadResult.success) {
-                console.log('✅ Cover photo uploaded successfully:', uploadResult.url);
+                console.log('✅ Cover photo uploaded successfully to:', uploadResult.url);
                 return uploadResult.url;
             } else {
+                console.log('❌ ImgBB upload failed:', uploadResult.error);
                 throw new Error(uploadResult.error);
             }
         } catch (error) {
@@ -244,40 +280,53 @@ const EditProfile = () => {
         }
     };
 
-    // FIXED: onSubmit function - Save cover photo at root level like profile photo
+    // THE onSubmit FUNCTION with enhanced debugging
     const onSubmit = async (data) => {
         setIsLoading(true);
         console.log('📝 Updating profile with data:', data);
 
         try {
             let photoURL = userData?.photoURL || '';
-            let coverPhotoURL = userData?.coverPhotoURL || ''; // FIXED: Get from root level
+            let coverPhotoURL = userData?.coverPhotoURL || '';
+
+            console.log('🔍 Initial state:', {
+                hasSelectedFile: !!selectedFile,
+                hasSelectedCoverFile: !!selectedCoverFile,
+                currentPhotoURL: photoURL,
+                currentCoverPhotoURL: coverPhotoURL
+            });
 
             // Upload new profile photo if selected
             if (selectedFile) {
+                console.log('📤 Uploading profile photo...');
                 const uploadedPhotoURL = await uploadPhoto();
                 if (uploadedPhotoURL) {
                     photoURL = uploadedPhotoURL;
+                    console.log('✅ Profile photo uploaded:', photoURL);
                 } else {
+                    console.log('❌ Profile photo upload failed');
                     return;
                 }
             }
 
             // Upload new cover photo if selected
             if (selectedCoverFile) {
+                console.log('📤 Uploading cover photo...');
                 const uploadedCoverURL = await uploadCoverPhoto();
                 if (uploadedCoverURL) {
                     coverPhotoURL = uploadedCoverURL;
+                    console.log('✅ Cover photo uploaded:', coverPhotoURL);
                 } else {
+                    console.log('❌ Cover photo upload failed');
                     return;
                 }
             }
 
-            // FIXED: Save cover photo at root level, same as profile photo
+            // Prepare update data - ALL fields at root level
             const updateData = {
                 name: data.name,
-                photoURL: photoURL, // Root level
-                coverPhotoURL: coverPhotoURL, // Root level - FIXED
+                photoURL: photoURL,
+                coverPhotoURL: coverPhotoURL,
                 bio: data.bio,
                 country: data.country,
                 district: data.district,
@@ -287,11 +336,14 @@ const EditProfile = () => {
                 mailLink: data.mailLink
             };
 
-            console.log('📝 Sending update data:', updateData);
+            console.log('📝 Final update data being sent:', updateData);
+            console.log('📝 Cover photo URL in update data:', updateData.coverPhotoURL);
 
             const response = await axiosPublic.put(`/users/${user.email}`, updateData);
 
-            console.log('✅ Profile update response:', response.data);
+            console.log('✅ API Response:', response.data);
+            console.log('🔍 Returned user object:', response.data.user); // ← ADDED THIS LINE
+            console.log('🔍 Returned user coverPhotoURL:', response.data.user?.coverPhotoURL); // ← ADDED THIS LINE
 
             if (response.data.success) {
                 Swal.fire({
@@ -306,12 +358,12 @@ const EditProfile = () => {
                 setSelectedFile(null);
                 setSelectedCoverFile(null);
 
-                // FIXED: Update local userData state with new data
+                // Update local userData state
                 setUserData(prev => ({
                     ...prev,
                     name: data.name,
                     photoURL: photoURL,
-                    coverPhotoURL: coverPhotoURL, // FIXED: Root level
+                    coverPhotoURL: coverPhotoURL,
                     profile: {
                         ...prev?.profile,
                         bio: data.bio,
@@ -324,12 +376,15 @@ const EditProfile = () => {
                     }
                 }));
 
+                console.log('🔄 Updated local userData with coverPhotoURL:', coverPhotoURL);
+
                 setTimeout(() => {
                     navigate('/dashboard');
                 }, 1500);
             }
         } catch (error) {
             console.error('❌ Error updating profile:', error);
+            console.error('❌ Error response:', error.response?.data);
             Swal.fire({
                 icon: 'error',
                 title: 'Update Failed!',
@@ -481,7 +536,7 @@ const EditProfile = () => {
                                     </div>
                                 </div>
 
-                                {/* Form Content - Rest of the form remains the same */}
+                                {/* Form Content */}
                                 <div className="px-8">
                                     <div className="space-y-8">
                                         {/* Personal Information */}
