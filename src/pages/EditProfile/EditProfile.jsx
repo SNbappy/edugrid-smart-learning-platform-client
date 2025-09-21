@@ -22,7 +22,7 @@ const EditProfile = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [selectedCoverFile, setSelectedCoverFile] = useState(null);
 
-    // Dynamic location data (removed cities)
+    // Dynamic location data
     const [countries, setCountries] = useState([]);
     const [states, setStates] = useState([]);
     const [selectedCountryCode, setSelectedCountryCode] = useState('');
@@ -44,7 +44,7 @@ const EditProfile = () => {
         setCountries(allCountries);
     }, []);
 
-    // Update states when country changes (removed cities logic)
+    // Update states when country changes
     useEffect(() => {
         if (selectedCountryCode) {
             const countryStates = State.getStatesOfCountry(selectedCountryCode);
@@ -54,7 +54,7 @@ const EditProfile = () => {
         }
     }, [selectedCountryCode]);
 
-    // Handle country selection (removed city reset)
+    // Handle country selection
     const handleCountryChange = (e) => {
         const selectedCountry = countries.find(country => country.name === e.target.value);
         if (selectedCountry) {
@@ -77,7 +77,7 @@ const EditProfile = () => {
                         const fetchedUser = response.data.user;
                         setUserData(fetchedUser);
 
-                        // Populate form with existing data (removed city)
+                        // Populate form with existing data
                         setValue('name', fetchedUser.name || '');
                         setValue('email', fetchedUser.email || '');
                         setValue('bio', fetchedUser.profile?.bio || '');
@@ -93,9 +93,9 @@ const EditProfile = () => {
                             setPhotoPreview(fetchedUser.photoURL);
                         }
 
-                        // Set cover photo preview if exists
-                        if (fetchedUser.profile?.coverPhotoURL) {
-                            setCoverPreview(fetchedUser.profile.coverPhotoURL);
+                        // FIXED: Cover photo should be at root level, same as profile picture
+                        if (fetchedUser.coverPhotoURL) {
+                            setCoverPreview(fetchedUser.coverPhotoURL);
                         }
 
                         // Set selected country code for existing data
@@ -244,20 +244,22 @@ const EditProfile = () => {
         }
     };
 
-    // THE onSubmit FUNCTION (removed city)
+    // FIXED: onSubmit function - Save cover photo at root level like profile photo
     const onSubmit = async (data) => {
         setIsLoading(true);
         console.log('📝 Updating profile with data:', data);
 
         try {
             let photoURL = userData?.photoURL || '';
-            let coverPhotoURL = userData?.profile?.coverPhotoURL || '';
+            let coverPhotoURL = userData?.coverPhotoURL || ''; // FIXED: Get from root level
 
             // Upload new profile photo if selected
             if (selectedFile) {
                 const uploadedPhotoURL = await uploadPhoto();
                 if (uploadedPhotoURL) {
                     photoURL = uploadedPhotoURL;
+                } else {
+                    return;
                 }
             }
 
@@ -266,22 +268,26 @@ const EditProfile = () => {
                 const uploadedCoverURL = await uploadCoverPhoto();
                 if (uploadedCoverURL) {
                     coverPhotoURL = uploadedCoverURL;
+                } else {
+                    return;
                 }
             }
 
-            // Prepare update data (removed city)
+            // FIXED: Save cover photo at root level, same as profile photo
             const updateData = {
                 name: data.name,
+                photoURL: photoURL, // Root level
+                coverPhotoURL: coverPhotoURL, // Root level - FIXED
                 bio: data.bio,
                 country: data.country,
                 district: data.district,
                 institution: data.institution,
                 facebook: data.facebook,
                 linkedin: data.linkedin,
-                mailLink: data.mailLink,
-                photoURL: photoURL,
-                coverPhotoURL: coverPhotoURL
+                mailLink: data.mailLink
             };
+
+            console.log('📝 Sending update data:', updateData);
 
             const response = await axiosPublic.put(`/users/${user.email}`, updateData);
 
@@ -299,6 +305,24 @@ const EditProfile = () => {
                 // Clear selected files after successful upload
                 setSelectedFile(null);
                 setSelectedCoverFile(null);
+
+                // FIXED: Update local userData state with new data
+                setUserData(prev => ({
+                    ...prev,
+                    name: data.name,
+                    photoURL: photoURL,
+                    coverPhotoURL: coverPhotoURL, // FIXED: Root level
+                    profile: {
+                        ...prev?.profile,
+                        bio: data.bio,
+                        country: data.country,
+                        district: data.district,
+                        institution: data.institution,
+                        facebook: data.facebook,
+                        linkedin: data.linkedin,
+                        mailLink: data.mailLink
+                    }
+                }));
 
                 setTimeout(() => {
                     navigate('/dashboard');
@@ -318,10 +342,10 @@ const EditProfile = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="min-h-screen flex items-center justify-center bg-slate-50">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-2 border-blue-600 border-t-transparent mx-auto mb-4"></div>
-                    <p className="text-gray-600 font-medium">Loading profile...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#457B9D] border-t-transparent mx-auto mb-4"></div>
+                    <p className="text-slate-600 font-medium">Loading profile...</p>
                 </div>
             </div>
         );
@@ -333,7 +357,7 @@ const EditProfile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 font-inter">
+        <div className="min-h-screen bg-slate-50">
             <Helmet>
                 <title>EduGrid | Edit Profile</title>
             </Helmet>
@@ -345,27 +369,14 @@ const EditProfile = () => {
                     <div className="max-w-4xl mx-auto">
                         {/* Professional Header */}
                         <div className="mb-8">
-                            <div className="">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h1 className="text-3xl font-bold text-gray-900 mt-2 -mb-2">Edit Profile</h1>
-                                        {/* <p className="text-gray-600">Update your personal information and preferences</p> */}
-                                    </div>
-                                    {/* <div className="flex items-center space-x-4">
-                                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                            </svg>
-                                        </div>
-                                    </div> */}
-                                </div>
-                            </div>
+                            <h1 className="text-3xl font-bold text-slate-800">Edit Profile</h1>
+                            <p className="text-slate-600 mt-1">Update your personal information and preferences</p>
                         </div>
 
                         {/* Main Content */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                             <form onSubmit={handleSubmit(onSubmit)}>
-                                {/* LinkedIn-Style Photo Section */}
+                                {/* Cover and Profile Photo Section */}
                                 <div className="relative">
                                     {/* Cover Photo Section */}
                                     <div className="relative h-48 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] overflow-hidden">
@@ -376,7 +387,7 @@ const EditProfile = () => {
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
-                                                <div className="w-full h-full bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] flex items-center justify-center">
+                                            <div className="w-full h-full bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] flex items-center justify-center">
                                                 <div className="text-center text-white">
                                                     <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -387,12 +398,12 @@ const EditProfile = () => {
                                         )}
 
                                         {/* Cover Photo Upload Button */}
-                                        <label className="absolute top-4 right-4 bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg cursor-pointer transition-all shadow-md border border-gray-200 text-sm font-medium">
+                                        <label className="absolute top-4 right-4 bg-white/90 hover:bg-white text-slate-700 px-4 py-2 rounded-lg cursor-pointer transition-all shadow-md text-sm font-medium">
                                             <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
-                                            {coverPreview ? 'Change cover' : 'Add cover photo'}
+                                            {coverPreview ? 'Change Cover' : 'Add Cover'}
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -404,21 +415,20 @@ const EditProfile = () => {
 
                                         {/* Cover Upload Loading */}
                                         {isUploadingCover && (
-                                            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                                                 <div className="bg-white rounded-lg p-4 flex items-center">
-                                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent mr-3"></div>
-                                                    <span className="text-gray-700 font-medium">Uploading cover photo...</span>
+                                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#457B9D] border-t-transparent mr-3"></div>
+                                                    <span className="text-slate-700 font-medium">Uploading cover photo...</span>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Profile Photo Section - Centered with info below */}
+                                    {/* Profile Photo Section */}
                                     <div className="relative px-8 pb-8">
-                                        {/* Profile Photo - Centered */}
                                         <div className="flex -mt-16 mb-6">
                                             <div className="relative">
-                                                <div className="w-40 h-40 rounded-4xl overflow-hidden border-4 border-white shadow-lg bg-white">
+                                                <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white">
                                                     {photoPreview ? (
                                                         <img
                                                             src={photoPreview}
@@ -426,8 +436,8 @@ const EditProfile = () => {
                                                             className="w-full h-full object-cover"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                                                            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <div className="w-full h-full bg-slate-100 flex items-center justify-center">
+                                                            <svg className="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                             </svg>
                                                         </div>
@@ -435,7 +445,7 @@ const EditProfile = () => {
                                                 </div>
 
                                                 {/* Profile Photo Upload Button */}
-                                                <label className="absolute bottom-1 right-1 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white p-2 rounded-full cursor-pointer transition-colors shadow-lg border-2 border-white">
+                                                <label className="absolute bottom-1 right-1 bg-[#457B9D] text-white p-2 rounded-full cursor-pointer hover:bg-[#3a6b8a] transition-colors shadow-lg border-2 border-white">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -451,45 +461,44 @@ const EditProfile = () => {
 
                                                 {/* Profile Photo Upload Loading */}
                                                 {isUploadingImage && (
-                                                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                                                    <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
                                                         <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* User Info - Centered below profile photo */}
-                                        <div className="">
-                                            <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                                        {/* User Info */}
+                                        <div>
+                                            <h2 className="text-2xl font-bold text-slate-800 mb-1">
                                                 {userData?.name || user?.displayName || 'User Name'}
                                             </h2>
-                                            <p className="text-gray-600 text-sm mb-2">{user?.email}</p>
+                                            <p className="text-slate-600 text-sm mb-2">{user?.email}</p>
                                             {userData?.profile?.institution && (
-                                                <p className="text-gray-500 text-sm mb-4">{userData.profile.institution}</p>
+                                                <p className="text-slate-500 text-sm mb-4">{userData.profile.institution}</p>
                                             )}
-
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Form Content */}
+                                {/* Form Content - Rest of the form remains the same */}
                                 <div className="px-8">
                                     <div className="space-y-8">
                                         {/* Personal Information */}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                                            <h3 className="text-lg font-semibold text-slate-800 mb-6 pb-2 border-b border-slate-200">
                                                 Personal Information
                                             </h3>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         Full Name *
                                                     </label>
                                                     <input
                                                         type="text"
                                                         {...register('name', { required: 'Full name is required' })}
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-white"
+                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="Enter your full name"
                                                     />
                                                     {errors.name && (
@@ -498,47 +507,47 @@ const EditProfile = () => {
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         Email Address
                                                     </label>
                                                     <input
                                                         type="email"
                                                         {...register('email')}
                                                         disabled
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
                                                     />
-                                                    <p className="mt-1 text-xs text-gray-500">Email address cannot be changed</p>
+                                                    <p className="mt-1 text-xs text-slate-500">Email address cannot be changed</p>
                                                 </div>
 
                                                 <div className="md:col-span-2">
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         Institution/Organization
                                                     </label>
                                                     <input
                                                         type="text"
                                                         {...register('institution')}
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="Where do you study or work?"
                                                     />
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Location - Only Country and State */}
+                                        {/* Location */}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                                            <h3 className="text-lg font-semibold text-slate-800 mb-6 pb-2 border-b border-slate-200">
                                                 Location
                                             </h3>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         Country *
                                                     </label>
                                                     <select
                                                         {...register('country', { required: 'Please select a country' })}
                                                         onChange={handleCountryChange}
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                     >
                                                         <option value="">Select Country</option>
                                                         {countries.map((country) => (
@@ -553,12 +562,12 @@ const EditProfile = () => {
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         State/District
                                                     </label>
                                                     <select
                                                         {...register('district')}
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50"
+                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all disabled:bg-slate-50"
                                                         disabled={!selectedCountryCode}
                                                     >
                                                         <option value="">
@@ -576,18 +585,18 @@ const EditProfile = () => {
 
                                         {/* About */}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                                            <h3 className="text-lg font-semibold text-slate-800 mb-6 pb-2 border-b border-slate-200">
                                                 About
                                             </h3>
 
                                             <div>
-                                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <label className="block text-sm font-medium text-slate-700 mb-2">
                                                     Bio/Description
                                                 </label>
                                                 <textarea
                                                     {...register('bio')}
                                                     rows="4"
-                                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all resize-none"
                                                     placeholder="Tell us about yourself, your interests, and professional background..."
                                                 />
                                             </div>
@@ -595,43 +604,43 @@ const EditProfile = () => {
 
                                         {/* Professional Links */}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-900 mb-6 pb-2 border-b border-gray-200">
+                                            <h3 className="text-lg font-semibold text-slate-800 mb-6 pb-2 border-b border-slate-200">
                                                 Professional Links
                                             </h3>
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         LinkedIn Profile
                                                     </label>
                                                     <input
                                                         type="url"
                                                         {...register('linkedin')}
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="https://linkedin.com/in/username"
                                                     />
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         Professional Email
                                                     </label>
                                                     <input
                                                         type="email"
                                                         {...register('mailLink')}
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="professional@domain.com"
                                                     />
                                                 </div>
 
-                                                <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         Facebook Profile
                                                     </label>
                                                     <input
                                                         type="url"
                                                         {...register('facebook')}
-                                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="https://facebook.com/username"
                                                     />
                                                 </div>
@@ -640,12 +649,12 @@ const EditProfile = () => {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    <div className="flex justify-end space-x-4 pt-8 mt-8 border-t border-gray-200 mb-6">
+                                    <div className="flex justify-end space-x-4 pt-8 mt-8 border-t border-slate-200 pb-6">
                                         <button
                                             type="button"
                                             onClick={() => navigate('/dashboard')}
                                             disabled={isLoading}
-                                            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+                                            className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium disabled:opacity-50"
                                         >
                                             Cancel
                                         </button>
@@ -653,7 +662,7 @@ const EditProfile = () => {
                                         <button
                                             type="submit"
                                             disabled={isLoading || isUploadingImage || isUploadingCover}
-                                            className="px-8 py-3 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white rounded-lg hover:bg-gradient-to-r  transition-colors font-medium disabled:opacity-50 flex items-center"
+                                            className="px-8 py-3 bg-[#457B9D] hover:bg-[#3a6b8a] text-white rounded-lg transition-colors font-medium disabled:opacity-50 flex items-center"
                                         >
                                             {isLoading ? (
                                                 <>
