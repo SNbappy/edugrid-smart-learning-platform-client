@@ -39,10 +39,10 @@ export const router = createBrowserRouter([
                 path: 'contact',
                 element: <Contact/>
             },
-            {
-                path: 'blog',
-                element: <Blog/>
-            },
+            // {
+            //     path: 'blog',
+            //     element: <Blog/>
+            // },
             {
                 path: 'all-classes',
                 element: <AllClasses/>
