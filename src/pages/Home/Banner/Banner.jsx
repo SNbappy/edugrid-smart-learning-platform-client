@@ -14,8 +14,8 @@ const Banner = () => {
                             From classrooms to lifelong learning, EduGrid supports every step of your learning journey. With real-time progress and a user-friendly experience, we’re redefining education for a smarter tomorrow.
                         </p>
                         <p className="pt-[76px]">
-                            <input type="text" name="search" id="" placeholder="what do u want to learn" className="pl-[58px] pr-[94px] bg-white py-[20px] font-medium text-[22px] text-[#868181] rounded-l-[11px]" />
-                            <button className="bg-[#423FE5] text-white font-medium text-[22px] py-[20px] px-[28px] rounded-r-[11px]">Search Course</button>
+                            {/* <input type="text" name="search" id="" placeholder="what do u want to learn" className="pl-[58px] pr-[94px] bg-white py-[20px] font-medium text-[22px] text-[#868181] rounded-l-[11px]" />
+                            <button className="bg-[#423FE5] text-white font-medium text-[22px] py-[20px] px-[28px] rounded-r-[11px]">Search Course</button> */}
                         </p>
                     </div>
                     <div className="w-1/2 flex justify-between">

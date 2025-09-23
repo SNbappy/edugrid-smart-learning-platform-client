@@ -161,7 +161,7 @@ const Contact = () => {
             </section>
 
             {/* Contact Methods */}
-            <section className="py-20 bg-white/40 backdrop-blur-sm">
+            {/* <section className="py-20 bg-white/40 backdrop-blur-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">Choose Your Preferred Way</h2>
@@ -184,7 +184,7 @@ const Contact = () => {
                         ))}
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* Contact Form & Info */}
             <section className="py-20">
@@ -415,7 +415,7 @@ const Contact = () => {
             </section>
 
             {/* CTA Section */}
-            <section className="py-20 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900">
+            {/* <section className="py-20 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900">
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
                         Still Have Questions?
@@ -434,7 +434,7 @@ const Contact = () => {
                         </button>
                     </div>
                 </div>
-            </section>
+            </section> */}
         </div>
     );
 };
