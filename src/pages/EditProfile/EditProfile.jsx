@@ -342,8 +342,8 @@ const EditProfile = () => {
             const response = await axiosPublic.put(`/users/${user.email}`, updateData);
 
             console.log('✅ API Response:', response.data);
-            console.log('🔍 Returned user object:', response.data.user); // ← ADDED THIS LINE
-            console.log('🔍 Returned user coverPhotoURL:', response.data.user?.coverPhotoURL); // ← ADDED THIS LINE
+            console.log('🔍 Returned user object:', response.data.user);
+            console.log('🔍 Returned user coverPhotoURL:', response.data.user?.coverPhotoURL);
 
             if (response.data.success) {
                 Swal.fire({
@@ -420,12 +420,13 @@ const EditProfile = () => {
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px] p-6">
+                {/* Main Content - Responsive with sidebar adjustment */}
+                <div className="flex-1 lg:ml-[320px] p-4 sm:p-6">
                     <div className="max-w-4xl mx-auto">
                         {/* Professional Header */}
-                        <div className="mb-8">
-                            <h1 className="text-3xl font-bold text-slate-800">Edit Profile</h1>
-                            <p className="text-slate-600 mt-1">Update your personal information and preferences</p>
+                        <div className="mb-6 sm:mb-8">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Edit Profile</h1>
+                            <p className="text-slate-600 mt-1 text-sm sm:text-base">Update your personal information and preferences</p>
                         </div>
 
                         {/* Main Content */}
@@ -433,8 +434,8 @@ const EditProfile = () => {
                             <form onSubmit={handleSubmit(onSubmit)}>
                                 {/* Cover and Profile Photo Section */}
                                 <div className="relative">
-                                    {/* Cover Photo Section */}
-                                    <div className="relative h-48 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] overflow-hidden">
+                                    {/* Cover Photo Section - Responsive Height */}
+                                    <div className="relative h-32 sm:h-40 md:h-48 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] overflow-hidden">
                                         {coverPreview ? (
                                             <img
                                                 src={coverPreview}
@@ -444,21 +445,22 @@ const EditProfile = () => {
                                         ) : (
                                             <div className="w-full h-full bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] flex items-center justify-center">
                                                 <div className="text-center text-white">
-                                                    <svg className="w-16 h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                     </svg>
-                                                    <p className="text-sm opacity-75">Add a cover photo</p>
+                                                    <p className="text-xs sm:text-sm opacity-75 hidden sm:block">Add a cover photo</p>
                                                 </div>
                                             </div>
                                         )}
 
-                                        {/* Cover Photo Upload Button */}
-                                        <label className="absolute top-4 right-4 bg-white/90 hover:bg-white text-slate-700 px-4 py-2 rounded-lg cursor-pointer transition-all shadow-md text-sm font-medium">
-                                            <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        {/* Cover Photo Upload Button - Responsive */}
+                                        <label className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg cursor-pointer transition-all shadow-md text-xs sm:text-sm font-medium">
+                                            <svg className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
-                                            {coverPreview ? 'Change Cover' : 'Add Cover'}
+                                            <span className="hidden sm:inline">{coverPreview ? 'Change Cover' : 'Add Cover'}</span>
+                                            <span className="sm:hidden">Cover</span>
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -471,19 +473,19 @@ const EditProfile = () => {
                                         {/* Cover Upload Loading */}
                                         {isUploadingCover && (
                                             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                <div className="bg-white rounded-lg p-4 flex items-center">
-                                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-[#457B9D] border-t-transparent mr-3"></div>
-                                                    <span className="text-slate-700 font-medium">Uploading cover photo...</span>
+                                                <div className="bg-white rounded-lg p-3 sm:p-4 flex items-center">
+                                                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-[#457B9D] border-t-transparent mr-2 sm:mr-3"></div>
+                                                    <span className="text-slate-700 font-medium text-xs sm:text-sm">Uploading...</span>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Profile Photo Section */}
-                                    <div className="relative px-8 pb-8">
-                                        <div className="flex -mt-16 mb-6">
+                                    {/* Profile Photo Section - Responsive */}
+                                    <div className="relative px-4 sm:px-6 md:px-8 pb-6 sm:pb-8">
+                                        <div className="flex -mt-12 sm:-mt-16 mb-4 sm:mb-6">
                                             <div className="relative">
-                                                <div className="w-32 h-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white">
+                                                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white">
                                                     {photoPreview ? (
                                                         <img
                                                             src={photoPreview}
@@ -492,7 +494,7 @@ const EditProfile = () => {
                                                         />
                                                     ) : (
                                                         <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                                                            <svg className="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                             </svg>
                                                         </div>
@@ -500,8 +502,8 @@ const EditProfile = () => {
                                                 </div>
 
                                                 {/* Profile Photo Upload Button */}
-                                                <label className="absolute bottom-1 right-1 bg-[#457B9D] text-white p-2 rounded-full cursor-pointer hover:bg-[#3a6b8a] transition-colors shadow-lg border-2 border-white">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <label className="absolute bottom-0 right-0 sm:bottom-1 sm:right-1 bg-[#457B9D] text-white p-1.5 sm:p-2 rounded-full cursor-pointer hover:bg-[#3a6b8a] transition-colors shadow-lg border-2 border-white">
+                                                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     </svg>
@@ -517,35 +519,35 @@ const EditProfile = () => {
                                                 {/* Profile Photo Upload Loading */}
                                                 {isUploadingImage && (
                                                     <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
-                                                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                                                        <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-white border-t-transparent"></div>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* User Info */}
+                                        {/* User Info - Responsive */}
                                         <div>
-                                            <h2 className="text-2xl font-bold text-slate-800 mb-1">
+                                            <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-1">
                                                 {userData?.name || user?.displayName || 'User Name'}
                                             </h2>
-                                            <p className="text-slate-600 text-sm mb-2">{user?.email}</p>
+                                            <p className="text-slate-600 text-xs sm:text-sm mb-2">{user?.email}</p>
                                             {userData?.profile?.institution && (
-                                                <p className="text-slate-500 text-sm mb-4">{userData.profile.institution}</p>
+                                                <p className="text-slate-500 text-xs sm:text-sm mb-4">{userData.profile.institution}</p>
                                             )}
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* Form Content */}
-                                <div className="px-8">
-                                    <div className="space-y-8">
+                                {/* Form Content - Responsive Padding */}
+                                <div className="px-4 sm:px-6 md:px-8">
+                                    <div className="space-y-6 sm:space-y-8">
                                         {/* Personal Information */}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-slate-800 mb-6 pb-2 border-b border-slate-200">
+                                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 sm:mb-6 pb-2 border-b border-slate-200">
                                                 Personal Information
                                             </h3>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                                 <div>
                                                     <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         Full Name *
@@ -553,11 +555,11 @@ const EditProfile = () => {
                                                     <input
                                                         type="text"
                                                         {...register('name', { required: 'Full name is required' })}
-                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
+                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="Enter your full name"
                                                     />
                                                     {errors.name && (
-                                                        <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+                                                        <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.name.message}</p>
                                                     )}
                                                 </div>
 
@@ -569,7 +571,7 @@ const EditProfile = () => {
                                                         type="email"
                                                         {...register('email')}
                                                         disabled
-                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
+                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
                                                     />
                                                     <p className="mt-1 text-xs text-slate-500">Email address cannot be changed</p>
                                                 </div>
@@ -581,7 +583,7 @@ const EditProfile = () => {
                                                     <input
                                                         type="text"
                                                         {...register('institution')}
-                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
+                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="Where do you study or work?"
                                                     />
                                                 </div>
@@ -590,11 +592,11 @@ const EditProfile = () => {
 
                                         {/* Location */}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-slate-800 mb-6 pb-2 border-b border-slate-200">
+                                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 sm:mb-6 pb-2 border-b border-slate-200">
                                                 Location
                                             </h3>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                                 <div>
                                                     <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         Country *
@@ -602,7 +604,7 @@ const EditProfile = () => {
                                                     <select
                                                         {...register('country', { required: 'Please select a country' })}
                                                         onChange={handleCountryChange}
-                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
+                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                     >
                                                         <option value="">Select Country</option>
                                                         {countries.map((country) => (
@@ -612,7 +614,7 @@ const EditProfile = () => {
                                                         ))}
                                                     </select>
                                                     {errors.country && (
-                                                        <p className="mt-1 text-sm text-red-600">{errors.country.message}</p>
+                                                        <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.country.message}</p>
                                                     )}
                                                 </div>
 
@@ -622,7 +624,7 @@ const EditProfile = () => {
                                                     </label>
                                                     <select
                                                         {...register('district')}
-                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all disabled:bg-slate-50"
+                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all disabled:bg-slate-50"
                                                         disabled={!selectedCountryCode}
                                                     >
                                                         <option value="">
@@ -640,7 +642,7 @@ const EditProfile = () => {
 
                                         {/* About */}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-slate-800 mb-6 pb-2 border-b border-slate-200">
+                                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 sm:mb-6 pb-2 border-b border-slate-200">
                                                 About
                                             </h3>
 
@@ -651,7 +653,7 @@ const EditProfile = () => {
                                                 <textarea
                                                     {...register('bio')}
                                                     rows="4"
-                                                    className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all resize-none"
+                                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all resize-none"
                                                     placeholder="Tell us about yourself, your interests, and professional background..."
                                                 />
                                             </div>
@@ -659,11 +661,11 @@ const EditProfile = () => {
 
                                         {/* Professional Links */}
                                         <div>
-                                            <h3 className="text-lg font-semibold text-slate-800 mb-6 pb-2 border-b border-slate-200">
+                                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 sm:mb-6 pb-2 border-b border-slate-200">
                                                 Professional Links
                                             </h3>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                                 <div>
                                                     <label className="block text-sm font-medium text-slate-700 mb-2">
                                                         LinkedIn Profile
@@ -671,7 +673,7 @@ const EditProfile = () => {
                                                     <input
                                                         type="url"
                                                         {...register('linkedin')}
-                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
+                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="https://linkedin.com/in/username"
                                                     />
                                                 </div>
@@ -683,7 +685,7 @@ const EditProfile = () => {
                                                     <input
                                                         type="email"
                                                         {...register('mailLink')}
-                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
+                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="professional@domain.com"
                                                     />
                                                 </div>
@@ -695,7 +697,7 @@ const EditProfile = () => {
                                                     <input
                                                         type="url"
                                                         {...register('facebook')}
-                                                        className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
+                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
                                                         placeholder="https://facebook.com/username"
                                                     />
                                                 </div>
@@ -703,13 +705,13 @@ const EditProfile = () => {
                                         </div>
                                     </div>
 
-                                    {/* Action Buttons */}
-                                    <div className="flex justify-end space-x-4 pt-8 mt-8 border-t border-slate-200 pb-6">
+                                    {/* Action Buttons - Responsive */}
+                                    <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 sm:pt-8 mt-6 sm:mt-8 border-t border-slate-200 pb-4 sm:pb-6">
                                         <button
                                             type="button"
                                             onClick={() => navigate('/dashboard')}
                                             disabled={isLoading}
-                                            className="px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium disabled:opacity-50"
+                                            className="w-full sm:w-auto px-6 py-2.5 sm:py-3 text-sm sm:text-base border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium disabled:opacity-50"
                                         >
                                             Cancel
                                         </button>
@@ -717,7 +719,7 @@ const EditProfile = () => {
                                         <button
                                             type="submit"
                                             disabled={isLoading || isUploadingImage || isUploadingCover}
-                                            className="px-8 py-3 bg-[#457B9D] hover:bg-[#3a6b8a] text-white rounded-lg transition-colors font-medium disabled:opacity-50 flex items-center"
+                                            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base bg-[#457B9D] hover:bg-[#3a6b8a] text-white rounded-lg transition-colors font-medium disabled:opacity-50 flex items-center justify-center"
                                         >
                                             {isLoading ? (
                                                 <>

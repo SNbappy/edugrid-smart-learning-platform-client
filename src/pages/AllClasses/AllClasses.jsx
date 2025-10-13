@@ -18,8 +18,9 @@ import {
     MdCheckCircle
 } from 'react-icons/md';
 
+
 const AllClasses = () => {
-    const { user, loading } = useContext(AuthContext);
+    const { user } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
     const navigate = useNavigate();
     const [classrooms, setClassrooms] = useState([]);
@@ -28,6 +29,7 @@ const AllClasses = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedSubject, setSelectedSubject] = useState('');
 
+
     // Fetch all classrooms and user's enrolled classrooms
     useEffect(() => {
         const fetchData = async () => {
@@ -35,27 +37,31 @@ const AllClasses = () => {
                 setIsLoading(true);
                 console.log('📋 Fetching all classrooms...');
 
-                // Fetch all classrooms
+                // Fetch all classrooms (ALWAYS - public data)
                 const allClassroomsResponse = await axiosPublic.get('/classrooms');
-
-                // Fetch user's enrolled classrooms (as student)
-                let userClassroomsResponse = null;
-                if (user?.email) {
-                    try {
-                        userClassroomsResponse = await axiosPublic.get(`/classrooms/student/${user.email}`);
-                    } catch (error) {
-                        console.log('No student classrooms found or error:', error);
-                    }
-                }
 
                 if (allClassroomsResponse.data.success) {
                     setClassrooms(allClassroomsResponse.data.classrooms);
                     console.log('✅ Found classrooms:', allClassroomsResponse.data.classrooms);
                 }
 
-                if (userClassroomsResponse?.data.success) {
-                    setUserEnrolledClassrooms(userClassroomsResponse.data.classrooms || []);
-                    console.log('✅ User enrolled classrooms:', userClassroomsResponse.data.classrooms);
+                // Fetch user's enrolled classrooms ONLY if user is logged in
+                if (user?.email) {
+                    try {
+                        const userClassroomsResponse = await axiosPublic.get(`/classrooms/student/${user.email}`);
+
+                        if (userClassroomsResponse?.data.success) {
+                            setUserEnrolledClassrooms(userClassroomsResponse.data.classrooms || []);
+                            console.log('✅ User enrolled classrooms:', userClassroomsResponse.data.classrooms);
+                        }
+                    } catch (error) {
+                        console.log('No student classrooms found or error:', error);
+                        // Not an error - user just isn't enrolled in any classes
+                        setUserEnrolledClassrooms([]);
+                    }
+                } else {
+                    // User not logged in - clear enrolled classrooms
+                    setUserEnrolledClassrooms([]);
                 }
             } catch (error) {
                 console.error('❌ Error fetching classrooms:', error);
@@ -69,23 +75,25 @@ const AllClasses = () => {
             }
         };
 
-        if (user) {
-            fetchData();
-        }
+        fetchData();
     }, [axiosPublic, user]);
+
 
     // Get unique subjects for filters
     const subjects = [...new Set(classrooms.map(c => c.subject).filter(Boolean))];
+
 
     // Check if user is the teacher/owner of a classroom
     const isUserTeacher = (classroom) => {
         return classroom.teacherEmail === user?.email;
     };
 
+
     // Check if user is enrolled as student
     const isUserEnrolledAsStudent = (classroomId) => {
         return userEnrolledClassrooms.some(enrolled => enrolled._id === classroomId);
     };
+
 
     // Filter classrooms
     const filteredClassrooms = classrooms.filter(classroom => {
@@ -96,6 +104,7 @@ const AllClasses = () => {
 
         return matchesSearch && matchesSubject;
     });
+
 
     // Get button configuration based on user relationship to classroom
     const getButtonConfig = (classroom) => {
@@ -128,6 +137,7 @@ const AllClasses = () => {
         }
     };
 
+
     // Handle join classroom - with actual API call
     const handleJoinClassroom = async (classroom) => {
         if (!user) {
@@ -135,6 +145,7 @@ const AllClasses = () => {
                 icon: 'warning',
                 title: 'Please Login',
                 text: 'You need to be logged in to join a classroom.',
+                confirmButtonColor: '#457B9D',
             });
             return;
         }
@@ -208,12 +219,14 @@ const AllClasses = () => {
         }
     };
 
+
     // Handle enter classroom for already enrolled students or teachers
     const handleEnterClassroom = (classroomId) => {
         navigate(`/classroom/${classroomId}`);
     };
 
-    if (loading || isLoading) {
+
+    if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
                 <div className="text-center">
@@ -227,6 +240,7 @@ const AllClasses = () => {
             </div>
         );
     }
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50">
@@ -434,5 +448,6 @@ const AllClasses = () => {
         </div>
     );
 };
+
 
 export default AllClasses;
