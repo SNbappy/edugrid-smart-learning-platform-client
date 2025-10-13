@@ -26,6 +26,7 @@ import {
     FaEnvelope
 } from 'react-icons/fa';
 
+
 const Dashboard = () => {
     const { user, loading } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
@@ -179,7 +180,7 @@ const Dashboard = () => {
             <div className="min-h-screen bg-slate-50">
                 <div className="flex">
                     <Sidebar />
-                    <div className="flex-1 ml-[320px] flex items-center justify-center">
+                    <div className="flex-1 lg:ml-[320px] flex items-center justify-center p-4">
                         <div className="text-center py-20">
                             <div className="w-16 h-16 bg-white rounded-lg shadow-sm flex items-center justify-center mx-auto mb-6">
                                 <div className="animate-spin rounded-full h-8 w-8 border-2 border-slate-200 border-t-[#457B9D]"></div>
@@ -202,11 +203,58 @@ const Dashboard = () => {
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px]">
-                    {/* Clean Professional Header */}
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
-                        <div className="max-w-7xl mx-auto px-8">
-                            <div className="flex items-center justify-between h-16">
+                <div className="flex-1 lg:ml-[320px]">
+                    {/* Professional Responsive Header */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-30 lg:z-40">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            {/* Mobile Layout (< lg) */}
+                            <div className="lg:hidden">
+                                {/* Top Row - Title and Date */}
+                                <div className="flex items-center justify-between py-3 border-b border-slate-100">
+                                    <div className="flex items-center space-x-3 flex-1 min-w-0 pr-14">
+                                        <div className="w-8 h-8 bg-[#457B9D] rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <MdDashboard className="w-4 h-4 text-white" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h1 className="text-base font-bold text-slate-800 truncate">
+                                                {greeting}, {dashboardData.userData?.name?.split(' ')[0] || user?.displayName?.split(' ')[0] || 'User'}!
+                                            </h1>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Row - Actions */}
+                                <div className="flex items-center justify-between py-2.5 space-x-2">
+                                    <div className="flex items-center text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg text-xs flex-1">
+                                        <MdCalendarToday className="w-3.5 h-3.5 mr-1.5 text-slate-500 flex-shrink-0" />
+                                        <span className="font-medium truncate">
+                                            {new Date().toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        onClick={handleJoinClass}
+                                        className="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-xs font-medium rounded-lg transition-colors flex items-center whitespace-nowrap"
+                                    >
+                                        <MdLogin className="w-3.5 h-3.5 mr-1" />
+                                        Join
+                                    </button>
+
+                                    <button
+                                        onClick={() => navigate('/create-class')}
+                                        className="px-3 py-1.5 bg-[#457B9D] hover:bg-[#3a6b8a] text-white text-xs font-medium rounded-lg transition-colors flex items-center whitespace-nowrap"
+                                    >
+                                        <MdAdd className="w-3.5 h-3.5 mr-1" />
+                                        New
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Desktop Layout (≥ lg) */}
+                            <div className="hidden lg:flex items-center justify-between h-16">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-10 h-10 bg-[#457B9D] rounded-lg flex items-center justify-center">
                                         <MdDashboard className="w-5 h-5 text-white" />
@@ -220,7 +268,7 @@ const Dashboard = () => {
                                 </div>
 
                                 <div className="flex items-center space-x-4">
-                                    <div className="hidden lg:flex items-center text-slate-600 bg-slate-100 px-4 py-2 rounded-lg text-sm">
+                                    <div className="flex items-center text-slate-600 bg-slate-100 px-4 py-2 rounded-lg text-sm">
                                         <MdCalendarToday className="w-4 h-4 mr-2 text-slate-500" />
                                         <span className="font-medium">{new Date().toLocaleDateString('en-US', {
                                             weekday: 'long',
@@ -231,17 +279,17 @@ const Dashboard = () => {
 
                                     <button
                                         onClick={handleJoinClass}
-                                        className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors"
+                                        className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors flex items-center"
                                     >
-                                        <MdLogin className="w-4 h-4 mr-2 inline" />
+                                        <MdLogin className="w-4 h-4 mr-2" />
                                         Join Class
                                     </button>
 
                                     <button
                                         onClick={() => navigate('/create-class')}
-                                        className="px-4 py-2 bg-[#457B9D] hover:bg-[#3a6b8a] text-white text-sm font-medium rounded-lg transition-colors"
+                                        className="px-4 py-2 bg-[#457B9D] hover:bg-[#3a6b8a] text-white text-sm font-medium rounded-lg transition-colors flex items-center"
                                     >
-                                        <MdAdd className="w-4 h-4 mr-2 inline" />
+                                        <MdAdd className="w-4 h-4 mr-2" />
                                         New Class
                                     </button>
                                 </div>
@@ -249,14 +297,14 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    {/* Main Content */}
-                    <div className="max-w-7xl mx-auto px-8 py-12">
-                        <div className="space-y-8">
-                            {/* Clean User Profile Section */}
+                    {/* Main Content - Responsive Padding */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
+                        <div className="space-y-6 sm:space-y-8">
+                            {/* Responsive User Profile Section */}
                             <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                                 <div className="relative">
-                                    {/* Simple Cover Area */}
-                                    <div className="h-24 relative overflow-hidden">
+                                    {/* Responsive Cover Area */}
+                                    <div className="h-20 sm:h-24 relative overflow-hidden">
                                         {dashboardData.userData?.coverPhotoURL ? (
                                             <>
                                                 <img
@@ -272,18 +320,18 @@ const Dashboard = () => {
 
                                         <button
                                             onClick={() => navigate('/edit-profile')}
-                                            className="absolute top-4 right-4 px-3 py-2 bg-white/90 backdrop-blur-sm rounded-lg text-slate-700 hover:bg-white text-sm font-medium transition-colors flex items-center space-x-2 shadow-sm"
+                                            className="absolute top-2 right-2 sm:top-4 sm:right-4 px-2 py-1.5 sm:px-3 sm:py-2 bg-white/90 backdrop-blur-sm rounded-lg text-slate-700 hover:bg-white text-xs sm:text-sm font-medium transition-colors flex items-center space-x-1 sm:space-x-2 shadow-sm"
                                         >
-                                            <MdEdit className="w-4 h-4" />
-                                            <span>Edit Profile</span>
+                                            <MdEdit className="w-3 h-3 sm:w-4 sm:h-4" />
+                                            <span>Edit</span>
                                         </button>
                                     </div>
 
-                                    {/* Profile Content */}
-                                    <div className="relative px-8 pb-8">
-                                        {/* Profile Picture */}
-                                        <div className="flex -mt-10 mb-6">
-                                            <div className="w-20 h-20 bg-white rounded-lg shadow-sm flex items-center justify-center border-2 border-white overflow-hidden">
+                                    {/* Profile Content - Responsive */}
+                                    <div className="relative px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
+                                        {/* Profile Picture - Responsive Size */}
+                                        <div className="flex -mt-8 sm:-mt-10 mb-4 sm:mb-6">
+                                            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-lg shadow-sm flex items-center justify-center border-2 border-white overflow-hidden">
                                                 {dashboardData.userData?.photoURL || user?.photoURL ? (
                                                     <img
                                                         src={dashboardData.userData?.photoURL || user?.photoURL}
@@ -291,84 +339,84 @@ const Dashboard = () => {
                                                         className="w-full h-full object-cover rounded-md"
                                                     />
                                                 ) : (
-                                                    <MdPerson className="w-10 h-10 text-slate-500" />
+                                                    <MdPerson className="w-8 h-8 sm:w-10 sm:h-10 text-slate-500" />
                                                 )}
                                             </div>
                                         </div>
 
-                                        {/* User Info Grid */}
-                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                        {/* User Info Grid - Responsive */}
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                                             {/* Basic Info */}
                                             <div>
-                                                <div className="mb-6">
-                                                    <h3 className="text-xl font-semibold text-slate-800 flex items-center mb-1">
+                                                <div className="mb-4 sm:mb-6">
+                                                    <h3 className="text-lg sm:text-xl font-semibold text-slate-800 flex items-center mb-1">
                                                         {dashboardData.userData?.name || user?.displayName || 'User Name'}
                                                         {user?.emailVerified && (
-                                                            <MdVerified className="w-5 h-5 text-blue-600 ml-2" />
+                                                            <MdVerified className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 ml-2" />
                                                         )}
                                                     </h3>
-                                                    <p className="text-slate-600">
+                                                    <p className="text-slate-600 text-sm">
                                                         {dashboardData.teachingClasses.length > 0 ? 'Educator' : 'Student'}
                                                     </p>
                                                 </div>
 
                                                 {/* Bio */}
                                                 {dashboardData.userData?.profile?.bio && (
-                                                    <div className="mb-6">
-                                                        <p className="text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-lg text-sm">
+                                                    <div className="mb-4 sm:mb-6">
+                                                        <p className="text-slate-700 leading-relaxed bg-slate-50 p-3 sm:p-4 rounded-lg text-xs sm:text-sm">
                                                             {dashboardData.userData.profile.bio}
                                                         </p>
                                                     </div>
                                                 )}
 
-                                                {/* Simple Stats */}
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="text-center p-3 bg-slate-50 rounded-lg">
-                                                        <div className="text-xl font-semibold text-slate-800">{dashboardData.teachingClasses.length}</div>
+                                                {/* Simple Stats - Responsive */}
+                                                <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                                                    <div className="text-center p-2 sm:p-3 bg-slate-50 rounded-lg">
+                                                        <div className="text-lg sm:text-xl font-semibold text-slate-800">{dashboardData.teachingClasses.length}</div>
                                                         <div className="text-xs text-slate-600">Teaching</div>
                                                     </div>
-                                                    <div className="text-center p-3 bg-slate-50 rounded-lg">
-                                                        <div className="text-xl font-semibold text-slate-800">{dashboardData.enrolledClasses.length}</div>
+                                                    <div className="text-center p-2 sm:p-3 bg-slate-50 rounded-lg">
+                                                        <div className="text-lg sm:text-xl font-semibold text-slate-800">{dashboardData.enrolledClasses.length}</div>
                                                         <div className="text-xs text-slate-600">Learning</div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* Contact Info */}
+                                            {/* Contact Info - Responsive */}
                                             <div>
-                                                <h4 className="text-lg font-medium text-slate-800 mb-4">Information</h4>
-                                                <div className="space-y-3 text-sm">
-                                                    <div className="flex items-center">
-                                                        <MdEmail className="w-4 h-4 text-slate-500 mr-3" />
-                                                        <div>
+                                                <h4 className="text-base sm:text-lg font-medium text-slate-800 mb-3 sm:mb-4">Information</h4>
+                                                <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+                                                    <div className="flex items-start">
+                                                        <MdEmail className="w-4 h-4 text-slate-500 mr-3 flex-shrink-0 mt-0.5" />
+                                                        <div className="min-w-0">
                                                             <div className="text-slate-800 font-medium">Email</div>
                                                             <div className="text-slate-600 truncate">{user?.email}</div>
                                                         </div>
                                                     </div>
 
                                                     {getLocationString() && (
-                                                        <div className="flex items-center">
-                                                            <MdLocationOn className="w-4 h-4 text-slate-500 mr-3" />
-                                                            <div>
+                                                        <div className="flex items-start">
+                                                            <MdLocationOn className="w-4 h-4 text-slate-500 mr-3 flex-shrink-0 mt-0.5" />
+                                                            <div className="min-w-0">
                                                                 <div className="text-slate-800 font-medium">Location</div>
-                                                                <div className="text-slate-600">{getLocationString()}</div>
+                                                                <div className="text-slate-600 break-words">{getLocationString()}</div>
                                                             </div>
                                                         </div>
                                                     )}
 
                                                     {dashboardData.userData?.profile?.institution && (
-                                                        <div className="flex items-center">
-                                                            <MdBusiness className="w-4 h-4 text-slate-500 mr-3" />
-                                                            <div>
+                                                        <div className="flex items-start">
+                                                            <MdBusiness className="w-4 h-4 text-slate-500 mr-3 flex-shrink-0 mt-0.5" />
+                                                            <div className="min-w-0">
                                                                 <div className="text-slate-800 font-medium">Institution</div>
-                                                                <div className="text-slate-600">{dashboardData.userData.profile.institution}</div>
+                                                                <div className="text-slate-600 break-words">{dashboardData.userData.profile.institution}</div>
                                                             </div>
                                                         </div>
                                                     )}
 
                                                     {dashboardData.userData?.createdAt && (
-                                                        <div className="flex items-center">
-                                                            <MdCake className="w-4 h-4 text-slate-500 mr-3" />
+                                                        <div className="flex items-start">
+                                                            <MdCake className="w-4 h-4 text-slate-500 mr-3 flex-shrink-0 mt-0.5" />
                                                             <div>
                                                                 <div className="text-slate-800 font-medium">Joined</div>
                                                                 <div className="text-slate-600">
@@ -383,19 +431,19 @@ const Dashboard = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Social Links */}
+                                            {/* Social Links - Responsive */}
                                             <div>
-                                                <h4 className="text-lg font-medium text-slate-800 mb-4">Connect</h4>
+                                                <h4 className="text-base sm:text-lg font-medium text-slate-800 mb-3 sm:mb-4">Connect</h4>
                                                 {(dashboardData.userData?.profile?.facebook || dashboardData.userData?.profile?.linkedin || dashboardData.userData?.profile?.mailLink) ? (
-                                                    <div className="space-y-3">
+                                                    <div className="space-y-2 sm:space-y-3">
                                                         {dashboardData.userData?.profile?.facebook && (
                                                             <a
                                                                 href={dashboardData.userData.profile.facebook}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors text-sm"
+                                                                className="flex items-center p-2 sm:p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors text-xs sm:text-sm"
                                                             >
-                                                                <FaFacebook className="w-4 h-4 text-slate-600 mr-3" />
+                                                                <FaFacebook className="w-4 h-4 text-slate-600 mr-3 flex-shrink-0" />
                                                                 <span className="text-slate-700">Facebook</span>
                                                             </a>
                                                         )}
@@ -404,24 +452,24 @@ const Dashboard = () => {
                                                                 href={dashboardData.userData.profile.linkedin}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors text-sm"
+                                                                className="flex items-center p-2 sm:p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors text-xs sm:text-sm"
                                                             >
-                                                                <FaLinkedin className="w-4 h-4 text-slate-600 mr-3" />
+                                                                <FaLinkedin className="w-4 h-4 text-slate-600 mr-3 flex-shrink-0" />
                                                                 <span className="text-slate-700">LinkedIn</span>
                                                             </a>
                                                         )}
                                                         {dashboardData.userData?.profile?.mailLink && (
                                                             <a
                                                                 href={`mailto:${dashboardData.userData.profile.mailLink}`}
-                                                                className="flex items-center p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors text-sm"
+                                                                className="flex items-center p-2 sm:p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors text-xs sm:text-sm"
                                                             >
-                                                                <FaEnvelope className="w-4 h-4 text-slate-600 mr-3" />
+                                                                <FaEnvelope className="w-4 h-4 text-slate-600 mr-3 flex-shrink-0" />
                                                                 <span className="text-slate-700">Email</span>
                                                             </a>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <div className="text-center py-6 text-slate-500 text-sm">
+                                                    <div className="text-center py-4 sm:py-6 text-slate-500 text-xs sm:text-sm">
                                                         <p>No social links added</p>
                                                     </div>
                                                 )}
@@ -431,28 +479,28 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            {/* Simple Quick Actions */}
-                            <div className="bg-white rounded-lg border border-slate-200 p-8 shadow-sm">
-                                <div className="mb-6">
-                                    <h2 className="text-xl font-semibold text-slate-800 mb-1">Quick Actions</h2>
-                                    <p className="text-slate-600 text-sm">Get started with these essential features</p>
+                            {/* Responsive Quick Actions */}
+                            <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 lg:p-8 shadow-sm">
+                                <div className="mb-4 sm:mb-6">
+                                    <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-1">Quick Actions</h2>
+                                    <p className="text-slate-600 text-xs sm:text-sm">Get started with these essential features</p>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
                                     {quickActions.map((action, index) => {
                                         const IconComponent = action.icon;
                                         return (
                                             <button
                                                 key={index}
                                                 onClick={action.action}
-                                                className="group p-6 bg-slate-50 rounded-lg border border-slate-200 hover:bg-white hover:shadow-md transition-all"
+                                                className="group p-4 sm:p-6 bg-slate-50 rounded-lg border border-slate-200 hover:bg-white hover:shadow-md transition-all"
                                             >
-                                                <div className="flex flex-col items-center text-center space-y-3">
-                                                    <div className="w-12 h-12 bg-[#457B9D] rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
-                                                        <IconComponent className="w-6 h-6 text-white" />
+                                                <div className="flex flex-col items-center text-center space-y-2 sm:space-y-3">
+                                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#457B9D] rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+                                                        <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                                                     </div>
                                                     <div>
-                                                        <h3 className="font-medium text-slate-800 mb-1">{action.title}</h3>
-                                                        <p className="text-sm text-slate-600">{action.description}</p>
+                                                        <h3 className="font-medium text-slate-800 mb-1 text-sm sm:text-base">{action.title}</h3>
+                                                        <p className="text-xs sm:text-sm text-slate-600">{action.description}</p>
                                                     </div>
                                                 </div>
                                             </button>
