@@ -10,10 +10,10 @@ import {
 
 const About = () => {
     const stats = [
-        { number: '10,000+', label: 'Active Students' },
-        { number: '500+', label: 'Expert Instructors' },
-        { number: '1,000+', label: 'Courses Available' },
-        { number: '95%', label: 'Success Rate' }
+        // { number: '10,000+', label: 'Active Students' },
+        // { number: '500+', label: 'Expert Instructors' },
+        // { number: '1,000+', label: 'Courses Available' },
+        // { number: '95%', label: 'Success Rate' }
     ];
 
     const features = [
