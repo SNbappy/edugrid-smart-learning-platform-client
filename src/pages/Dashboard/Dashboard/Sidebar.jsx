@@ -127,16 +127,16 @@ const Sidebar = () => {
 
     return (
         <>
-            {/* Hamburger Menu Button - RIGHT SIDE - Only visible on mobile */}
+            {/* Compact Professional Hamburger Menu Button */}
             <button
                 onClick={toggleSidebar}
-                className="lg:hidden fixed top-4 right-4 z-50 p-3 bg-[#457B9D] text-white rounded-xl shadow-lg hover:bg-[#3a6b8a] transition-all duration-300"
+                className="lg:hidden fixed top-2 right-3 z-50 p-1.5 bg-white text-[#457B9D] rounded-lg shadow-md hover:shadow-lg border border-gray-200 transition-all duration-300 hover:bg-gray-50"
                 aria-label="Toggle Sidebar"
             >
                 {isSidebarOpen ? (
-                    <MdClose className="text-2xl" />
+                    <MdClose className="w-4 h-4" />
                 ) : (
-                    <MdMenu className="text-2xl" />
+                    <MdMenu className="w-4 h-4" />
                 )}
             </button>
 

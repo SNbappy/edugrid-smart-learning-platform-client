@@ -44,7 +44,6 @@ const TasksPage = () => {
         submitTask,
         isOwner,
         refreshTasks,
-        // Submission-related returns
         showSubmissionView,
         setShowSubmissionView,
         selectedSubmission,
@@ -60,17 +59,13 @@ const TasksPage = () => {
         allowsResubmission
     } = useTasksLogic(user, classroomId, axiosPublic, loading);
 
-    // Enhanced state management for grade synchronization
     const [refreshTrigger, setRefreshTrigger] = useState(0);
     const [showViewSubmissionModal, setShowViewSubmissionModal] = useState(false);
     const [selectedTaskForSubmissions, setSelectedTaskForSubmissions] = useState(null);
-
-    // Delete confirmation modal states
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [taskToDelete, setTaskToDelete] = useState(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Permission check using backend data
     const canCreateTask = useMemo(() => {
         if (!user || !classroom) {
             return false;
@@ -78,7 +73,6 @@ const TasksPage = () => {
         return isOwner?.() || userRole === 'teacher';
     }, [user, classroom, userRole, isOwner]);
 
-    // Task status determination function - UPDATED FOR ROLE-SPECIFIC LOGIC
     const getTaskStatus = useCallback((task, userEmail, userRole) => {
         const now = new Date();
         const dueDate = task.dueDate ? new Date(task.dueDate) : null;
@@ -86,7 +80,6 @@ const TasksPage = () => {
         const submissionCount = getSubmissionCount ? getSubmissionCount(task) : (task.submissions?.length || 0);
 
         if (userRole === 'student') {
-            // Student-specific status logic
             const userSubmission = getUserSubmission ? getUserSubmission(task, userEmail) : null;
             const hasSubmitted = hasUserSubmitted ? hasUserSubmitted(task, userEmail) : false;
             const isGraded = userSubmission?.grade !== null && userSubmission?.grade !== undefined;
@@ -101,13 +94,11 @@ const TasksPage = () => {
                 return 'pending';
             }
         } else {
-            // Teacher-specific status logic - REMOVED ACTIVE STATUS
             if (isOverdue) {
                 return 'overdue';
             } else if (submissionCount === 0) {
-                return 'needs-grading'; // Changed from 'active' to 'needs-grading'
+                return 'needs-grading';
             } else {
-                // Check if any submissions need grading
                 const hasUngradedSubmissions = task.submissions?.some(sub =>
                     sub.grade === null || sub.grade === undefined
                 ) || false;
@@ -115,13 +106,12 @@ const TasksPage = () => {
                 if (hasUngradedSubmissions) {
                     return 'needs-grading';
                 } else {
-                    return 'graded'; // All submissions are graded
+                    return 'graded';
                 }
             }
         }
     }, [getUserSubmission, hasUserSubmitted, getSubmissionCount]);
 
-    // Updated filteredTasks logic
     const filteredTasks = useMemo(() => {
         if (!tasks || !Array.isArray(tasks)) return [];
 
@@ -133,13 +123,12 @@ const TasksPage = () => {
         });
     }, [tasks, filterStatus, getTaskStatus, user?.email, userRole]);
 
-    // Updated taskStats calculation with role-specific stats - REMOVED ACTIVE
     const taskStats = useMemo(() => {
         if (!tasks || !Array.isArray(tasks)) {
             if (userRole === 'student') {
                 return { total: 0, pending: 0, completed: 0, graded: 0, overdue: 0 };
             } else {
-                return { total: 0, 'needs-grading': 0, graded: 0, overdue: 0 }; // Removed active
+                return { total: 0, 'needs-grading': 0, graded: 0, overdue: 0 };
             }
         }
 
@@ -147,7 +136,7 @@ const TasksPage = () => {
         if (userRole === 'student') {
             stats = { total: tasks.length, pending: 0, completed: 0, graded: 0, overdue: 0 };
         } else {
-            stats = { total: tasks.length, 'needs-grading': 0, graded: 0, overdue: 0 }; // Removed active
+            stats = { total: tasks.length, 'needs-grading': 0, graded: 0, overdue: 0 };
         }
 
         tasks.forEach(task => {
@@ -158,17 +147,12 @@ const TasksPage = () => {
         return stats;
     }, [tasks, getTaskStatus, user?.email, userRole]);
 
-    // Enhanced submit task handler with refresh
     const handleSubmitTask = async (taskId, submissionData, isResubmission = false) => {
         try {
-            console.log('🎯 TasksPage: Submitting task', { taskId, isResubmission });
-
             const result = await submitTask(taskId, submissionData, isResubmission);
             if (result?.success) {
-                console.log('✅ TasksPage: Task submitted, triggering refresh');
                 setRefreshTrigger(prev => prev + 1);
 
-                // Refresh tasks to get updated submission data
                 if (refreshTasks) {
                     await refreshTasks();
                 }
@@ -180,31 +164,19 @@ const TasksPage = () => {
         }
     };
 
-    // Grade submission callback - key for synchronization
     const handleGradeSubmitted = useCallback(async (gradeData) => {
-        console.log('📢 TasksPage: Grade submitted callback received:', gradeData);
-
         try {
-            // Trigger tasks refresh to update TaskCard displays
             if (refreshTasks) {
-                console.log('🔄 TasksPage: Refreshing tasks after grading');
                 await refreshTasks();
             }
 
-            // Update refresh trigger for any other components
             setRefreshTrigger(prev => prev + 1);
-
-            console.log('✅ TasksPage: Grade synchronization completed');
-
         } catch (error) {
             console.error('❌ TasksPage: Error in grade callback:', error);
         }
     }, [refreshTasks]);
 
-    // Task update callback for general task refresh
     const handleTaskUpdate = useCallback(async (taskId, classroomId) => {
-        console.log('🔄 TasksPage: Task update callback', { taskId, classroomId });
-
         try {
             if (refreshTasks) {
                 await refreshTasks();
@@ -215,68 +187,48 @@ const TasksPage = () => {
         }
     }, [refreshTasks]);
 
-    // View submissions handler for new modal
     const handleViewSubmissions = useCallback((task) => {
-        console.log('👁️ TasksPage: Opening ViewSubmissionModal for task:', task._id || task.id);
         setSelectedTaskForSubmissions(task);
         setShowViewSubmissionModal(true);
     }, []);
 
-    // ✅ IMPROVED DELETE TASK HANDLER - PREVENTS DUPLICATE MODALS
     const handleDeleteTask = useCallback((taskId) => {
-        // Input validation
         if (!taskId) {
             console.error('❌ TasksPage: Invalid taskId provided');
             return;
         }
 
-        // Prevent duplicate calls
         if (isDeleting || showDeleteConfirm) {
-            console.log('🚫 TasksPage: Delete already in progress or modal already shown');
             return;
         }
 
-        // Find the task to show in confirmation
         const task = tasks.find(t => (t._id || t.id) === taskId);
         if (!task) {
             console.error('❌ TasksPage: Task not found');
             return;
         }
 
-        console.log('🗑️ TasksPage: Initiating delete confirmation for task:', task.title);
         setTaskToDelete({ id: taskId, title: task.title });
         setShowDeleteConfirm(true);
     }, [tasks, isDeleting, showDeleteConfirm]);
 
-    // ✅ EXECUTE DELETE WITH PROPER ERROR HANDLING
     const executeDelete = async () => {
         if (!taskToDelete) return;
 
         try {
             setIsDeleting(true);
-            console.log('🗑️ TasksPage: Executing delete for task:', taskToDelete.id);
 
             const result = await deleteTask(taskToDelete.id);
 
             if (result?.success) {
-                console.log('✅ TasksPage: Task deleted successfully');
-
-                // Close modal and reset state
                 setShowDeleteConfirm(false);
                 setTaskToDelete(null);
 
-                // Refresh data
                 if (refreshTasks) {
                     await refreshTasks();
                 }
                 setRefreshTrigger(prev => prev + 1);
-
-                console.log('✅ Task deleted successfully!');
-            } else {
-                const errorMessage = result?.error || 'Failed to delete task';
-                console.error('❌ TasksPage: Delete failed:', errorMessage);
             }
-
         } catch (error) {
             console.error('❌ TasksPage: Delete error:', error);
         } finally {
@@ -284,26 +236,24 @@ const TasksPage = () => {
         }
     };
 
-    // ✅ CANCEL DELETE
     const cancelDelete = () => {
-        if (isDeleting) return; // Prevent canceling during deletion
+        if (isDeleting) return;
         setShowDeleteConfirm(false);
         setTaskToDelete(null);
     };
 
-    // Loading state
     if (loading || isLoading) {
         return (
             <div className="min-h-screen bg-slate-50">
                 <div className="flex">
                     <Sidebar />
-                    <div className="flex-1 ml-[320px] flex items-center justify-center">
+                    <div className="flex-1 lg:ml-[320px] flex items-center justify-center p-4">
                         <div className="text-center py-20">
                             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg mx-auto mb-6">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 mb-2">Loading Tasks</h3>
-                            <p className="text-slate-600">Please wait while we fetch your classroom tasks...</p>
+                            <p className="text-slate-600 text-sm sm:text-base px-4">Please wait while we fetch your classroom tasks...</p>
                         </div>
                     </div>
                 </div>
@@ -321,11 +271,49 @@ const TasksPage = () => {
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px]">
-                    {/* Professional Header */}
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
-                        <div className="max-w-7xl mx-auto px-6 sm:px-8">
-                            <div className="flex items-center justify-between h-16">
+                <div className="flex-1 lg:ml-[320px]">
+                    {/* Responsive Header */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-30 lg:z-40">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            {/* Mobile Layout */}
+                            <div className="lg:hidden py-3 space-y-3">
+                                <button
+                                    onClick={() => navigate(`/classroom/${classroomId}`)}
+                                    className="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors duration-200"
+                                >
+                                    <MdArrowBack className="w-5 h-5 mr-2" />
+                                    <span className="text-sm font-medium">Back</span>
+                                </button>
+
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <MdAssignment className="w-5 h-5 text-purple-600" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h1 className="text-base font-bold text-slate-900 truncate">
+                                            {classroom?.name}
+                                        </h1>
+                                        <p className="text-xs text-slate-500 truncate">Task Management</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${isOwner?.()
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        }`}>
+                                        {isOwner?.() ? '👨‍🏫' : '👨‍🎓'}
+                                    </span>
+
+                                    <div className="flex items-center text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full border border-slate-200">
+                                        <MdPeople className="w-3 h-3 mr-1" />
+                                        <span className="font-medium">{classroom?.students?.length || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Desktop Layout */}
+                            <div className="hidden lg:flex items-center justify-between h-16">
                                 <div className="flex items-center space-x-6">
                                     <button
                                         onClick={() => navigate(`/classroom/${classroomId}`)}
@@ -353,8 +341,8 @@ const TasksPage = () => {
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center space-x-3">
                                         <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isOwner?.()
-                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                             }`}>
                                             {isOwner?.() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
                                         </span>
@@ -380,22 +368,35 @@ const TasksPage = () => {
                         </div>
                     </div>
 
-                    {/* Main Content */}
-                    <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-                        {/* Professional Stats Grid - ONE LINE LAYOUT WITH 4 CARDS FOR TEACHERS */}
-                        <div className={`grid ${userRole === 'student' ? 'grid-cols-5' : 'grid-cols-4'} gap-4 mb-8`}>
-                            {/* Total Tasks Card - Clickable */}
+                    {/* Main Content - Responsive */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                        {/* Mobile New Task Button */}
+                        {canCreateTask && (
+                            <div className="lg:hidden mb-6">
+                                <button
+                                    onClick={() => setShowCreateTask(true)}
+                                    className="w-full inline-flex items-center justify-center px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-purple-600/25"
+                                >
+                                    <MdAdd className="w-5 h-5 mr-2" />
+                                    Create New Task
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Stats Grid - Responsive */}
+                        <div className={`grid grid-cols-2 ${userRole === 'student' ? 'sm:grid-cols-3 lg:grid-cols-5' : 'sm:grid-cols-2 lg:grid-cols-4'} gap-3 sm:gap-4 mb-6 sm:mb-8`}>
+                            {/* Total Tasks Card */}
                             <div
-                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'all' ? 'border-purple-300 ring-2 ring-purple-200' : 'border-slate-200'
+                                className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'all' ? 'border-purple-300 ring-2 ring-purple-200' : 'border-slate-200'
                                     }`}
                                 onClick={() => setFilterStatus('all')}
                             >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                        <MdAssignment className="w-5 h-5 text-purple-600" />
+                                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <MdAssignment className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xl font-bold text-slate-900">
+                                        <div className="text-lg sm:text-xl font-bold text-slate-900">
                                             {taskStats?.total || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Total</div>
@@ -411,16 +412,16 @@ const TasksPage = () => {
                                 <>
                                     {/* Pending Tasks Card - Student */}
                                     <div
-                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'pending' ? 'border-amber-300 ring-2 ring-amber-200' : 'border-slate-200'
+                                        className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'pending' ? 'border-amber-300 ring-2 ring-amber-200' : 'border-slate-200'
                                             }`}
                                         onClick={() => setFilterStatus(filterStatus === 'pending' ? 'all' : 'pending')}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                                                <MdSchedule className="w-5 h-5 text-amber-600" />
+                                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                                <MdSchedule className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xl font-bold text-slate-900">
+                                                <div className="text-lg sm:text-xl font-bold text-slate-900">
                                                     {taskStats?.pending || 0}
                                                 </div>
                                                 <div className="text-xs text-slate-500 font-medium">Pending</div>
@@ -436,16 +437,16 @@ const TasksPage = () => {
 
                                     {/* Completed Tasks Card - Student */}
                                     <div
-                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'completed' ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-200'
+                                        className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'completed' ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-200'
                                             }`}
                                         onClick={() => setFilterStatus(filterStatus === 'completed' ? 'all' : 'completed')}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                                                <MdCheckCircle className="w-5 h-5 text-emerald-600" />
+                                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                                <MdCheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xl font-bold text-slate-900">
+                                                <div className="text-lg sm:text-xl font-bold text-slate-900">
                                                     {taskStats?.completed || 0}
                                                 </div>
                                                 <div className="text-xs text-slate-500 font-medium">Submitted</div>
@@ -461,16 +462,16 @@ const TasksPage = () => {
 
                                     {/* Graded Tasks Card - Student */}
                                     <div
-                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'graded' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
+                                        className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'graded' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
                                             }`}
                                         onClick={() => setFilterStatus(filterStatus === 'graded' ? 'all' : 'graded')}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                <MdGrade className="w-5 h-5 text-blue-600" />
+                                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                <MdGrade className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xl font-bold text-slate-900">
+                                                <div className="text-lg sm:text-xl font-bold text-slate-900">
                                                     {taskStats?.graded || 0}
                                                 </div>
                                                 <div className="text-xs text-slate-500 font-medium">Graded</div>
@@ -488,16 +489,16 @@ const TasksPage = () => {
                                 <>
                                     {/* Needs Grading Tasks Card - Teacher */}
                                     <div
-                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'needs-grading' ? 'border-amber-300 ring-2 ring-amber-200' : 'border-slate-200'
+                                        className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'needs-grading' ? 'border-amber-300 ring-2 ring-amber-200' : 'border-slate-200'
                                             }`}
                                         onClick={() => setFilterStatus(filterStatus === 'needs-grading' ? 'all' : 'needs-grading')}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
-                                                <MdHourglassEmpty className="w-5 h-5 text-amber-600" />
+                                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+                                                <MdHourglassEmpty className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xl font-bold text-slate-900">
+                                                <div className="text-lg sm:text-xl font-bold text-slate-900">
                                                     {taskStats?.['needs-grading'] || 0}
                                                 </div>
                                                 <div className="text-xs text-slate-500 font-medium">To Grade</div>
@@ -513,16 +514,16 @@ const TasksPage = () => {
 
                                     {/* Graded Tasks Card - Teacher */}
                                     <div
-                                        className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'graded' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
+                                        className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'graded' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
                                             }`}
                                         onClick={() => setFilterStatus(filterStatus === 'graded' ? 'all' : 'graded')}
                                     >
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                                <MdGrade className="w-5 h-5 text-blue-600" />
+                                        <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                                <MdGrade className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-xl font-bold text-slate-900">
+                                                <div className="text-lg sm:text-xl font-bold text-slate-900">
                                                     {taskStats?.graded || 0}
                                                 </div>
                                                 <div className="text-xs text-slate-500 font-medium">Graded</div>
@@ -540,16 +541,16 @@ const TasksPage = () => {
 
                             {/* Overdue Tasks Card - Common for Both Roles */}
                             <div
-                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterStatus === 'overdue' ? 'border-red-300 ring-2 ring-red-200' : 'border-slate-200'
+                                className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer col-span-2 sm:col-span-1 ${filterStatus === 'overdue' ? 'border-red-300 ring-2 ring-red-200' : 'border-slate-200'
                                     }`}
                                 onClick={() => setFilterStatus(filterStatus === 'overdue' ? 'all' : 'overdue')}
                             >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                                        <MdWarning className="w-5 h-5 text-red-600" />
+                                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                                        <MdWarning className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xl font-bold text-slate-900">
+                                        <div className="text-lg sm:text-xl font-bold text-slate-900">
                                             {taskStats?.overdue || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Overdue</div>
@@ -564,30 +565,30 @@ const TasksPage = () => {
                             </div>
                         </div>
 
-                        {/* Tasks Section */}
+                        {/* Tasks Section - Responsive */}
                         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-lg font-semibold text-slate-900">Classroom Tasks</h2>
-                                    <div className="flex items-center space-x-4">
+                            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                                    <h2 className="text-base sm:text-lg font-semibold text-slate-900">Classroom Tasks</h2>
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                                         {tasks && tasks.length > 0 && (
-                                            <span className="text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                            <span className="text-xs sm:text-sm text-slate-600 bg-slate-100 px-2 sm:px-3 py-1 rounded-full">
                                                 {filteredTasks?.length || 0} task{filteredTasks?.length !== 1 ? 's' : ''}
                                             </span>
                                         )}
-                                        <div className="flex items-center space-x-2">
-                                            <label className="text-sm text-slate-600">Filter:</label>
+                                        <div className="flex items-center space-x-2 w-full sm:w-auto">
+                                            <label className="text-xs sm:text-sm text-slate-600">Filter:</label>
                                             <select
                                                 value={filterStatus}
                                                 onChange={(e) => setFilterStatus(e.target.value)}
-                                                className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                                className="text-xs sm:text-sm border border-slate-300 rounded-lg px-2 sm:px-3 py-1.5 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 flex-1 sm:flex-none"
                                             >
                                                 <option value="all">All Tasks</option>
                                                 {userRole === 'student' ? (
                                                     <>
-                                                        <option value="pending">Pending (Not Submitted)</option>
-                                                        <option value="completed">Submitted (Awaiting Grade)</option>
-                                                        <option value="graded">Graded (Has Marks)</option>
+                                                        <option value="pending">Pending</option>
+                                                        <option value="completed">Submitted</option>
+                                                        <option value="graded">Graded</option>
                                                     </>
                                                 ) : (
                                                     <>
@@ -602,7 +603,7 @@ const TasksPage = () => {
                                 </div>
                             </div>
 
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 <TasksList
                                     filteredTasks={filteredTasks}
                                     filterStatus={filterStatus}
@@ -631,9 +632,9 @@ const TasksPage = () => {
                 </div>
             </div>
 
-            {/* ✅ DELETE CONFIRMATION MODAL - PREVENTS DUPLICATE MODALS */}
+            {/* Delete Confirmation Modal */}
             {showDeleteConfirm && taskToDelete && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div
                         className="fixed inset-0 bg-black/30 backdrop-blur-sm"
                         onClick={cancelDelete}
@@ -687,7 +688,7 @@ const TasksPage = () => {
                 />
             )}
 
-            {/* New View Submission Modal with Grade Callbacks */}
+            {/* View Submission Modal */}
             {showViewSubmissionModal && selectedTaskForSubmissions && (
                 <ViewSubmissionModal
                     taskId={selectedTaskForSubmissions._id || selectedTaskForSubmissions.id}
@@ -705,7 +706,7 @@ const TasksPage = () => {
                 />
             )}
 
-            {/* Legacy Modals - Keep for Compatibility */}
+            {/* Legacy Modals */}
             {showSubmissionView && selectedSubmission && (
                 <SubmissionViewModal
                     submission={selectedSubmission}

@@ -19,6 +19,7 @@ import {
     MdSettings
 } from 'react-icons/md';
 
+
 const Classroom = () => {
     const { user, loading } = useContext(AuthContext);
     const { classroomId } = useParams();
@@ -29,10 +30,8 @@ const Classroom = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [copiedCode, setCopiedCode] = useState(false);
 
-    // Check if current user is the classroom owner
     const isClassroomOwner = user && classroom && classroom.teacherEmail === user.email;
 
-    // Copy classroom code function
     const handleCopyCode = async () => {
         try {
             await navigator.clipboard.writeText(classroom.code);
@@ -43,7 +42,6 @@ const Classroom = () => {
         }
     };
 
-    // Fetch classroom details
     useEffect(() => {
         const fetchClassroom = async () => {
             if (classroomId) {
@@ -71,14 +69,12 @@ const Classroom = () => {
         }
     }, [classroomId, user, loading, axiosPublic, navigate]);
 
-    // Handle classroom update
     const handleClassroomUpdate = (updatedClassroom) => {
         console.log('Updating classroom state with:', updatedClassroom);
         setClassroom(updatedClassroom);
         setShowEditModal(false);
     };
 
-    // Enhanced classroom options with modern design
     const classroomOptions = [
         {
             id: 'attendance',
@@ -115,19 +111,18 @@ const Classroom = () => {
         },
     ];
 
-    // Loading state with modern spinner - following AttendancePage pattern
     if (loading || isLoading) {
         return (
             <div className="min-h-screen bg-slate-50">
                 <div className="flex">
                     <Sidebar />
-                    <div className="flex-1 ml-[320px] flex items-center justify-center">
+                    <div className="flex-1 lg:ml-[320px] flex items-center justify-center p-4">
                         <div className="text-center py-20">
                             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg mx-auto mb-6">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 mb-2">Loading Classroom</h3>
-                            <p className="text-slate-600">Please wait while we fetch your classroom information...</p>
+                            <p className="text-slate-600 text-sm sm:text-base px-4">Please wait while we fetch your classroom information...</p>
                         </div>
                     </div>
                 </div>
@@ -135,19 +130,18 @@ const Classroom = () => {
         );
     }
 
-    // Error state - following AttendancePage pattern
     if (!classroom) {
         return (
             <div className="min-h-screen bg-slate-50">
                 <div className="flex">
                     <Sidebar />
-                    <div className="flex-1 ml-[320px] flex items-center justify-center">
-                        <div className="text-center py-20">
+                    <div className="flex-1 lg:ml-[320px] flex items-center justify-center p-4">
+                        <div className="text-center py-20 px-4">
                             <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                                 <MdSchool className="w-8 h-8 text-slate-400" />
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 mb-3">Classroom Not Found</h3>
-                            <p className="text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
+                            <p className="text-slate-600 mb-8 max-w-md mx-auto leading-relaxed text-sm sm:text-base">
                                 The classroom you're looking for doesn't exist or you don't have access to it.
                             </p>
                             <button
@@ -179,11 +173,76 @@ const Classroom = () => {
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px]">
-                    {/* Professional Header - Following AttendancePage pattern */}
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
-                        <div className="max-w-7xl mx-auto px-6 sm:px-8">
-                            <div className="flex items-center justify-between h-16">
+                <div className="flex-1 lg:ml-[320px]">
+                    {/* Responsive Header */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-30 lg:z-40">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            {/* Mobile Layout */}
+                            <div className="lg:hidden py-3 space-y-3">
+                                {/* Top Row - Back Button */}
+                                <button
+                                    onClick={() => navigate('/my-classes')}
+                                    className="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors duration-200"
+                                >
+                                    <MdArrowBack className="w-5 h-5 mr-2" />
+                                    <span className="text-sm font-medium">Back</span>
+                                </button>
+
+                                {/* Title Row */}
+                                <div className="flex items-start justify-between">
+                                    <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                        <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            <MdSchool className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <h1 className="text-base font-bold text-slate-900 truncate">
+                                                {classroom?.name}
+                                            </h1>
+                                            <p className="text-xs text-slate-500 truncate">{classroom?.subject}</p>
+                                        </div>
+                                    </div>
+                                    {isClassroomOwner && (
+                                        <button
+                                            onClick={() => setShowEditModal(true)}
+                                            className="ml-2 p-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors flex-shrink-0"
+                                        >
+                                            <MdEdit className="w-4 h-4" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Stats Row */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${isClassroomOwner
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        }`}>
+                                        {isClassroomOwner ? '👨‍🏫' : '👨‍🎓'}
+                                    </span>
+
+                                    <div className="flex items-center text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full border border-slate-200">
+                                        <MdPeople className="w-3 h-3 mr-1" />
+                                        <span className="font-medium">{classroom?.students?.length || 0}</span>
+                                    </div>
+
+                                    {isClassroomOwner && (
+                                        <button
+                                            onClick={handleCopyCode}
+                                            className="flex items-center text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors"
+                                        >
+                                            {copiedCode ? (
+                                                <MdCheck className="w-3 h-3 mr-1 text-emerald-600" />
+                                            ) : (
+                                                <MdContentCopy className="w-3 h-3 mr-1" />
+                                            )}
+                                            <span className="font-mono font-medium">{classroom?.code}</span>
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Desktop Layout */}
+                            <div className="hidden lg:flex items-center justify-between h-16">
                                 <div className="flex items-center space-x-6">
                                     <button
                                         onClick={() => navigate('/my-classes')}
@@ -211,8 +270,8 @@ const Classroom = () => {
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center space-x-3">
                                         <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isClassroomOwner
-                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                             }`}>
                                             {isClassroomOwner ? '👨‍🏫 Teacher' : '👨‍🎓 Student'}
                                         </span>
@@ -223,7 +282,6 @@ const Classroom = () => {
                                             <span className="ml-1">students</span>
                                         </div>
 
-                                        {/* Only show class code for teachers */}
                                         {isClassroomOwner && (
                                             <button
                                                 onClick={handleCopyCode}
@@ -253,13 +311,13 @@ const Classroom = () => {
                         </div>
                     </div>
 
-                    {/* Main Content */}
-                    <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-                        {/* Classroom Header Card */}
+                    {/* Main Content - Responsive Padding */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                        {/* Classroom Header Card - Responsive */}
                         {(classroom?.imageUrl || classroom?.description) && (
-                            <div className="mb-8 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                            <div className="mb-6 sm:mb-8 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
                                 {classroom?.imageUrl && (
-                                    <div className="relative h-48 overflow-hidden">
+                                    <div className="relative h-32 sm:h-40 md:h-48 overflow-hidden">
                                         <div
                                             className="absolute inset-0 bg-gradient-to-r from-slate-600 via-slate-700 to-slate-800"
                                             style={{
@@ -269,34 +327,34 @@ const Classroom = () => {
                                             }}
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20" />
-                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-6">
-                                            <h2 className="text-2xl font-bold text-white mb-2" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 sm:p-6">
+                                            <h2 className="text-lg sm:text-2xl font-bold text-white mb-1 sm:mb-2" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
                                                 Welcome to {classroom.name}
                                             </h2>
-                                            <p className="text-white/90 text-sm" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
+                                            <p className="text-white/90 text-xs sm:text-sm" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
                                                 Instructor: {classroom.teacherName}
                                             </p>
                                         </div>
                                     </div>
                                 )}
                                 {classroom?.description && (
-                                    <div className="p-6 bg-slate-50 border-t">
-                                        <p className="text-slate-700 leading-relaxed">{classroom.description}</p>
+                                    <div className="p-4 sm:p-6 bg-slate-50 border-t">
+                                        <p className="text-slate-700 leading-relaxed text-sm sm:text-base">{classroom.description}</p>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* Professional Stats Grid - Conditional based on role */}
-                        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isClassroomOwner ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6 mb-8`}>
+                        {/* Stats Grid - Responsive */}
+                        <div className={`grid grid-cols-2 ${isClassroomOwner ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'} gap-3 sm:gap-6 mb-6 sm:mb-8`}>
                             {/* Students Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                        <MdPeople className="w-6 h-6 text-blue-600" />
+                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                        <MdPeople className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
+                                        <div className="text-xl sm:text-2xl font-bold text-slate-900">
                                             {classroom?.students?.length || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Students</div>
@@ -308,13 +366,13 @@ const Classroom = () => {
                             </div>
 
                             {/* Tasks Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                                        <MdAssignment className="w-6 h-6 text-purple-600" />
+                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                                        <MdAssignment className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
+                                        <div className="text-xl sm:text-2xl font-bold text-slate-900">
                                             {classroom?.tasks?.assignments?.length || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Assignments</div>
@@ -329,13 +387,13 @@ const Classroom = () => {
                             </div>
 
                             {/* Materials Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                                        <MdBook className="w-6 h-6 text-emerald-600" />
+                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 col-span-2 sm:col-span-1">
+                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                        <MdBook className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
+                                        <div className="text-xl sm:text-2xl font-bold text-slate-900">
                                             {(classroom?.materials?.files?.length || 0) +
                                                 (classroom?.materials?.links?.length || 0) +
                                                 (classroom?.materials?.videos?.length || 0)}
@@ -351,16 +409,16 @@ const Classroom = () => {
                                 </div>
                             </div>
 
-                            {/* Class Code Card - Only visible to teachers */}
+                            {/* Class Code Card - Only for teachers */}
                             {isClassroomOwner && (
-                                <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                                            <MdGrade className="w-6 h-6 text-amber-600" />
+                                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 col-span-2 sm:col-span-1">
+                                    <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                                            <MdGrade className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
                                         </div>
                                         <div className="text-right">
                                             <div className="flex items-center justify-end gap-2 mb-1">
-                                                <div className="text-lg font-bold text-slate-900 font-mono">
+                                                <div className="text-base sm:text-lg font-bold text-slate-900 font-mono">
                                                     {classroom?.code}
                                                 </div>
                                                 <button
@@ -384,20 +442,19 @@ const Classroom = () => {
                             )}
                         </div>
 
-                        {/* Classroom Features Section - Following AttendancePage pattern */}
+                        {/* Features Section - Responsive */}
                         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-lg font-semibold text-slate-900">Classroom Features</h2>
-                                    <span className="text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                    <h2 className="text-base sm:text-lg font-semibold text-slate-900">Classroom Features</h2>
+                                    <span className="text-xs sm:text-sm text-slate-600 bg-slate-100 px-2 sm:px-3 py-1 rounded-full">
                                         {classroomOptions.length} modules
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="p-6">
-                                {/* Grid Layout for Features */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <div className="p-4 sm:p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                                     {classroomOptions.map((option) => {
                                         const IconComponent = option.icon;
 
@@ -405,11 +462,11 @@ const Classroom = () => {
                                             <div
                                                 key={option.id}
                                                 onClick={() => navigate(option.path)}
-                                                className="bg-slate-50 rounded-xl border border-slate-200 hover:bg-white hover:shadow-md hover:shadow-slate-200/50 transition-all duration-300 cursor-pointer group p-6"
+                                                className="bg-slate-50 rounded-xl border border-slate-200 hover:bg-white hover:shadow-md hover:shadow-slate-200/50 transition-all duration-300 cursor-pointer group p-4 sm:p-6"
                                             >
-                                                <div className="flex items-center justify-between mb-4">
-                                                    <div className={`w-12 h-12 ${option.bgColor} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
-                                                        <IconComponent className={`w-6 h-6 ${option.iconColor}`} />
+                                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 ${option.bgColor} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-200`}>
+                                                        <IconComponent className={`w-5 h-5 sm:w-6 sm:h-6 ${option.iconColor}`} />
                                                     </div>
                                                     <div className="w-6 h-6 rounded-full bg-slate-300 group-hover:bg-blue-600 flex items-center justify-center transition-colors duration-200">
                                                         <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -418,8 +475,8 @@ const Classroom = () => {
                                                     </div>
                                                 </div>
 
-                                                <h3 className="text-lg font-semibold text-slate-900 mb-2">{option.title}</h3>
-                                                <p className="text-sm text-slate-600 mb-4">{option.description}</p>
+                                                <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-2">{option.title}</h3>
+                                                <p className="text-xs sm:text-sm text-slate-600 mb-3 sm:mb-4">{option.description}</p>
 
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs text-slate-500 font-medium bg-white px-2 py-1 rounded">

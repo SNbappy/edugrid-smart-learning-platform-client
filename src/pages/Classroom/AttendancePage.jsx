@@ -21,6 +21,7 @@ import CreateAttendanceModal from '../../components/CreateAttendanceModal';
 import SessionDetailsModal from '../../components/SessionDetailsModal';
 import { exportAllSessionsPDF } from '../../utils/attendancePDFExport';
 
+
 const AttendancePage = () => {
     const { user, loading } = useContext(AuthContext);
     const { classroomId } = useParams();
@@ -33,9 +34,8 @@ const AttendancePage = () => {
     const [showCreateSession, setShowCreateSession] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
     const [isExporting, setIsExporting] = useState(false);
-    const [updateTrigger, setUpdateTrigger] = useState(0); // Add trigger for force updates
+    const [updateTrigger, setUpdateTrigger] = useState(0);
 
-    // Enhanced owner check function (memoized to prevent infinite re-renders)
     const isOwner = useCallback(() => {
         if (!classroom || !user) return false;
 
@@ -84,7 +84,6 @@ const AttendancePage = () => {
         return isDirectOwner || isInTeachersArray || isInInstructorsArray || hasTeacherRole;
     }, [classroom, user]);
 
-    // Real Attendance Calculation Function
     const calculateRealAttendanceStats = useCallback(() => {
         if (!attendanceSessions || attendanceSessions.length === 0) {
             return {
@@ -166,7 +165,6 @@ const AttendancePage = () => {
         }
     }, [attendanceSessions, classroom, user, isOwner]);
 
-    // Fetch classroom and attendance data
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -195,7 +193,6 @@ const AttendancePage = () => {
         }
     }, [classroomId, user, loading, axiosPublic, navigate]);
 
-    // Enhanced update attendance function with immediate state updates
     const updateAttendance = async (sessionId, studentEmail, status) => {
         try {
             if (!isOwner()) {
@@ -208,7 +205,6 @@ const AttendancePage = () => {
                 return false;
             }
 
-            // Show loading state
             Swal.fire({
                 title: 'Updating...',
                 text: 'Please wait while we update the attendance.',
@@ -227,7 +223,6 @@ const AttendancePage = () => {
             });
 
             if (response.data.success) {
-                // Update local state immediately for better UX
                 setAttendanceSessions(prevSessions =>
                     prevSessions.map(session => {
                         if (session.id === sessionId) {
@@ -249,7 +244,6 @@ const AttendancePage = () => {
                     })
                 );
 
-                // Update the selected session if it's the one being modified
                 if (selectedSession && selectedSession.id === sessionId) {
                     setSelectedSession(prevSession => ({
                         ...prevSession,
@@ -266,7 +260,6 @@ const AttendancePage = () => {
                     }));
                 }
 
-                // Trigger update indicator
                 setUpdateTrigger(prev => prev + 1);
 
                 Swal.fire({
@@ -291,29 +284,23 @@ const AttendancePage = () => {
         }
     };
 
-    // Enhanced session details close handler
     const handleSessionDetailsClose = (updatedSession = null) => {
         if (updatedSession) {
-            // Update the sessions array with the modified session
             setAttendanceSessions(prevSessions =>
                 prevSessions.map(session =>
                     session.id === updatedSession.id ? updatedSession : session
                 )
             );
-            // Trigger update indicator
             setUpdateTrigger(prev => prev + 1);
         }
         setSelectedSession(null);
     };
 
-    // Enhanced session details open handler
     const handleViewSessionDetails = (session) => {
-        // Pass the latest session data
         const latestSession = attendanceSessions.find(s => s.id === session.id) || session;
         setSelectedSession(latestSession);
     };
 
-    // Create new attendance session
     const createAttendanceSession = async (sessionData) => {
         try {
             if (!isOwner()) {
@@ -355,7 +342,6 @@ const AttendancePage = () => {
         }
     };
 
-    // Handle export all sessions as PDF
     const handleExportAllSessions = async () => {
         const stats = calculateRealAttendanceStats();
 
@@ -408,7 +394,6 @@ const AttendancePage = () => {
         }
     };
 
-    // Calculate real stats
     const stats = calculateRealAttendanceStats();
 
     if (loading || isLoading) {
@@ -416,13 +401,13 @@ const AttendancePage = () => {
             <div className="min-h-screen bg-slate-50">
                 <div className="flex">
                     <Sidebar />
-                    <div className="flex-1 ml-[320px] flex items-center justify-center">
+                    <div className="flex-1 lg:ml-[320px] flex items-center justify-center p-4">
                         <div className="text-center py-20">
                             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg mx-auto mb-6">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 mb-2">Loading Attendance Data</h3>
-                            <p className="text-slate-600">Please wait while we fetch your classroom information...</p>
+                            <p className="text-slate-600 text-sm sm:text-base px-4">Please wait while we fetch your classroom information...</p>
                         </div>
                     </div>
                 </div>
@@ -440,11 +425,49 @@ const AttendancePage = () => {
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px]">
-                    {/* Professional Header */}
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
-                        <div className="max-w-7xl mx-auto px-6 sm:px-8">
-                            <div className="flex items-center justify-between h-16">
+                <div className="flex-1 lg:ml-[320px]">
+                    {/* Responsive Header */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-30 lg:z-40">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            {/* Mobile Layout */}
+                            <div className="lg:hidden py-3 space-y-3">
+                                <button
+                                    onClick={() => navigate(`/classroom/${classroomId}`)}
+                                    className="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors duration-200"
+                                >
+                                    <MdArrowBack className="w-5 h-5 mr-2" />
+                                    <span className="text-sm font-medium">Back</span>
+                                </button>
+
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <MdBarChart className="w-5 h-5 text-blue-600" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h1 className="text-base font-bold text-slate-900 truncate">
+                                            {classroom?.name}
+                                        </h1>
+                                        <p className="text-xs text-slate-500 truncate">Attendance</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${isOwner()
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        }`}>
+                                        {isOwner() ? '👨‍🏫' : '👨‍🎓'}
+                                    </span>
+
+                                    <div className="flex items-center text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full border border-slate-200">
+                                        <MdPeople className="w-3 h-3 mr-1" />
+                                        <span className="font-medium">{classroom?.students?.length || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Desktop Layout */}
+                            <div className="hidden lg:flex items-center justify-between h-16">
                                 <div className="flex items-center space-x-6">
                                     <button
                                         onClick={() => navigate(`/classroom/${classroomId}`)}
@@ -472,8 +495,8 @@ const AttendancePage = () => {
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center space-x-3">
                                         <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isOwner()
-                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                             }`}>
                                             {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
                                         </span>
@@ -499,22 +522,35 @@ const AttendancePage = () => {
                         </div>
                     </div>
 
-                    {/* Main Content */}
-                    <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-                        {/* Professional Stats Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {/* Main Content - Responsive */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                        {/* Mobile New Session Button - Below Navbar */}
+                        {isOwner() && (
+                            <div className="lg:hidden mb-6">
+                                <button
+                                    onClick={() => setShowCreateSession(true)}
+                                    className="w-full inline-flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-blue-600/25"
+                                >
+                                    <MdAdd className="w-5 h-5 mr-2" />
+                                    Create New Session
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Stats Grid - Responsive */}
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
                             {/* Total Students Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                        <MdSchool className="w-6 h-6 text-blue-600" />
+                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                                        <MdSchool className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
+                                        <div className="text-xl sm:text-2xl font-bold text-slate-900">
                                             {classroom?.students?.length || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">
-                                            {isOwner() ? 'Total Students' : 'Class Size'}
+                                            {isOwner() ? 'Students' : 'Class Size'}
                                         </div>
                                     </div>
                                 </div>
@@ -524,16 +560,16 @@ const AttendancePage = () => {
                             </div>
 
                             {/* Total Sessions Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                                        <MdCalendarToday className="w-6 h-6 text-emerald-600" />
+                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                        <MdCalendarToday className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-2xl font-bold text-slate-900">
+                                        <div className="text-xl sm:text-2xl font-bold text-slate-900">
                                             {stats.totalSessions}
                                         </div>
-                                        <div className="text-xs text-slate-500 font-medium">Total Sessions</div>
+                                        <div className="text-xs text-slate-500 font-medium">Sessions</div>
                                     </div>
                                 </div>
                                 <div className="w-full bg-slate-100 rounded-full h-2">
@@ -545,26 +581,26 @@ const AttendancePage = () => {
                             </div>
 
                             {/* Attendance Rate Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                                        <MdTrendingUp className="w-6 h-6 text-amber-600" />
+                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 col-span-2 sm:col-span-1">
+                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-xl flex items-center justify-center">
+                                        <MdTrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className={`text-2xl font-bold ${stats.averageAttendance >= 80 ? 'text-emerald-600' :
-                                            stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
+                                        <div className={`text-xl sm:text-2xl font-bold ${stats.averageAttendance >= 80 ? 'text-emerald-600' :
+                                                stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
                                             }`}>
                                             {stats.averageAttendance}%
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">
-                                            {isOwner() ? 'Average Attendance' : 'Your Attendance'}
+                                            {isOwner() ? 'Average' : 'Your Rate'}
                                         </div>
                                     </div>
                                 </div>
                                 <div className="w-full bg-slate-100 rounded-full h-2">
                                     <div
                                         className={`h-2 rounded-full transition-all duration-500 ${stats.averageAttendance >= 80 ? 'bg-emerald-600' :
-                                            stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
+                                                stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
                                             }`}
                                         style={{ width: `${stats.averageAttendance}%` }}
                                     ></div>
@@ -573,43 +609,43 @@ const AttendancePage = () => {
 
                             {/* Export Report Card - Only for Teachers */}
                             {isOwner() && (
-                                <div className="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 col-span-2 sm:col-span-1">
                                     <button
                                         onClick={handleExportAllSessions}
                                         disabled={isExporting || attendanceSessions.length === 0}
                                         className="w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
                                     >
-                                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-200">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-200">
                                             {isExporting ? (
-                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                                                <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-purple-600"></div>
                                             ) : (
-                                                <MdFileDownload className="w-6 h-6 text-purple-600" />
+                                                <MdFileDownload className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                                             )}
                                         </div>
-                                        <div className="text-sm font-semibold text-slate-900 mb-1">
-                                            {isExporting ? 'Exporting...' : 'Export Report'}
+                                        <div className="text-xs sm:text-sm font-semibold text-slate-900 mb-1">
+                                            {isExporting ? 'Exporting...' : 'Export'}
                                         </div>
                                         <div className="text-xs text-slate-500">
-                                            {isExporting ? 'Please wait' : 'Download PDF'}
+                                            {isExporting ? 'Wait' : 'PDF'}
                                         </div>
                                     </button>
                                 </div>
                             )}
                         </div>
 
-                        {/* Sessions Section with Grid Layout */}
+                        {/* Sessions Section - Responsive */}
                         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-lg font-semibold text-slate-900">Attendance Sessions</h2>
+                            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                                    <h2 className="text-base sm:text-lg font-semibold text-slate-900">Attendance Sessions</h2>
                                     {attendanceSessions.length > 0 && (
-                                        <div className="flex items-center space-x-4">
-                                            <span className="text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                        <div className="flex items-center space-x-3 sm:space-x-4">
+                                            <span className="text-xs sm:text-sm text-slate-600 bg-slate-100 px-2 sm:px-3 py-1 rounded-full">
                                                 {attendanceSessions.length} session{attendanceSessions.length !== 1 ? 's' : ''}
                                             </span>
                                             {isOwner() && stats.totalPossibleAttendance > 0 && (
-                                                <span className="text-xs text-slate-500">
-                                                    {stats.totalActualAttendance}/{stats.totalPossibleAttendance} total attendance
+                                                <span className="text-xs text-slate-500 hidden sm:inline">
+                                                    {stats.totalActualAttendance}/{stats.totalPossibleAttendance} total
                                                 </span>
                                             )}
                                         </div>
@@ -617,17 +653,17 @@ const AttendancePage = () => {
                                 </div>
                             </div>
 
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 {attendanceSessions.length === 0 ? (
-                                    <div className="text-center py-12">
+                                    <div className="text-center py-12 px-4">
                                         <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
                                             <MdCalendarToday className="w-8 h-8 text-slate-400" />
                                         </div>
-                                        <h3 className="text-lg font-semibold text-slate-900 mb-3">No Attendance Sessions Yet</h3>
-                                        <p className="text-slate-600 mb-8 max-w-md mx-auto leading-relaxed">
+                                        <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-3">No Attendance Sessions Yet</h3>
+                                        <p className="text-slate-600 text-sm sm:text-base mb-8 max-w-md mx-auto leading-relaxed">
                                             {isOwner()
-                                                ? 'Start tracking student attendance by creating your first session. You can manage attendance for each class meeting.'
-                                                : 'Your teacher hasn\'t created any attendance sessions yet. Sessions will appear here once they\'re created.'
+                                                ? 'Start tracking student attendance by creating your first session.'
+                                                : 'Your teacher hasn\'t created any attendance sessions yet.'
                                             }
                                         </p>
                                         {isOwner() && (
@@ -636,13 +672,12 @@ const AttendancePage = () => {
                                                 className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-blue-600/25"
                                             >
                                                 <MdAdd className="w-4 h-4 mr-2" />
-                                                Create Your First Session
+                                                Create First Session
                                             </button>
                                         )}
                                     </div>
                                 ) : (
-                                    // Grid Layout for Attendance Sessions
-                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
                                         {attendanceSessions.map((session) => (
                                             <AttendanceSessionCard
                                                 key={`${session.id}-${updateTrigger}`}

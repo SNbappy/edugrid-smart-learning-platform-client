@@ -8,6 +8,7 @@ import useAxiosPublic from '../../hooks/useAxiosPublic';
 import Sidebar from '../Dashboard/Dashboard/Sidebar';
 import { uploadImageToImgBB, validateImageFile } from '../../services/imageUpload';
 
+
 const CreateClass = () => {
     const { user, loading } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
@@ -42,7 +43,7 @@ const CreateClass = () => {
         }
 
         setSelectedFile(file);
-        setImageError(''); // Clear any previous error
+        setImageError('');
 
         // Show preview immediately
         const reader = new FileReader();
@@ -163,25 +164,27 @@ const CreateClass = () => {
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px] p-8">
+                {/* Main Content - Responsive */}
+                <div className="flex-1 lg:ml-[320px] p-4 sm:p-6 lg:p-8">
                     <div className="max-w-2xl mx-auto">
-                        {/* Header */}
-                        <div className="mb-8">
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Classroom</h1>
-                            <p className="text-gray-600">Set up a new classroom for your students</p>
+                        {/* Header - Responsive */}
+                        <div className="mb-6 sm:mb-8">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Create New Classroom</h1>
+                            <p className="text-sm sm:text-base text-gray-600">Set up a new classroom for your students</p>
                         </div>
 
-                        {/* Form Container */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                                {/* Class Image Upload - Now Required */}
-                                <div className="text-center mb-8">
+                        {/* Form Container - Responsive Padding */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6">
+                                {/* Class Image Upload - Responsive */}
+                                <div className="text-center mb-6 sm:mb-8">
                                     <div className="flex flex-col items-center">
-                                        <label className="block text-sm font-medium text-gray-700 mb-3">
+                                        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">
                                             Class Image *
                                         </label>
-                                        <div className="relative mb-4">
-                                            <div className={`w-32 h-24 rounded-lg overflow-hidden border-2 bg-gray-50 flex items-center justify-center ${imageError ? 'border-red-300' : 'border-gray-200'}`}>
+                                        <div className="relative mb-3 sm:mb-4">
+                                            <div className={`w-28 h-20 sm:w-32 sm:h-24 rounded-lg overflow-hidden border-2 bg-gray-50 flex items-center justify-center ${imageError ? 'border-red-300' : 'border-gray-200'
+                                                }`}>
                                                 {imagePreview ? (
                                                     <img
                                                         src={imagePreview}
@@ -189,8 +192,8 @@ const CreateClass = () => {
                                                         className="w-full h-full object-cover"
                                                     />
                                                 ) : (
-                                                    <div className="text-gray-400 text-center">
-                                                        <svg className="w-8 h-8 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                                    <div className="text-gray-400 text-center px-2">
+                                                        <svg className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                                                         </svg>
                                                         <p className="text-xs">Required</p>
@@ -200,14 +203,14 @@ const CreateClass = () => {
 
                                             {isUploadingImage && (
                                                 <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                                                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                                                    <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-white"></div>
                                                 </div>
                                             )}
                                         </div>
 
-                                        <label className={`cursor-pointer px-4 py-2 rounded-md transition-colors text-sm ${selectedFile
-                                            ? 'bg-green-100 hover:bg-green-200 text-green-700'
-                                            : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
+                                        <label className={`cursor-pointer px-3 sm:px-4 py-1.5 sm:py-2 rounded-md transition-colors text-xs sm:text-sm ${selectedFile
+                                                ? 'bg-green-100 hover:bg-green-200 text-green-700'
+                                                : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
                                             }`}>
                                             {selectedFile ? 'Change Image' : 'Upload Image *'}
                                             <input
@@ -221,74 +224,74 @@ const CreateClass = () => {
                                         </label>
 
                                         {imageError && (
-                                            <p className="text-red-500 text-sm mt-2">{imageError}</p>
+                                            <p className="text-red-500 text-xs sm:text-sm mt-2">{imageError}</p>
                                         )}
 
-                                        <p className="text-xs text-gray-500 mt-2">
+                                        <p className="text-xs text-gray-500 mt-2 px-4 text-center">
                                             Upload an image that represents your classroom
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* Class Name */}
+                                {/* Class Name - Responsive */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                                         Class Name *
                                     </label>
                                     <input
                                         type="text"
                                         {...register('name', { required: 'Class name is required' })}
-                                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
+                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base text-gray-900 placeholder-gray-400"
                                         placeholder="e.g., Advanced Mathematics"
                                     />
                                     {errors.name && (
-                                        <span className="text-red-500 text-sm mt-1">{errors.name.message}</span>
+                                        <span className="text-red-500 text-xs sm:text-sm mt-1 block">{errors.name.message}</span>
                                     )}
                                 </div>
 
-                                {/* Subject */}
+                                {/* Subject - Responsive */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                                         Subject *
                                     </label>
                                     <input
                                         type="text"
                                         {...register('subject', { required: 'Subject is required' })}
-                                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
+                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base text-gray-900 placeholder-gray-400"
                                         placeholder="e.g., Mathematics"
                                     />
                                     {errors.subject && (
-                                        <span className="text-red-500 text-sm mt-1">{errors.subject.message}</span>
+                                        <span className="text-red-500 text-xs sm:text-sm mt-1 block">{errors.subject.message}</span>
                                     )}
                                 </div>
 
-                                {/* Description */}
+                                {/* Description - Responsive */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                                         Description (optional)
                                     </label>
                                     <textarea
                                         {...register('description')}
                                         rows="4"
-                                        className="w-full px-3 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400 resize-none"
+                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base text-gray-900 placeholder-gray-400 resize-none"
                                         placeholder="Brief description about the classroom..."
                                     />
                                 </div>
 
-                                {/* Action Buttons */}
-                                <div className="flex justify-end space-x-3 pt-6">
+                                {/* Action Buttons - Responsive */}
+                                <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-3 pt-4 sm:pt-6">
                                     <button
                                         type="button"
                                         onClick={() => navigate('/my-classes')}
                                         disabled={isLoading}
-                                        className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm sm:text-base font-medium"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isLoading || isUploadingImage || !selectedFile}
-                                        className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base font-medium"
                                     >
                                         {isLoading ? (
                                             <>

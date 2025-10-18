@@ -42,7 +42,6 @@ const MaterialsPage = () => {
     const isOwner = useCallback(() => {
         if (!classroom || !user) return false;
 
-        // Check multiple possible owner/teacher fields
         const possibleOwnerFields = [
             classroom.owner,
             classroom.teacher,
@@ -51,12 +50,10 @@ const MaterialsPage = () => {
             classroom.teacherEmail
         ];
 
-        // Check if user email matches any owner field (case insensitive)
         const isDirectOwner = possibleOwnerFields.some(field =>
             field && field.toLowerCase().trim() === user.email?.toLowerCase().trim()
         );
 
-        // Check if user is in teachers array (if it exists)
         const isInTeachersArray = classroom.teachers && Array.isArray(classroom.teachers) &&
             classroom.teachers.some(teacher => {
                 if (typeof teacher === 'string') {
@@ -68,7 +65,6 @@ const MaterialsPage = () => {
                 return false;
             });
 
-        // Check if user is in instructors array (if it exists)
         const isInInstructorsArray = classroom.instructors && Array.isArray(classroom.instructors) &&
             classroom.instructors.some(instructor => {
                 if (typeof instructor === 'string') {
@@ -80,7 +76,6 @@ const MaterialsPage = () => {
                 return false;
             });
 
-        // Check if user has teacher/owner role in members array
         const hasTeacherRole = classroom.members && Array.isArray(classroom.members) &&
             classroom.members.some(member => {
                 const emailMatch = member.email?.toLowerCase().trim() === user.email?.toLowerCase().trim() ||
@@ -134,7 +129,6 @@ const MaterialsPage = () => {
                 material.type === 'doc' ||
                 material.type === 'docx' ||
                 material.type === 'presentation' ||
-                // Check file extensions if available
                 (material.fileName && /\.(pdf|doc|docx|ppt|pptx|txt|rtf|xls|xlsx)$/i.test(material.fileName)) ||
                 (material.name && /\.(pdf|doc|docx|ppt|pptx|txt|rtf|xls|xlsx)$/i.test(material.name))
             );
@@ -168,14 +162,12 @@ const MaterialsPage = () => {
         };
 
         materials.forEach(material => {
-            // Count YouTube videos
             if (material.type === 'youtube' ||
                 material.type === 'video' ||
                 (material.url && material.url.includes('youtube.com')) ||
                 (material.url && material.url.includes('youtu.be'))) {
                 stats.youtube++;
             }
-            // Count files (including documents, PPTs, PDFs, etc.)
             else if (material.type === 'file' ||
                 material.type === 'document' ||
                 material.type === 'ppt' ||
@@ -183,12 +175,10 @@ const MaterialsPage = () => {
                 material.type === 'doc' ||
                 material.type === 'docx' ||
                 material.type === 'presentation' ||
-                // Check file extensions
                 (material.fileName && /\.(pdf|doc|docx|ppt|pptx|txt|rtf|xls|xlsx)$/i.test(material.fileName)) ||
                 (material.name && /\.(pdf|doc|docx|ppt|pptx|txt|rtf|xls|xlsx)$/i.test(material.name))) {
                 stats.file++;
             }
-            // Count external links
             else if (material.type === 'link' ||
                 (material.url &&
                     !material.url.includes('youtube.com') &&
@@ -197,11 +187,9 @@ const MaterialsPage = () => {
                     material.type !== 'document')) {
                 stats.link++;
             }
-            // Default fallback - if type is not recognized, count as file if it has a file-like property
             else if (material.fileName || material.fileUrl || material.attachment) {
                 stats.file++;
             }
-            // Otherwise count as link if it has a URL
             else if (material.url) {
                 stats.link++;
             }
@@ -226,13 +214,13 @@ const MaterialsPage = () => {
             <div className="min-h-screen bg-slate-50">
                 <div className="flex">
                     <Sidebar />
-                    <div className="flex-1 ml-[320px] flex items-center justify-center">
+                    <div className="flex-1 lg:ml-[320px] flex items-center justify-center p-4">
                         <div className="text-center py-20">
                             <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg mx-auto mb-6">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                             </div>
                             <h3 className="text-lg font-semibold text-slate-900 mb-2">Loading Materials</h3>
-                            <p className="text-slate-600">Please wait while we fetch your classroom materials...</p>
+                            <p className="text-slate-600 text-sm sm:text-base px-4">Please wait while we fetch your classroom materials...</p>
                         </div>
                     </div>
                 </div>
@@ -250,11 +238,49 @@ const MaterialsPage = () => {
             <div className="flex">
                 <Sidebar />
 
-                <div className="flex-1 ml-[320px]">
-                    {/* Professional Header */}
-                    <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
-                        <div className="max-w-7xl mx-auto px-6 sm:px-8">
-                            <div className="flex items-center justify-between h-16">
+                <div className="flex-1 lg:ml-[320px]">
+                    {/* Responsive Header */}
+                    <div className="bg-white border-b border-slate-200 sticky top-0 z-30 lg:z-40">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            {/* Mobile Layout */}
+                            <div className="lg:hidden py-3 space-y-3">
+                                <button
+                                    onClick={() => navigate(`/classroom/${classroomId}`)}
+                                    className="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors duration-200"
+                                >
+                                    <MdArrowBack className="w-5 h-5 mr-2" />
+                                    <span className="text-sm font-medium">Back</span>
+                                </button>
+
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <MdLibraryBooks className="w-5 h-5 text-teal-600" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h1 className="text-base font-bold text-slate-900 truncate">
+                                            {classroom?.name}
+                                        </h1>
+                                        <p className="text-xs text-slate-500 truncate">Materials Library</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${isOwner()
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        }`}>
+                                        {isOwner() ? '👨‍🏫' : '👨‍🎓'}
+                                    </span>
+
+                                    <div className="flex items-center text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full border border-slate-200">
+                                        <MdPeople className="w-3 h-3 mr-1" />
+                                        <span className="font-medium">{classroom?.students?.length || 0}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Desktop Layout */}
+                            <div className="hidden lg:flex items-center justify-between h-16">
                                 <div className="flex items-center space-x-6">
                                     <button
                                         onClick={() => navigate(`/classroom/${classroomId}`)}
@@ -309,22 +335,35 @@ const MaterialsPage = () => {
                         </div>
                     </div>
 
-                    {/* Main Content */}
-                    <div className="max-w-7xl mx-auto px-6 sm:px-8 py-8">
-                        {/* Professional Stats Grid - 4 Cards */}
-                        <div className="grid grid-cols-4 gap-4 mb-8">
+                    {/* Main Content - Responsive */}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                        {/* Mobile Add Material Button - Below Navbar */}
+                        {isOwner() && (
+                            <div className="lg:hidden mb-6">
+                                <button
+                                    onClick={() => setShowAddMaterial(true)}
+                                    className="w-full inline-flex items-center justify-center px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium rounded-lg transition-colors duration-200 shadow-lg shadow-teal-600/25"
+                                >
+                                    <MdAdd className="w-5 h-5 mr-2" />
+                                    Add New Material
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Stats Grid - Responsive */}
+                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                             {/* Total Materials Card */}
                             <div
-                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'all' ? 'border-teal-300 ring-2 ring-teal-200' : 'border-slate-200'
+                                className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'all' ? 'border-teal-300 ring-2 ring-teal-200' : 'border-slate-200'
                                     }`}
                                 onClick={() => setFilterType('all')}
                             >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                                        <MdLibraryBooks className="w-5 h-5 text-teal-600" />
+                                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                                        <MdLibraryBooks className="w-4 h-4 sm:w-5 sm:h-5 text-teal-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xl font-bold text-slate-900">
+                                        <div className="text-lg sm:text-xl font-bold text-slate-900">
                                             {materialStats?.total || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Total</div>
@@ -337,16 +376,16 @@ const MaterialsPage = () => {
 
                             {/* Videos Card */}
                             <div
-                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'youtube' || filterType === 'video' ? 'border-purple-300 ring-2 ring-purple-200' : 'border-slate-200'
+                                className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'youtube' || filterType === 'video' ? 'border-purple-300 ring-2 ring-purple-200' : 'border-slate-200'
                                     }`}
                                 onClick={() => setFilterType(filterType === 'youtube' || filterType === 'video' ? 'all' : 'youtube')}
                             >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                        <MdVideoLibrary className="w-5 h-5 text-purple-600" />
+                                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                                        <MdVideoLibrary className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xl font-bold text-slate-900">
+                                        <div className="text-lg sm:text-xl font-bold text-slate-900">
                                             {materialStats?.youtube || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Videos</div>
@@ -360,18 +399,18 @@ const MaterialsPage = () => {
                                 </div>
                             </div>
 
-                            {/* Files Card (includes all documents, PPTs, PDFs, etc.) */}
+                            {/* Files Card */}
                             <div
-                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'file' || filterType === 'files' ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-200'
+                                className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'file' || filterType === 'files' ? 'border-emerald-300 ring-2 ring-emerald-200' : 'border-slate-200'
                                     }`}
                                 onClick={() => setFilterType(filterType === 'file' || filterType === 'files' ? 'all' : 'file')}
                             >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
-                                        <MdAttachFile className="w-5 h-5 text-emerald-600" />
+                                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                                        <MdAttachFile className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xl font-bold text-slate-900">
+                                        <div className="text-lg sm:text-xl font-bold text-slate-900">
                                             {materialStats?.file || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Files</div>
@@ -387,16 +426,16 @@ const MaterialsPage = () => {
 
                             {/* Links Card */}
                             <div
-                                className={`bg-white rounded-lg border p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'link' || filterType === 'links' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
+                                className={`bg-white rounded-lg border p-3 sm:p-4 hover:shadow-md transition-all duration-300 cursor-pointer ${filterType === 'link' || filterType === 'links' ? 'border-blue-300 ring-2 ring-blue-200' : 'border-slate-200'
                                     }`}
                                 onClick={() => setFilterType(filterType === 'link' || filterType === 'links' ? 'all' : 'link')}
                             >
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                        <MdLink className="w-5 h-5 text-blue-600" />
+                                <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                        <MdLink className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                                     </div>
                                     <div className="text-right">
-                                        <div className="text-xl font-bold text-slate-900">
+                                        <div className="text-lg sm:text-xl font-bold text-slate-900">
                                             {materialStats?.link || 0}
                                         </div>
                                         <div className="text-xs text-slate-500 font-medium">Links</div>
@@ -411,35 +450,35 @@ const MaterialsPage = () => {
                             </div>
                         </div>
 
-                        {/* Materials Section */}
+                        {/* Materials Section - Responsive */}
                         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                                <div className="flex items-center justify-between">
-                                    <h2 className="text-lg font-semibold text-slate-900">Course Materials</h2>
-                                    <div className="flex items-center space-x-4">
+                            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-slate-50">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
+                                    <h2 className="text-base sm:text-lg font-semibold text-slate-900">Course Materials</h2>
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                                         {materials && materials.length > 0 && (
-                                            <span className="text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full">
+                                            <span className="text-xs sm:text-sm text-slate-600 bg-slate-100 px-2 sm:px-3 py-1 rounded-full">
                                                 {filteredMaterials?.length || 0} material{filteredMaterials?.length !== 1 ? 's' : ''}
                                             </span>
                                         )}
-                                        <div className="flex items-center space-x-2">
-                                            <label className="text-sm text-slate-600">Filter:</label>
+                                        <div className="flex items-center space-x-2 w-full sm:w-auto">
+                                            <label className="text-xs sm:text-sm text-slate-600">Filter:</label>
                                             <select
                                                 value={filterType}
                                                 onChange={(e) => setFilterType(e.target.value)}
-                                                className="text-sm border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                                                className="text-xs sm:text-sm border border-slate-300 rounded-lg px-2 sm:px-3 py-1.5 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 flex-1 sm:flex-none"
                                             >
                                                 <option value="all">All Materials</option>
                                                 <option value="youtube">Videos</option>
-                                                <option value="file">Files (PDFs, Docs, PPTs)</option>
-                                                <option value="link">External Links</option>
+                                                <option value="file">Files</option>
+                                                <option value="link">Links</option>
                                             </select>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="p-6">
+                            <div className="p-4 sm:p-6">
                                 <MaterialsGrid
                                     materials={filteredMaterials}
                                     onDelete={deleteMaterial}
