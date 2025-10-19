@@ -21,6 +21,8 @@ import Classroom from "../pages/Classroom/Classroom";
 import TasksPage from "../pages/Classroom/Tasks/TasksPage";
 import MarksPage from "../pages/Classroom/MarksPage";
 import MaterialsPage from "../pages/Classroom/MaterialsPage";
+import PublicRoute from "./PublicRoute";
+import ClassroomRoute from "../pages/Classroom/ClassroomRoute";
 
 export const router = createBrowserRouter([
     {
@@ -45,19 +47,19 @@ export const router = createBrowserRouter([
             // },
             {
                 path: 'all-classes',
-                element: <AllClasses/>
+                element: <AllClasses />
             },
             {
                 path: 'sign-up',
-                element: <SignUp/>
+                element: <PublicRoute><SignUp /></PublicRoute>
             },
             {
                 path: 'login',
-                element: <Login/>
+                element: <PublicRoute><Login /></PublicRoute>
             },
             {
                 path: 'forgot-password',
-                element: <ForgotPassword/>
+                element: <PublicRoute><ForgotPassword /></PublicRoute>
             }
         ]
     },
@@ -79,22 +81,22 @@ export const router = createBrowserRouter([
     },
     {
         path: '/classroom/:classroomId',
-        element: <PrivateRoute><Classroom /></PrivateRoute>
+        element: <ClassroomRoute><Classroom /></ClassroomRoute>
     },
     {
         path: '/classroom/:classroomId/attendance',
-        element: <PrivateRoute><AttendancePage /></PrivateRoute>
+        element: <ClassroomRoute><AttendancePage /></ClassroomRoute>
     },
     {
         path: '/classroom/:classroomId/materials',
-        element: <PrivateRoute><MaterialsPage /></PrivateRoute>
+        element: <ClassroomRoute><MaterialsPage /></ClassroomRoute>
     },
     {
         path: '/classroom/:classroomId/tasks',
-        element: <PrivateRoute><TasksPage /></PrivateRoute>
+        element: <ClassroomRoute><TasksPage /></ClassroomRoute>
     },
     {
         path: '/classroom/:classroomId/marks',
-        element: <PrivateRoute><MarksPage /></PrivateRoute>
+        element: <ClassroomRoute><MarksPage /></ClassroomRoute>
     }
 ]);
