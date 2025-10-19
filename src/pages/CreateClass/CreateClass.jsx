@@ -183,14 +183,19 @@ const CreateClass = () => {
                 {/* Main Content - Responsive */}
                 <div className="flex-1 lg:ml-[320px] p-4 sm:p-6 lg:p-8">
                     <div className="max-w-2xl mx-auto">
-                        {/* Header - Responsive */}
+                        {/* Simplified Breadcrumb Header - Matching Edit Profile Style */}
                         <div className="mb-6 sm:mb-8">
-                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Create New Classroom</h1>
-                            <p className="text-sm sm:text-base text-gray-600">Set up a new classroom for your students</p>
+                            <nav className="flex items-center space-x-2 text-sm text-slate-600 mb-4">
+                                <span>Dashboard</span>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                                <span className="text-slate-900 font-medium">Create Classroom</span>
+                            </nav>
                         </div>
 
                         {/* Form Container - Responsive Padding */}
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6">
                                 {/* Class Image Upload - Responsive (OPTIONAL) */}
                                 <div className="text-center mb-6 sm:mb-8">
@@ -258,7 +263,7 @@ const CreateClass = () => {
                                     <input
                                         type="text"
                                         {...register('name', { required: 'Class name is required' })}
-                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base text-gray-900 placeholder-gray-400"
+                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#457B9D]/20 focus:border-[#457B9D] text-sm sm:text-base text-gray-900 placeholder-gray-400 transition-all"
                                         placeholder="e.g., Advanced Mathematics"
                                     />
                                     {errors.name && (
@@ -274,7 +279,7 @@ const CreateClass = () => {
                                     <input
                                         type="text"
                                         {...register('subject', { required: 'Subject is required' })}
-                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base text-gray-900 placeholder-gray-400"
+                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#457B9D]/20 focus:border-[#457B9D] text-sm sm:text-base text-gray-900 placeholder-gray-400 transition-all"
                                         placeholder="e.g., Mathematics"
                                     />
                                     {errors.subject && (
@@ -290,7 +295,7 @@ const CreateClass = () => {
                                     <textarea
                                         {...register('description')}
                                         rows="4"
-                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm sm:text-base text-gray-900 placeholder-gray-400 resize-none"
+                                        className="w-full px-3 py-2 sm:py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#457B9D]/20 focus:border-[#457B9D] text-sm sm:text-base text-gray-900 placeholder-gray-400 resize-none transition-all"
                                         placeholder="Brief description about the classroom..."
                                     />
                                 </div>
@@ -301,14 +306,14 @@ const CreateClass = () => {
                                         type="button"
                                         onClick={() => navigate('/my-classes')}
                                         disabled={isLoading}
-                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm sm:text-base font-medium"
+                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 text-sm sm:text-base font-semibold"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
                                         disabled={isLoading || isUploadingImage}
-                                        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base font-medium"
+                                        className="w-full sm:w-auto px-6 sm:px-8 py-2 sm:py-2.5 bg-gradient-to-r from-[#457B9D] to-[#5D8FB8] hover:from-[#3a6b8a] hover:to-[#457B9D] text-white rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base font-semibold shadow-md"
                                     >
                                         {isLoading ? (
                                             <>

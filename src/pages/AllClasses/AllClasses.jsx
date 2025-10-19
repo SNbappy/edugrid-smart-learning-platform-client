@@ -238,8 +238,8 @@ const AllClasses = () => {
     }
 
     return (
-        <div className="min-h-screen" style={{
-            backgroundColor: '#f8fafc',
+        <div className="min-h-screen bg-[#DCE8F5] font-poppins" style={{
+            // backgroundColor: '#f8fafc',
             colorScheme: 'light'
         }}>
             <Helmet>
