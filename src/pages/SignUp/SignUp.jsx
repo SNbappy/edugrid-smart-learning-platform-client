@@ -11,6 +11,9 @@ const SignUp = () => {
     const axiosPublic = useAxiosPublic();
     const [isLoading, setIsLoading] = useState(false);
 
+    // Debug: Log when component mounts
+    console.log('SignUp component mounted, title should be: EduGrid | Sign up');
+
     const {
         register,
         handleSubmit,
@@ -141,9 +144,10 @@ const SignUp = () => {
         <div className="bg-[#DCE8F5] font-poppins text-black min-h-screen">
             <div className="max-w-[1250px] mx-auto px-4 sm:px-6 lg:px-8">
                 <Helmet>
-                    <title>EduGrid | Sign Up</title>
+                    <title>EduGrid | Sign up</title>
+                    <meta name="description" content="Create a new account on EduGrid - Smart Learning Platform. Join thousands of students and teachers in our innovative educational community." />
+                    <meta name="robots" content="index, follow" />
                 </Helmet>
-
                 <div className="flex flex-col lg:flex-row lg:justify-between items-center gap-6 lg:gap-8 py-6 lg:py-8">
                     {/* Form Container */}
                     <div className="bg-[#DCE8F5]/30 rounded-[20px] lg:rounded-[30px] shadow-2xl px-6 sm:px-10 md:px-16 lg:px-[70px] w-full lg:w-1/2 py-8 sm:py-12 lg:pt-[80px] lg:pb-[40px]">

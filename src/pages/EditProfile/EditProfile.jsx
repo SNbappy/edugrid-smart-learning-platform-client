@@ -65,20 +65,15 @@ const EditProfile = () => {
         }
     };
 
-    // Fetch user data when component loads - with debugging
+    // Fetch user data when component loads
     useEffect(() => {
         const fetchUserData = async () => {
             if (user?.email) {
                 try {
-                    console.log('📋 Fetching user data for:', user.email);
                     const response = await axiosPublic.get(`/users/${user.email}`);
 
                     if (response.data.success) {
                         const fetchedUser = response.data.user;
-                        console.log('🔍 Full fetched user data:', fetchedUser);
-                        console.log('🔍 Profile photo URL:', fetchedUser.photoURL);
-                        console.log('🔍 Cover photo URL:', fetchedUser.coverPhotoURL);
-
                         setUserData(fetchedUser);
 
                         // Populate form with existing data
@@ -94,16 +89,12 @@ const EditProfile = () => {
 
                         // Set photo preview if exists
                         if (fetchedUser.photoURL) {
-                            console.log('✅ Setting profile photo preview:', fetchedUser.photoURL);
                             setPhotoPreview(fetchedUser.photoURL);
                         }
 
                         // Set cover photo preview if exists
                         if (fetchedUser.coverPhotoURL) {
-                            console.log('✅ Setting cover photo preview:', fetchedUser.coverPhotoURL);
                             setCoverPreview(fetchedUser.coverPhotoURL);
-                        } else {
-                            console.log('❌ No cover photo URL found in user data');
                         }
 
                         // Set selected country code for existing data
@@ -115,11 +106,9 @@ const EditProfile = () => {
                                 setSelectedCountryCode(existingCountry.isoCode);
                             }
                         }
-
-                        console.log('✅ User data loaded successfully');
                     }
                 } catch (error) {
-                    console.error('❌ Error fetching user data:', error);
+                    console.error('Error fetching user data:', error);
                     Swal.fire({
                         icon: 'error',
                         title: 'Error!',
@@ -139,8 +128,6 @@ const EditProfile = () => {
         const file = event.target.files[0];
         if (!file) return;
 
-        console.log('📷 Profile photo selected:', file.name);
-
         // Validate file
         const validation = validateImageFile(file);
         if (!validation.valid) {
@@ -158,7 +145,6 @@ const EditProfile = () => {
         const reader = new FileReader();
         reader.onloadend = () => {
             setPhotoPreview(reader.result);
-            console.log('✅ Profile photo preview set');
         };
         reader.readAsDataURL(file);
     };
@@ -167,8 +153,6 @@ const EditProfile = () => {
     const handleCoverPhotoChange = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
-
-        console.log('🖼️ Cover photo selected:', file.name);
 
         // Validate file
         const validation = validateImageFile(file);
@@ -187,7 +171,6 @@ const EditProfile = () => {
         const reader = new FileReader();
         reader.onloadend = () => {
             setCoverPreview(reader.result);
-            console.log('✅ Cover photo preview set');
         };
         reader.readAsDataURL(file);
     };
@@ -195,36 +178,24 @@ const EditProfile = () => {
     // Upload profile photo to ImgBB
     const uploadPhoto = async () => {
         if (!selectedFile) {
-            console.log('❌ No profile file selected');
             return null;
         }
 
         setIsUploadingImage(true);
         try {
-            console.log('📤 Starting profile photo upload to ImgBB...');
-            console.log('📤 Profile file details:', {
-                name: selectedFile.name,
-                size: selectedFile.size,
-                type: selectedFile.type
-            });
-
             // Compress image before upload
             const compressedFile = await compressImage(selectedFile, 800, 0.8);
-            console.log('🗜️ Profile photo compressed successfully');
 
             // Upload to ImgBB
             const uploadResult = await uploadImageToImgBB(compressedFile);
-            console.log('📤 ImgBB upload result:', uploadResult);
 
             if (uploadResult.success) {
-                console.log('✅ Profile photo uploaded successfully to:', uploadResult.url);
                 return uploadResult.url;
             } else {
-                console.log('❌ ImgBB upload failed:', uploadResult.error);
                 throw new Error(uploadResult.error);
             }
         } catch (error) {
-            console.error('❌ Profile photo upload failed:', error);
+            console.error('Profile photo upload failed:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Upload Failed!',
@@ -236,39 +207,27 @@ const EditProfile = () => {
         }
     };
 
-    // Upload cover photo to ImgBB with debugging
+    // Upload cover photo to ImgBB
     const uploadCoverPhoto = async () => {
         if (!selectedCoverFile) {
-            console.log('❌ No cover file selected');
             return null;
         }
 
         setIsUploadingCover(true);
         try {
-            console.log('📤 Starting cover photo upload to ImgBB...');
-            console.log('📤 Cover file details:', {
-                name: selectedCoverFile.name,
-                size: selectedCoverFile.size,
-                type: selectedCoverFile.type
-            });
-
             // Compress image before upload
             const compressedFile = await compressImage(selectedCoverFile, 1200, 0.8);
-            console.log('🗜️ Cover photo compressed successfully');
 
             // Upload to ImgBB
             const uploadResult = await uploadImageToImgBB(compressedFile);
-            console.log('📤 ImgBB upload result:', uploadResult);
 
             if (uploadResult.success) {
-                console.log('✅ Cover photo uploaded successfully to:', uploadResult.url);
                 return uploadResult.url;
             } else {
-                console.log('❌ ImgBB upload failed:', uploadResult.error);
                 throw new Error(uploadResult.error);
             }
         } catch (error) {
-            console.error('❌ Cover photo upload failed:', error);
+            console.error('Cover photo upload failed:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Upload Failed!',
@@ -280,49 +239,35 @@ const EditProfile = () => {
         }
     };
 
-    // THE onSubmit FUNCTION with enhanced debugging
+    // THE onSubmit FUNCTION
     const onSubmit = async (data) => {
         setIsLoading(true);
-        console.log('📝 Updating profile with data:', data);
 
         try {
             let photoURL = userData?.photoURL || '';
             let coverPhotoURL = userData?.coverPhotoURL || '';
 
-            console.log('🔍 Initial state:', {
-                hasSelectedFile: !!selectedFile,
-                hasSelectedCoverFile: !!selectedCoverFile,
-                currentPhotoURL: photoURL,
-                currentCoverPhotoURL: coverPhotoURL
-            });
-
             // Upload new profile photo if selected
             if (selectedFile) {
-                console.log('📤 Uploading profile photo...');
                 const uploadedPhotoURL = await uploadPhoto();
                 if (uploadedPhotoURL) {
                     photoURL = uploadedPhotoURL;
-                    console.log('✅ Profile photo uploaded:', photoURL);
                 } else {
-                    console.log('❌ Profile photo upload failed');
                     return;
                 }
             }
 
             // Upload new cover photo if selected
             if (selectedCoverFile) {
-                console.log('📤 Uploading cover photo...');
                 const uploadedCoverURL = await uploadCoverPhoto();
                 if (uploadedCoverURL) {
                     coverPhotoURL = uploadedCoverURL;
-                    console.log('✅ Cover photo uploaded:', coverPhotoURL);
                 } else {
-                    console.log('❌ Cover photo upload failed');
                     return;
                 }
             }
 
-            // Prepare update data - ALL fields at root level
+            // Prepare update data
             const updateData = {
                 name: data.name,
                 photoURL: photoURL,
@@ -336,14 +281,7 @@ const EditProfile = () => {
                 mailLink: data.mailLink
             };
 
-            console.log('📝 Final update data being sent:', updateData);
-            console.log('📝 Cover photo URL in update data:', updateData.coverPhotoURL);
-
             const response = await axiosPublic.put(`/users/${user.email}`, updateData);
-
-            console.log('✅ API Response:', response.data);
-            console.log('🔍 Returned user object:', response.data.user);
-            console.log('🔍 Returned user coverPhotoURL:', response.data.user?.coverPhotoURL);
 
             if (response.data.success) {
                 Swal.fire({
@@ -376,15 +314,12 @@ const EditProfile = () => {
                     }
                 }));
 
-                console.log('🔄 Updated local userData with coverPhotoURL:', coverPhotoURL);
-
                 setTimeout(() => {
                     navigate('/dashboard');
                 }, 1500);
             }
         } catch (error) {
-            console.error('❌ Error updating profile:', error);
-            console.error('❌ Error response:', error.response?.data);
+            console.error('Error updating profile:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Update Failed!',
@@ -397,10 +332,29 @@ const EditProfile = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-slate-50">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#457B9D] border-t-transparent mx-auto mb-4"></div>
-                    <p className="text-slate-600 font-medium">Loading profile...</p>
+            <div className="min-h-screen flex items-center justify-center" style={{
+                backgroundColor: '#f8fafc',
+                colorScheme: 'light'
+            }}>
+                <div className="text-center rounded-2xl p-8 shadow-xl" style={{
+                    backgroundColor: '#ffffff',
+                    borderColor: '#e2e8f0',
+                    borderWidth: '1px',
+                    borderStyle: 'solid'
+                }}>
+                    <div className="relative">
+                        <div className="animate-spin rounded-full h-16 w-16 border-4 mx-auto mb-6" style={{
+                            borderColor: 'rgba(69, 123, 157, 0.2)',
+                            borderTopColor: '#457B9D'
+                        }}></div>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-full animate-pulse" style={{
+                                background: 'linear-gradient(to right, #457B9D, #5D8FB8)'
+                            }}></div>
+                        </div>
+                    </div>
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#1e293b' }}>Loading Your Profile</h3>
+                    <p style={{ color: '#475569' }}>Please wait while we fetch your information...</p>
                 </div>
             </div>
         );
@@ -412,30 +366,71 @@ const EditProfile = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen" style={{
+            backgroundColor: '#f8fafc',
+            colorScheme: 'light'
+        }}>
             <Helmet>
                 <title>EduGrid | Edit Profile</title>
+                <meta name="color-scheme" content="light" />
             </Helmet>
+
+            <style>{`
+                /* Force light mode colors for this component */
+                input, textarea, select {
+                    color-scheme: light;
+                    background-color: #ffffff !important;
+                    color: #1e293b !important;
+                    border-color: #cbd5e1 !important;
+                }
+                
+                input::placeholder, textarea::placeholder {
+                    color: #94a3b8 !important;
+                }
+                
+                input:disabled {
+                    background-color: #f1f5f9 !important;
+                    color: #64748b !important;
+                }
+                
+                /* Ensure dropdown options are readable */
+                select option {
+                    background-color: #ffffff !important;
+                    color: #1e293b !important;
+                }
+            `}</style>
 
             <div className="flex">
                 <Sidebar />
 
                 {/* Main Content - Responsive with sidebar adjustment */}
                 <div className="flex-1 lg:ml-[320px] p-4 sm:p-6">
-                    <div className="max-w-4xl mx-auto">
-                        {/* Professional Header */}
+                    <div className="max-w-5xl mx-auto">
+                        {/* Simplified Professional Header */}
                         <div className="mb-6 sm:mb-8">
-                            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Edit Profile</h1>
-                            <p className="text-slate-600 mt-1 text-sm sm:text-base">Update your personal information and preferences</p>
+                            <nav className="flex items-center space-x-2 text-sm mb-4">
+                                <span style={{ color: '#64748b' }}>Dashboard</span>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#64748b' }}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                                <span className="font-medium" style={{ color: '#0f172a' }}>Edit Profile</span>
+                            </nav>
                         </div>
 
-                        {/* Main Content */}
-                        <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                        {/* Main Content Card */}
+                        <div className="rounded-2xl shadow-sm overflow-hidden" style={{
+                            backgroundColor: '#ffffff',
+                            borderColor: '#e2e8f0',
+                            borderWidth: '1px',
+                            borderStyle: 'solid'
+                        }}>
                             <form onSubmit={handleSubmit(onSubmit)}>
                                 {/* Cover and Profile Photo Section */}
                                 <div className="relative">
-                                    {/* Cover Photo Section - Responsive Height */}
-                                    <div className="relative h-32 sm:h-40 md:h-48 bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] overflow-hidden">
+                                    {/* Cover Photo Section */}
+                                    <div className="relative h-40 sm:h-48 md:h-56 overflow-hidden" style={{
+                                        background: 'linear-gradient(to bottom right, #457B9D, #5D8FB8, #3a6b8a)'
+                                    }}>
                                         {coverPreview ? (
                                             <img
                                                 src={coverPreview}
@@ -443,24 +438,28 @@ const EditProfile = () => {
                                                 className="w-full h-full object-cover"
                                             />
                                         ) : (
-                                            <div className="w-full h-full bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] flex items-center justify-center">
-                                                <div className="text-center text-white">
-                                                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            <div className="w-full h-full flex items-center justify-center" style={{
+                                                background: 'linear-gradient(to bottom right, #457B9D, #5D8FB8, #3a6b8a)'
+                                            }}>
+                                                <div className="text-center" style={{ color: '#ffffff' }}>
+                                                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ opacity: 0.7 }}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                     </svg>
-                                                    <p className="text-xs sm:text-sm opacity-75 hidden sm:block">Add a cover photo</p>
+                                                    <p className="text-sm sm:text-base font-medium" style={{ opacity: 0.9 }}>Add Cover Photo</p>
                                                 </div>
                                             </div>
                                         )}
 
-                                        {/* Cover Photo Upload Button - Responsive */}
-                                        <label className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/90 hover:bg-white text-slate-700 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg cursor-pointer transition-all shadow-md text-xs sm:text-sm font-medium">
-                                            <svg className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        {/* Cover Photo Upload Button */}
+                                        <label className="absolute top-4 right-4 sm:top-6 sm:right-6 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl cursor-pointer transition-all shadow-md text-sm font-medium" style={{
+                                            backgroundColor: '#ffffff',
+                                            color: '#334155'
+                                        }}>
+                                            <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
-                                            <span className="hidden sm:inline">{coverPreview ? 'Change Cover' : 'Add Cover'}</span>
-                                            <span className="sm:hidden">Cover</span>
+                                            {coverPreview ? 'Change Cover' : 'Add Cover'}
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -470,22 +469,36 @@ const EditProfile = () => {
                                             />
                                         </label>
 
-                                        {/* Cover Upload Loading */}
+                                        {/* Upload Loading */}
                                         {isUploadingCover && (
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                <div className="bg-white rounded-lg p-3 sm:p-4 flex items-center">
-                                                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-[#457B9D] border-t-transparent mr-2 sm:mr-3"></div>
-                                                    <span className="text-slate-700 font-medium text-xs sm:text-sm">Uploading...</span>
+                                            <div className="absolute inset-0 flex items-center justify-center" style={{
+                                                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                                                backdropFilter: 'blur(4px)'
+                                            }}>
+                                                <div className="rounded-xl p-6 flex items-center shadow-xl" style={{ backgroundColor: '#ffffff' }}>
+                                                    <div className="animate-spin rounded-full h-5 w-5 mr-3" style={{
+                                                        borderWidth: '3px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#457B9D',
+                                                        borderTopColor: 'transparent'
+                                                    }}></div>
+                                                    <span className="font-semibold" style={{ color: '#334155' }}>Uploading cover photo...</span>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Profile Photo Section - Responsive */}
-                                    <div className="relative px-4 sm:px-6 md:px-8 pb-6 sm:pb-8">
-                                        <div className="flex -mt-12 sm:-mt-16 mb-4 sm:mb-6">
-                                            <div className="relative">
-                                                <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-white">
+                                    {/* Profile Photo Section */}
+                                    <div className="relative px-6 sm:px-8 md:px-10 pb-8 sm:pb-10" style={{ backgroundColor: '#ffffff' }}>
+                                        <div className="flex items-start -mt-12 sm:-mt-14 mb-6 sm:mb-8 relative z-10">
+                                            <div className="relative mr-6">
+                                                {/* Profile Photo */}
+                                                <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden shadow-xl" style={{
+                                                    backgroundColor: '#ffffff',
+                                                    borderWidth: '4px',
+                                                    borderStyle: 'solid',
+                                                    borderColor: '#ffffff'
+                                                }}>
                                                     {photoPreview ? (
                                                         <img
                                                             src={photoPreview}
@@ -493,17 +506,25 @@ const EditProfile = () => {
                                                             className="w-full h-full object-cover"
                                                         />
                                                     ) : (
-                                                        <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                                                            <svg className="w-10 h-10 sm:w-12 sm:h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                        <div className="w-full h-full flex items-center justify-center" style={{
+                                                            background: 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)'
+                                                        }}>
+                                                            <svg className="w-12 h-12 sm:w-14 sm:h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                             </svg>
                                                         </div>
                                                     )}
                                                 </div>
 
                                                 {/* Profile Photo Upload Button */}
-                                                <label className="absolute bottom-0 right-0 sm:bottom-1 sm:right-1 bg-[#457B9D] text-white p-1.5 sm:p-2 rounded-full cursor-pointer hover:bg-[#3a6b8a] transition-colors shadow-lg border-2 border-white">
-                                                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <label className="absolute bottom-2 right-2 p-2.5 rounded-full cursor-pointer transition-all duration-300 shadow-lg" style={{
+                                                    background: 'linear-gradient(to right, #457B9D, #5D8FB8)',
+                                                    color: '#ffffff',
+                                                    borderWidth: '3px',
+                                                    borderStyle: 'solid',
+                                                    borderColor: '#ffffff'
+                                                }}>
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     </svg>
@@ -518,200 +539,277 @@ const EditProfile = () => {
 
                                                 {/* Profile Photo Upload Loading */}
                                                 {isUploadingImage && (
-                                                    <div className="absolute inset-0 bg-black/50 rounded-2xl flex items-center justify-center">
-                                                        <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-2 border-white border-t-transparent"></div>
+                                                    <div className="absolute inset-0 rounded-3xl flex items-center justify-center" style={{
+                                                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                                                        backdropFilter: 'blur(4px)'
+                                                    }}>
+                                                        <div className="animate-spin rounded-full h-8 w-8" style={{
+                                                            borderWidth: '3px',
+                                                            borderStyle: 'solid',
+                                                            borderColor: '#ffffff',
+                                                            borderTopColor: 'transparent'
+                                                        }}></div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* User Info */}
+                                            <div className="flex-1 pt-4">
+                                                <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2" style={{ color: '#1e293b' }}>
+                                                    {userData?.name || user?.displayName || 'User Name'}
+                                                </h2>
+                                                <div className="flex items-center space-x-2 mb-2">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                    </svg>
+                                                    <p className="text-sm sm:text-base" style={{ color: '#64748b' }}>{user?.email}</p>
+                                                </div>
+                                                {userData?.profile?.institution && (
+                                                    <div className="flex items-center space-x-2">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                        </svg>
+                                                        <p className="text-sm sm:text-base font-medium" style={{ color: '#64748b' }}>{userData.profile.institution}</p>
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* User Info - Responsive */}
-                                        <div>
-                                            <h2 className="text-xl sm:text-2xl font-bold text-slate-800 mb-1">
-                                                {userData?.name || user?.displayName || 'User Name'}
-                                            </h2>
-                                            <p className="text-slate-600 text-xs sm:text-sm mb-2">{user?.email}</p>
-                                            {userData?.profile?.institution && (
-                                                <p className="text-slate-500 text-xs sm:text-sm mb-4">{userData.profile.institution}</p>
-                                            )}
-                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Form Content - Responsive Padding */}
-                                <div className="px-4 sm:px-6 md:px-8">
-                                    <div className="space-y-6 sm:space-y-8">
-                                        {/* Personal Information */}
-                                        <div>
-                                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 sm:mb-6 pb-2 border-b border-slate-200">
-                                                Personal Information
-                                            </h3>
+                                {/* Form Content */}
+                                <div className="px-6 sm:px-8 md:px-10 pb-8 space-y-8">
+                                    {/* Personal Information Section */}
+                                    <div className="rounded-xl p-6 sm:p-8" style={{ backgroundColor: '#f8fafc' }}>
+                                        <h3 className="text-lg font-bold mb-6" style={{ color: '#1e293b' }}>Personal Information</h3>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Full Name *
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        {...register('name', { required: 'Full name is required' })}
-                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
-                                                        placeholder="Enter your full name"
-                                                    />
-                                                    {errors.name && (
-                                                        <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.name.message}</p>
-                                                    )}
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Email Address
-                                                    </label>
-                                                    <input
-                                                        type="email"
-                                                        {...register('email')}
-                                                        disabled
-                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg bg-slate-50 text-slate-500 cursor-not-allowed"
-                                                    />
-                                                    <p className="mt-1 text-xs text-slate-500">Email address cannot be changed</p>
-                                                </div>
-
-                                                <div className="md:col-span-2">
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Institution/Organization
-                                                    </label>
-                                                    <input
-                                                        type="text"
-                                                        {...register('institution')}
-                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
-                                                        placeholder="Where do you study or work?"
-                                                    />
-                                                </div>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                    Full Name *
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    {...register('name', { required: 'Full name is required' })}
+                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    placeholder="Enter your full name"
+                                                    style={{
+                                                        backgroundColor: '#ffffff',
+                                                        color: '#1e293b',
+                                                        borderWidth: '1px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#cbd5e1'
+                                                    }}
+                                                />
+                                                {errors.name && (
+                                                    <p className="mt-2 text-sm" style={{ color: '#dc2626' }}>{errors.name.message}</p>
+                                                )}
                                             </div>
-                                        </div>
-
-                                        {/* Location */}
-                                        <div>
-                                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 sm:mb-6 pb-2 border-b border-slate-200">
-                                                Location
-                                            </h3>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Country *
-                                                    </label>
-                                                    <select
-                                                        {...register('country', { required: 'Please select a country' })}
-                                                        onChange={handleCountryChange}
-                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
-                                                    >
-                                                        <option value="">Select Country</option>
-                                                        {countries.map((country) => (
-                                                            <option key={country.isoCode} value={country.name}>
-                                                                {country.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    {errors.country && (
-                                                        <p className="mt-1 text-xs sm:text-sm text-red-600">{errors.country.message}</p>
-                                                    )}
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        State/District
-                                                    </label>
-                                                    <select
-                                                        {...register('district')}
-                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all disabled:bg-slate-50"
-                                                        disabled={!selectedCountryCode}
-                                                    >
-                                                        <option value="">
-                                                            {selectedCountryCode ? 'Select State/District' : 'Select Country First'}
-                                                        </option>
-                                                        {states.map((state) => (
-                                                            <option key={state.isoCode} value={state.name}>
-                                                                {state.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* About */}
-                                        <div>
-                                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 sm:mb-6 pb-2 border-b border-slate-200">
-                                                About
-                                            </h3>
 
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                    Bio/Description
+                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                    Email Address
                                                 </label>
-                                                <textarea
-                                                    {...register('bio')}
-                                                    rows="4"
-                                                    className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all resize-none"
-                                                    placeholder="Tell us about yourself, your interests, and professional background..."
+                                                <input
+                                                    type="email"
+                                                    {...register('email')}
+                                                    disabled
+                                                    className="w-full px-4 py-3 text-base rounded-lg cursor-not-allowed"
+                                                    style={{
+                                                        backgroundColor: '#f1f5f9',
+                                                        color: '#64748b',
+                                                        borderWidth: '1px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#cbd5e1'
+                                                    }}
                                                 />
                                             </div>
-                                        </div>
 
-                                        {/* Professional Links */}
-                                        <div>
-                                            <h3 className="text-base sm:text-lg font-semibold text-slate-800 mb-4 sm:mb-6 pb-2 border-b border-slate-200">
-                                                Professional Links
-                                            </h3>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        LinkedIn Profile
-                                                    </label>
-                                                    <input
-                                                        type="url"
-                                                        {...register('linkedin')}
-                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
-                                                        placeholder="https://linkedin.com/in/username"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Professional Email
-                                                    </label>
-                                                    <input
-                                                        type="email"
-                                                        {...register('mailLink')}
-                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
-                                                        placeholder="professional@domain.com"
-                                                    />
-                                                </div>
-
-                                                <div className="md:col-span-2">
-                                                    <label className="block text-sm font-medium text-slate-700 mb-2">
-                                                        Facebook Profile
-                                                    </label>
-                                                    <input
-                                                        type="url"
-                                                        {...register('facebook')}
-                                                        className="w-full px-3 py-2 sm:px-4 sm:py-3 text-sm sm:text-base border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent transition-all"
-                                                        placeholder="https://facebook.com/username"
-                                                    />
-                                                </div>
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                    Institution/Organization
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    {...register('institution')}
+                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    placeholder="Where do you study or work?"
+                                                    style={{
+                                                        backgroundColor: '#ffffff',
+                                                        color: '#1e293b',
+                                                        borderWidth: '1px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#cbd5e1'
+                                                    }}
+                                                />
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Action Buttons - Responsive */}
-                                    <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-6 sm:pt-8 mt-6 sm:mt-8 border-t border-slate-200 pb-4 sm:pb-6">
+                                    {/* Location Section */}
+                                    <div className="rounded-xl p-6 sm:p-8" style={{ backgroundColor: '#f8fafc' }}>
+                                        <h3 className="text-lg font-bold mb-6" style={{ color: '#1e293b' }}>Location</h3>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                    Country *
+                                                </label>
+                                                <select
+                                                    {...register('country', { required: 'Please select a country' })}
+                                                    onChange={handleCountryChange}
+                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    style={{
+                                                        backgroundColor: '#ffffff',
+                                                        color: '#1e293b',
+                                                        borderWidth: '1px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#cbd5e1'
+                                                    }}
+                                                >
+                                                    <option value="">Select Country</option>
+                                                    {countries.map((country) => (
+                                                        <option key={country.isoCode} value={country.name}>
+                                                            {country.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {errors.country && (
+                                                    <p className="mt-2 text-sm" style={{ color: '#dc2626' }}>{errors.country.message}</p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                    State/District
+                                                </label>
+                                                <select
+                                                    {...register('district')}
+                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    disabled={!selectedCountryCode}
+                                                    style={{
+                                                        backgroundColor: selectedCountryCode ? '#ffffff' : '#f1f5f9',
+                                                        color: '#1e293b',
+                                                        borderWidth: '1px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#cbd5e1'
+                                                    }}
+                                                >
+                                                    <option value="">
+                                                        {selectedCountryCode ? 'Select State/District' : 'Select Country First'}
+                                                    </option>
+                                                    {states.map((state) => (
+                                                        <option key={state.isoCode} value={state.name}>
+                                                            {state.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* About Section */}
+                                    <div className="rounded-xl p-6 sm:p-8" style={{ backgroundColor: '#f8fafc' }}>
+                                        <h3 className="text-lg font-bold mb-6" style={{ color: '#1e293b' }}>About</h3>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                Bio/Description
+                                            </label>
+                                            <textarea
+                                                {...register('bio')}
+                                                rows="5"
+                                                className="w-full px-4 py-4 text-base rounded-lg transition-all resize-none"
+                                                placeholder="Tell us about yourself..."
+                                                style={{
+                                                    backgroundColor: '#ffffff',
+                                                    color: '#1e293b',
+                                                    borderWidth: '1px',
+                                                    borderStyle: 'solid',
+                                                    borderColor: '#cbd5e1'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Professional Links Section */}
+                                    <div className="rounded-xl p-6 sm:p-8" style={{ backgroundColor: '#f8fafc' }}>
+                                        <h3 className="text-lg font-bold mb-6" style={{ color: '#1e293b' }}>Professional Links</h3>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                    LinkedIn Profile
+                                                </label>
+                                                <input
+                                                    type="url"
+                                                    {...register('linkedin')}
+                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    placeholder="https://linkedin.com/in/username"
+                                                    style={{
+                                                        backgroundColor: '#ffffff',
+                                                        color: '#1e293b',
+                                                        borderWidth: '1px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#cbd5e1'
+                                                    }}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                    Professional Email
+                                                </label>
+                                                <input
+                                                    type="email"
+                                                    {...register('mailLink')}
+                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    placeholder="professional@domain.com"
+                                                    style={{
+                                                        backgroundColor: '#ffffff',
+                                                        color: '#1e293b',
+                                                        borderWidth: '1px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#cbd5e1'
+                                                    }}
+                                                />
+                                            </div>
+
+                                            <div className="md:col-span-2">
+                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                    Facebook Profile
+                                                </label>
+                                                <input
+                                                    type="url"
+                                                    {...register('facebook')}
+                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    placeholder="https://facebook.com/username"
+                                                    style={{
+                                                        backgroundColor: '#ffffff',
+                                                        color: '#1e293b',
+                                                        borderWidth: '1px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#cbd5e1'
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-4">
                                         <button
                                             type="button"
                                             onClick={() => navigate('/dashboard')}
                                             disabled={isLoading}
-                                            className="w-full sm:w-auto px-6 py-2.5 sm:py-3 text-sm sm:text-base border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors font-medium disabled:opacity-50"
+                                            className="w-full sm:w-auto px-6 py-3 text-base rounded-lg transition-all font-semibold"
+                                            style={{
+                                                backgroundColor: '#ffffff',
+                                                color: '#334155',
+                                                borderWidth: '2px',
+                                                borderStyle: 'solid',
+                                                borderColor: '#cbd5e1'
+                                            }}
                                         >
                                             Cancel
                                         </button>
@@ -719,11 +817,21 @@ const EditProfile = () => {
                                         <button
                                             type="submit"
                                             disabled={isLoading || isUploadingImage || isUploadingCover}
-                                            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base bg-[#457B9D] hover:bg-[#3a6b8a] text-white rounded-lg transition-colors font-medium disabled:opacity-50 flex items-center justify-center"
+                                            className="w-full sm:w-auto px-8 py-3 text-base rounded-lg transition-all font-semibold shadow-md"
+                                            style={{
+                                                background: 'linear-gradient(to right, #457B9D, #5D8FB8)',
+                                                color: '#ffffff',
+                                                opacity: (isLoading || isUploadingImage || isUploadingCover) ? 0.5 : 1
+                                            }}
                                         >
                                             {isLoading ? (
                                                 <>
-                                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                                    <div className="animate-spin rounded-full h-5 w-5 mr-3 inline-block" style={{
+                                                        borderWidth: '2px',
+                                                        borderStyle: 'solid',
+                                                        borderColor: '#ffffff',
+                                                        borderTopColor: 'transparent'
+                                                    }}></div>
                                                     {(isUploadingImage || isUploadingCover) ? 'Uploading...' : 'Saving...'}
                                                 </>
                                             ) : (

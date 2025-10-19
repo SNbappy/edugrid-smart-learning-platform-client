@@ -8,7 +8,6 @@ import useAxiosPublic from '../../hooks/useAxiosPublic';
 import Sidebar from '../Dashboard/Dashboard/Sidebar';
 import { uploadImageToImgBB, validateImageFile } from '../../services/imageUpload';
 
-
 const CreateClass = () => {
     const { user, loading } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
@@ -24,6 +23,24 @@ const CreateClass = () => {
         handleSubmit,
         formState: { errors },
     } = useForm();
+
+    // Default study-related images from Unsplash
+    const defaultClassImages = [
+        'https://images.unsplash.com/photo-1523580494863-6f436d47d1b9?auto=format&fit=crop&w=800&q=80', // Classroom
+        'https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80', // Books
+        'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80', // Study materials
+        'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80', // Library
+        'https://images.unsplash.com/photo-1497486751825-1233686d5d80?auto=format&fit=crop&w=800&q=80', // Desk study
+        'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80', // Notebook
+        'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80', // Students
+        'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=800&q=80', // Study desk
+    ];
+
+    // Get a random default image
+    const getRandomDefaultImage = () => {
+        const randomIndex = Math.floor(Math.random() * defaultClassImages.length);
+        return defaultClassImages[randomIndex];
+    };
 
     // Handle image selection
     const handleImageChange = async (event) => {
@@ -53,9 +70,9 @@ const CreateClass = () => {
         reader.readAsDataURL(file);
     };
 
-    // Upload image to ImgBB
+    // Upload image to ImgBB (optional)
     const uploadClassImage = async () => {
-        if (!selectedFile) return '';
+        if (!selectedFile) return null;
 
         setIsUploadingImage(true);
         try {
@@ -71,33 +88,32 @@ const CreateClass = () => {
             }
         } catch (error) {
             console.error('❌ Image upload failed:', error);
-            return '';
+            return null;
         } finally {
             setIsUploadingImage(false);
         }
     };
 
     const onSubmit = async (data) => {
-        // Check if image is selected
-        if (!selectedFile) {
-            setImageError('Class image is required');
-            Swal.fire({
-                icon: 'error',
-                title: 'Image Required!',
-                text: 'Please upload a class image before creating the classroom.',
-            });
-            return;
-        }
-
         setIsLoading(true);
         console.log('📚 Creating class with data:', data);
 
         try {
-            // Upload image (required)
-            const imageUrl = await uploadClassImage();
+            let imageUrl = '';
 
-            if (!imageUrl) {
-                throw new Error('Failed to upload image');
+            // Upload image if selected, otherwise use random default
+            if (selectedFile) {
+                imageUrl = await uploadClassImage();
+
+                // If upload fails, use default image
+                if (!imageUrl) {
+                    console.log('⚠️ Upload failed, using default image');
+                    imageUrl = getRandomDefaultImage();
+                }
+            } else {
+                // No image selected, use random default
+                console.log('ℹ️ No image selected, using default image');
+                imageUrl = getRandomDefaultImage();
             }
 
             const classroomData = {
@@ -176,14 +192,14 @@ const CreateClass = () => {
                         {/* Form Container - Responsive Padding */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 sm:space-y-6">
-                                {/* Class Image Upload - Responsive */}
+                                {/* Class Image Upload - Responsive (OPTIONAL) */}
                                 <div className="text-center mb-6 sm:mb-8">
                                     <div className="flex flex-col items-center">
                                         <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-3">
-                                            Class Image *
+                                            Class Image (Optional)
                                         </label>
                                         <div className="relative mb-3 sm:mb-4">
-                                            <div className={`w-28 h-20 sm:w-32 sm:h-24 rounded-lg overflow-hidden border-2 bg-gray-50 flex items-center justify-center ${imageError ? 'border-red-300' : 'border-gray-200'
+                                            <div className={`w-32 h-24 sm:w-40 sm:h-28 rounded-lg overflow-hidden border-2 bg-gray-50 flex items-center justify-center ${imageError ? 'border-red-300' : 'border-gray-200'
                                                 }`}>
                                                 {imagePreview ? (
                                                     <img
@@ -193,10 +209,10 @@ const CreateClass = () => {
                                                     />
                                                 ) : (
                                                     <div className="text-gray-400 text-center px-2">
-                                                        <svg className="w-6 h-6 sm:w-8 sm:h-8 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
+                                                        <svg className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-1" fill="currentColor" viewBox="0 0 20 20">
                                                             <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                                                         </svg>
-                                                        <p className="text-xs">Required</p>
+                                                        <p className="text-xs">Optional</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -212,14 +228,13 @@ const CreateClass = () => {
                                                 ? 'bg-green-100 hover:bg-green-200 text-green-700'
                                                 : 'bg-blue-100 hover:bg-blue-200 text-blue-700'
                                             }`}>
-                                            {selectedFile ? 'Change Image' : 'Upload Image *'}
+                                            {selectedFile ? 'Change Image' : 'Upload Custom Image'}
                                             <input
                                                 type="file"
                                                 accept="image/*"
                                                 onChange={handleImageChange}
                                                 className="hidden"
                                                 disabled={isUploadingImage}
-                                                required
                                             />
                                         </label>
 
@@ -228,7 +243,9 @@ const CreateClass = () => {
                                         )}
 
                                         <p className="text-xs text-gray-500 mt-2 px-4 text-center">
-                                            Upload an image that represents your classroom
+                                            {selectedFile
+                                                ? 'Custom image will be used for your classroom'
+                                                : 'A default study-related image will be assigned automatically'}
                                         </p>
                                     </div>
                                 </div>
@@ -268,7 +285,7 @@ const CreateClass = () => {
                                 {/* Description - Responsive */}
                                 <div>
                                     <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
-                                        Description (optional)
+                                        Description (Optional)
                                     </label>
                                     <textarea
                                         {...register('description')}
@@ -290,7 +307,7 @@ const CreateClass = () => {
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={isLoading || isUploadingImage || !selectedFile}
+                                        disabled={isLoading || isUploadingImage}
                                         className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base font-medium"
                                     >
                                         {isLoading ? (

@@ -17,10 +17,9 @@ import {
     HiCog,
     HiLogout,
     HiStar,
-    HiDotsVertical,
-    HiSearch
+    HiSearch,
+    HiTrash
 } from 'react-icons/hi';
-
 
 const MyClasses = () => {
     const { user, loading } = useContext(AuthContext);
@@ -145,6 +144,76 @@ const MyClasses = () => {
         }
     };
 
+    // Delete a classroom (only for instructors)
+    const deleteClassroom = async (classroom) => {
+        const confirmation = await Swal.fire({
+            title: 'Delete Classroom?',
+            html: `
+                <p class="text-gray-700 mb-3">Are you sure you want to permanently delete <strong>"${classroom.name}"</strong>?</p>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-left">
+                    <p class="text-sm text-red-800 mb-2"><strong>⚠️ Warning: This action cannot be undone!</strong></p>
+                    <ul class="text-xs text-red-700 list-disc list-inside space-y-1">
+                        <li>All students will lose access to this classroom</li>
+                        <li>All assignments, materials, and content will be deleted</li>
+                        <li>Student progress and submissions will be removed</li>
+                    </ul>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#DC2626',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Yes, delete permanently',
+            cancelButtonText: 'Cancel',
+            customClass: {
+                popup: 'rounded-xl',
+                confirmButton: 'font-semibold',
+                cancelButton: 'font-semibold'
+            }
+        });
+
+        if (confirmation.isConfirmed) {
+            try {
+                // Show loading state
+                Swal.fire({
+                    title: 'Deleting classroom...',
+                    text: 'Please wait',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Make API call to delete classroom
+                const response = await axiosPublic.delete(`/classrooms/${classroom._id}`);
+
+                if (response.data.success) {
+                    // Remove from local state
+                    setTeacherClasses(prev => prev.filter(c => c._id !== classroom._id));
+
+                    // Show success message
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Classroom Deleted',
+                        text: `"${classroom.name}" has been permanently deleted.`,
+                        timer: 2500,
+                        showConfirmButton: false
+                    });
+                } else {
+                    throw new Error(response.data.message || 'Failed to delete classroom');
+                }
+            } catch (error) {
+                console.error('Delete classroom failed:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Unable to Delete',
+                    text: error.response?.data?.message || 'Failed to delete classroom. Please try again later.',
+                    confirmButtonColor: '#457B9D'
+                });
+            }
+        }
+    };
+
     // Leave a classroom
     const leaveClassroom = async (classroom) => {
         const confirmation = await Swal.fire({
@@ -264,8 +333,8 @@ const MyClasses = () => {
                                         <button
                                             onClick={() => setCurrentView('overview')}
                                             className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${currentView === 'overview'
-                                                    ? 'bg-white text-[#457B9D] shadow-sm'
-                                                    : 'text-gray-600 hover:text-gray-900'
+                                                ? 'bg-white text-[#457B9D] shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
                                                 }`}
                                         >
                                             All ({teacherClasses.length + enrolledClasses.length})
@@ -273,8 +342,8 @@ const MyClasses = () => {
                                         <button
                                             onClick={() => setCurrentView('teaching')}
                                             className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${currentView === 'teaching'
-                                                    ? 'bg-white text-purple-700 shadow-sm'
-                                                    : 'text-gray-600 hover:text-gray-900'
+                                                ? 'bg-white text-purple-700 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
                                                 }`}
                                         >
                                             Teaching ({teacherClasses.length})
@@ -282,8 +351,8 @@ const MyClasses = () => {
                                         <button
                                             onClick={() => setCurrentView('enrolled')}
                                             className={`px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${currentView === 'enrolled'
-                                                    ? 'bg-white text-green-700 shadow-sm'
-                                                    : 'text-gray-600 hover:text-gray-900'
+                                                ? 'bg-white text-green-700 shadow-sm'
+                                                : 'text-gray-600 hover:text-gray-900'
                                                 }`}
                                         >
                                             Enrolled ({enrolledClasses.length})
@@ -298,7 +367,7 @@ const MyClasses = () => {
                                         placeholder="Search classrooms..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent text-sm sm:text-base"
+                                        className="w-full pl-10 pr-4 py-2 sm:py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#457B9D] focus:border-transparent text-sm sm:text-base text-black"
                                     />
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <HiSearch className="h-5 w-5 text-gray-400" />
@@ -323,6 +392,7 @@ const MyClasses = () => {
                                         classroom={classroom}
                                         onEnter={() => navigateToClassroom(classroom._id)}
                                         onLeave={() => leaveClassroom(classroom)}
+                                        onDelete={() => deleteClassroom(classroom)}
                                         onCopyCode={() => copyToClipboard(classroom.code || classroom.classCode)}
                                     />
                                 ))}
@@ -342,7 +412,6 @@ const MyClasses = () => {
         </div>
     );
 };
-
 
 // Empty State Component - Responsive
 const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => {
@@ -401,8 +470,8 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
                     <button
                         onClick={action.onClick}
                         className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-colors text-sm sm:text-base ${action.color === 'theme'
-                                ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white hover:from-[#3a6b8a] hover:to-[#2d5a73]'
-                                : 'bg-green-600 text-white hover:bg-green-700'
+                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white hover:from-[#3a6b8a] hover:to-[#2d5a73]'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                     >
                         {action.text}
@@ -413,8 +482,8 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
                         key={index}
                         onClick={action.onClick}
                         className={`w-full sm:w-auto px-6 py-3 rounded-lg font-medium transition-colors text-sm sm:text-base ${action.color === 'theme'
-                                ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white hover:from-[#3a6b8a] hover:to-[#2d5a73]'
-                                : 'bg-green-600 text-white hover:bg-green-700'
+                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white hover:from-[#3a6b8a] hover:to-[#2d5a73]'
+                            : 'bg-green-600 text-white hover:bg-green-700'
                             }`}
                     >
                         {action.text}
@@ -425,9 +494,8 @@ const EmptyState = ({ currentView, searchTerm, onCreateClick, onJoinClick }) => 
     );
 };
 
-
-// Classroom Card Component - Responsive
-const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
+// Classroom Card Component - Responsive with Delete Button
+const ClassroomCard = ({ classroom, onEnter, onLeave, onDelete, onCopyCode }) => {
     const isInstructor = classroom.role === 'instructor';
 
     const backgroundImages = [
@@ -475,8 +543,8 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
                         <p className="text-white/90 text-xs sm:text-sm drop-shadow-sm truncate">{classroom.subject}</p>
                     </div>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium backdrop-blur-sm flex-shrink-0 ${isInstructor
-                            ? 'bg-[#457B9D]/20 text-white border border-[#457B9D]/30'
-                            : 'bg-green-500/20 text-white border border-green-300/30'
+                        ? 'bg-[#457B9D]/20 text-white border border-[#457B9D]/30'
+                        : 'bg-green-500/20 text-white border border-green-300/30'
                         }`}>
                         {isInstructor ? (
                             <>
@@ -538,8 +606,8 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
                     <button
                         onClick={onEnter}
                         className={`flex-1 inline-flex items-center justify-center px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-medium transition-all text-xs sm:text-sm ${isInstructor
-                                ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] hover:from-[#3a6b8a] hover:to-[#2d5a73] text-white'
-                                : 'bg-green-600 hover:bg-green-700 text-white'
+                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] hover:from-[#3a6b8a] hover:to-[#2d5a73] text-white'
+                            : 'bg-green-600 hover:bg-green-700 text-white'
                             }`}
                     >
                         {isInstructor ? (
@@ -555,7 +623,16 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
                         )}
                     </button>
 
-                    {!isInstructor && (
+                    {/* Delete button for instructors, Leave button for students */}
+                    {isInstructor ? (
+                        <button
+                            onClick={onDelete}
+                            className="p-2 sm:p-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
+                            title="Delete classroom"
+                        >
+                            <HiTrash className="w-4 h-4" />
+                        </button>
+                    ) : (
                         <button
                             onClick={onLeave}
                             className="p-2 sm:p-2.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0"
@@ -569,7 +646,6 @@ const ClassroomCard = ({ classroom, onEnter, onLeave, onCopyCode }) => {
         </div>
     );
 };
-
 
 // Join Classroom Modal - Responsive
 const JoinClassModal = ({ onClose, onSubmit }) => {
@@ -611,7 +687,7 @@ const JoinClassModal = ({ onClose, onSubmit }) => {
                                 type="text"
                                 value={classCode}
                                 onChange={(e) => handleCodeChange(e.target.value)}
-                                className="w-full px-3 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-center text-base sm:text-lg font-mono tracking-wider"
+                                className="w-full px-3 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent text-center text-base sm:text-lg font-mono tracking-wider text-black"
                                 placeholder="ABC123"
                                 maxLength={6}
                                 required
@@ -644,6 +720,5 @@ const JoinClassModal = ({ onClose, onSubmit }) => {
         </div>
     );
 };
-
 
 export default MyClasses;
