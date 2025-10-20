@@ -6,13 +6,10 @@ import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 
-
 const SignUp = () => {
     const axiosPublic = useAxiosPublic();
     const [isLoading, setIsLoading] = useState(false);
-
-    // Debug: Log when component mounts
-    console.log('SignUp component mounted, title should be: EduGrid | Sign up');
+    const [isNavigating, setIsNavigating] = useState(false);
 
     const {
         register,
@@ -22,22 +19,24 @@ const SignUp = () => {
         formState: { errors },
     } = useForm();
 
-    const { createUser, updateUserProfile, signInWithGoogle } = useContext(AuthContext);
+    const { createUser, updateUserProfile, signInWithGoogle, logOut } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const onSubmit = async (data) => {
         setIsLoading(true);
         console.log('Starting sign up process...');
-        console.log('Form data:', data);
 
         try {
+            // Step 1: Create Firebase user
             const result = await createUser(data.email, data.password);
             const loggedUser = result.user;
-            console.log('Firebase user created:', loggedUser);
+            console.log('✅ Firebase user created:', loggedUser.email);
 
+            // Step 2: Update Firebase profile
             await updateUserProfile(data.name, data.photoURL || "");
-            console.log('Firebase profile updated');
+            console.log('✅ Firebase profile updated');
 
+            // Step 3: Prepare user info for backend
             const userInfo = {
                 name: data.name,
                 email: data.email,
@@ -45,6 +44,7 @@ const SignUp = () => {
                 loginMethod: 'email_password',
                 createdAt: new Date(),
                 role: 'user',
+                emailVerified: false,
                 profile: {
                     bio: '',
                     institution: '',
@@ -59,35 +59,68 @@ const SignUp = () => {
 
             console.log('Sending to backend:', userInfo);
 
+            // Step 4: Save to database
             const res = await axiosPublic.post('/users', userInfo);
             console.log('Backend response:', res.data);
 
             if (res.data.insertedId || res.data.message === 'User created successfully') {
-                console.log('User successfully saved to database');
+                console.log('✅ User successfully saved to database');
+
+                // ✅ CRITICAL: Show loader IMMEDIATELY (before any async operations)
+                setIsLoading(false);
+                setIsNavigating(true);
+
+                // Step 5: Send verification code first (while loader is showing)
+                // Step 5: Send verification code first (while loader is showing)
+                try {
+                    const codeResponse = await axiosPublic.post('/send-verification-code', {
+                        email: data.email,
+                        userName: data.name  // ✅ ADD THIS LINE
+                    });
+                    console.log('🔑 Verification code sent:', codeResponse.data.code);
+                } catch (emailError) {
+                    console.error('Error sending verification code:', emailError);
+                }
+
+                // Step 6: Reset form
                 reset();
-                Swal.fire({
-                    position: "top-end",
-                    icon: "success",
-                    title: "Account created successfully",
-                    showConfirmButton: false,
-                    timer: 1500
-                });
-                navigate('/dashboard');
-            } else {
-                console.log('Unexpected response from backend');
+
+                // Step 7: Log out user (loader is already showing)
+                console.log('🚪 Logging out user...');
+                await logOut();
+                console.log('✅ User logged out successfully');
+
+                // Step 8: Navigate immediately after logout
+                console.log('🚀 Navigating to verify-email');
+                navigate('/verify-email', { state: { email: data.email } }, { replace: true });
+
+                console.log('✅ Sign up process completed');
             }
         } catch (error) {
-            console.error('Sign up error:', error);
-            console.error('Error details:', error.response?.data);
+            console.error('❌ Sign up error:', error);
+
+            let errorMessage = 'Failed to create account. Please try again.';
+
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'This email is already registered. Please log in instead.';
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = 'Password is too weak. Please use a stronger password.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Invalid email address format.';
+            }
+
             Swal.fire({
                 icon: 'error',
-                title: 'Error!',
-                text: 'Failed to create account. Please try again.',
+                title: 'Sign Up Failed!',
+                text: errorMessage,
+                confirmButtonColor: '#457B9D'
             });
-        } finally {
+
             setIsLoading(false);
+            setIsNavigating(false);
         }
     };
+
 
     const handleGoogleSignUp = async () => {
         try {
@@ -105,6 +138,7 @@ const SignUp = () => {
                 loginMethod: 'google',
                 createdAt: new Date(),
                 role: 'user',
+                emailVerified: true,
                 profile: {
                     bio: '',
                     institution: '',
@@ -117,13 +151,13 @@ const SignUp = () => {
                 }
             };
 
-            console.log('Sending to /api/users endpoint:', userInfo);
+            console.log('Sending to backend:', userInfo);
 
             const res = await axiosPublic.post('/users', userInfo);
             console.log('User creation response:', res.data);
 
             if (res.data.insertedId || res.data.message === 'User created successfully') {
-                console.log('User successfully saved to USERS collection');
+                console.log('User successfully saved to database');
                 Swal.fire({
                     position: "top-end",
                     icon: "success",
@@ -135,6 +169,12 @@ const SignUp = () => {
             }
         } catch (error) {
             console.error('Google sign-up error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Sign Up Failed!',
+                text: error.message || 'Failed to create account with Google. Please try again.',
+                confirmButtonColor: '#457B9D'
+            });
         } finally {
             setIsLoading(false);
         }
@@ -209,7 +249,6 @@ const SignUp = () => {
                                 </span>
                             )}
 
-                            {/* Password Requirements */}
                             <div className="bg-blue-50 border border-blue-200 rounded-[4px] p-3 sm:p-4 mb-5 sm:mb-6">
                                 <p className="font-semibold text-xs sm:text-sm text-gray-700 mb-2">Password Requirements:</p>
                                 <ul className="text-[10px] sm:text-xs text-gray-600 space-y-1">
@@ -283,6 +322,34 @@ const SignUp = () => {
                     </div>
                 </div>
             </div>
+
+            {/* ✅ Professional Navigation Loader Overlay */}
+            {isNavigating && (
+                <div className="fixed inset-0 bg-[#DCE8F5] z-50 flex flex-col items-center justify-center">
+                    <div className="text-center">
+                        {/* Animated spinner */}
+                        <div className="relative mb-8">
+                            <div className="w-20 h-20 border-4 border-slate-300 rounded-full animate-spin border-t-[#457B9D] mx-auto"></div>
+                            <div className="absolute inset-0 w-20 h-20 border-4 border-transparent rounded-full animate-ping border-t-[#457B9D] mx-auto opacity-20"></div>
+                        </div>
+
+                        {/* Loading text */}
+                        <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">
+                            Creating Your Account
+                        </h3>
+                        <p className="text-slate-600 text-base sm:text-lg mb-6">
+                            Sending verification code to your email...
+                        </p>
+
+                        {/* Progress dots */}
+                        <div className="flex items-center justify-center gap-2">
+                            <div className="w-3 h-3 bg-[#457B9D] rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                            <div className="w-3 h-3 bg-[#457B9D] rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                            <div className="w-3 h-3 bg-[#457B9D] rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

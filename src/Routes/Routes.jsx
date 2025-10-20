@@ -23,6 +23,8 @@ import MarksPage from "../pages/Classroom/MarksPage";
 import MaterialsPage from "../pages/Classroom/MaterialsPage";
 import PublicRoute from "./PublicRoute";
 import ClassroomRoute from "../pages/Classroom/ClassroomRoute";
+import PublicProfile from "../pages/Dashboard/Dashboard/PublicProfile";
+import VerifyEmail from "../pages/VerifyEmail/VerifyEmail";
 
 export const router = createBrowserRouter([
     {
@@ -60,6 +62,10 @@ export const router = createBrowserRouter([
             {
                 path: 'forgot-password',
                 element: <PublicRoute><ForgotPassword /></PublicRoute>
+            },
+            {
+                path: 'verify-email',
+                element: <VerifyEmail />
             }
         ]
     },
@@ -78,6 +84,10 @@ export const router = createBrowserRouter([
     {
         path: '/my-classes',
         element: <PrivateRoute><MyClasses/></PrivateRoute>
+    },
+    {
+        path: '/user/:email',
+        element: <PrivateRoute><PublicProfile /></PrivateRoute>
     },
     {
         path: '/classroom/:classroomId',

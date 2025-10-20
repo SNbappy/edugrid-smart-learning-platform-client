@@ -7,7 +7,8 @@ import {
     updateProfile,
     GoogleAuthProvider,
     signInWithPopup,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    sendEmailVerification
 } from 'firebase/auth';
 import { auth } from '../firebase/firebase.config';
 
@@ -130,6 +131,21 @@ const AuthProvider = ({ children }) => {
         }
     };
 
+    // Send email verification function
+    const sendVerificationEmail = async () => {
+        try {
+            if (!auth.currentUser) {
+                throw new Error('No user is currently signed in');
+            }
+            await sendEmailVerification(auth.currentUser);
+            console.log('✅ Verification email sent successfully');
+            return true;
+        } catch (error) {
+            console.error('❌ Send verification email error:', error);
+            throw error;
+        }
+    };
+
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
             console.log('Auth state changed:', currentUser?.email || 'No user');
@@ -150,7 +166,8 @@ const AuthProvider = ({ children }) => {
         signInWithGoogle,
         updateUserProfile,
         logOut,
-        resetPassword
+        resetPassword,
+        sendVerificationEmail  // ✅ ADDED THIS
     };
 
     return (

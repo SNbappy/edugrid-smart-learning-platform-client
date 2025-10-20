@@ -625,6 +625,7 @@ const Classroom = () => {
                                         {membersDetails.map((member) => (
                                             <div
                                                 key={member.email}
+                                                onClick={() => navigate(`/user/${member.email}`)}
                                                 className="bg-slate-50 rounded-xl border border-slate-200 p-4 hover:bg-white hover:shadow-md transition-all duration-200"
                                             >
                                                 <div className="flex items-start gap-4">

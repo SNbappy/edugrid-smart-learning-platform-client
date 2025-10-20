@@ -5,13 +5,11 @@ import { Helmet } from 'react-helmet-async';
 import Swal from 'sweetalert2';
 import useAxiosPublic from '../../hooks/useAxiosPublic';
 
-
 const Login = () => {
-    const { signIn, signInWithGoogle } = useContext(AuthContext);
+    const { signIn, signInWithGoogle, logOut } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-
 
     const checkAndCreateUser = async (user, loginMethod) => {
         try {
@@ -28,6 +26,7 @@ const Login = () => {
                     loginMethod: loginMethod,
                     createdAt: new Date(),
                     role: 'user',
+                    emailVerified: true, // Google users are pre-verified
                     profile: {
                         bio: '',
                         institution: '',
@@ -60,7 +59,96 @@ const Login = () => {
         try {
             const result = await signIn(email, password);
             const user = result.user;
-            console.log('Email/Password login successful:', user.email);
+            console.log('Firebase login successful:', user.email);
+
+            // ✅ CHECK DATABASE FOR EMAIL VERIFICATION STATUS
+            try {
+                const userResponse = await axiosPublic.get(`/users/${email}`);
+
+                console.log('API Response:', userResponse.data);
+
+                // Access the user object from response
+                const dbUser = userResponse.data.user;
+
+                if (!dbUser) {
+                    console.log('⚠️ User not found in database');
+                    throw new Error('User not found in database');
+                }
+
+                console.log('Database user:', dbUser);
+                console.log('Email verified status:', dbUser.emailVerified);
+
+                // Check if email is verified (strict check - must be exactly true)
+                if (dbUser.emailVerified !== true) {
+                    console.log('⚠️ Email not verified - blocking access');
+
+                    // Log out immediately
+                    await logOut();
+
+                    const result = await Swal.fire({
+                        icon: 'warning',
+                        title: 'Email Not Verified',
+                        html: `
+                            <div class="text-left">
+                                <p class="mb-3 text-gray-700">Please verify your email before logging in.</p>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                                    <p class="text-sm text-blue-700 mb-2">
+                                        A verification code was sent to:<br/>
+                                        <strong>${email}</strong>
+                                    </p>
+                                    <p class="text-xs text-blue-600">
+                                        Check your inbox for the 6-digit verification code.
+                                    </p>
+                                </div>
+                            </div>
+                        `,
+                        showCancelButton: true,
+                        confirmButtonText: 'Verify Now',
+                        cancelButtonText: 'Cancel',
+                        confirmButtonColor: '#457B9D',
+                        cancelButtonColor: '#6B7280'
+                    });
+
+                    if (result.isConfirmed) {
+                        // Send new verification code
+                        try {
+                            await axiosPublic.post('/send-verification-code', { email });
+                            console.log('New verification code sent');
+                        } catch (error) {
+                            console.error('Failed to send code:', error);
+                        }
+
+                        // Navigate to verification page
+                        navigate('/verify-email', { state: { email } });
+                    }
+
+                    setIsLoading(false);
+                    return; // Block login
+                }
+
+                // ✅ Email is verified - allow login
+                console.log('✅ Email verified - access granted');
+
+            } catch (dbError) {
+                console.error('Error checking user in database:', dbError);
+
+                // If user not found in database but exists in Firebase
+                if (dbError.response?.status === 404) {
+                    console.log('⚠️ User exists in Firebase but not in database - logging out');
+                    await logOut();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Account Error',
+                        text: 'Your account setup is incomplete. Please sign up again.',
+                        confirmButtonColor: '#457B9D'
+                    });
+                    setIsLoading(false);
+                    return;
+                }
+
+                // For other errors, allow login (fail-safe)
+                console.log('⚠️ Database check failed - allowing login as fail-safe');
+            }
 
             Swal.fire({
                 position: "top-end",
@@ -70,12 +158,29 @@ const Login = () => {
                 timer: 1500
             });
             navigate('/dashboard', { replace: true });
+
         } catch (error) {
             console.error('Login error:', error);
+
+            let errorMessage = 'Invalid email or password. Please try again.';
+
+            if (error.code === 'auth/user-not-found') {
+                errorMessage = 'No account found with this email. Please sign up first.';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage = 'Incorrect password. Please try again or reset your password.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = 'Invalid email address format.';
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMessage = 'Too many failed login attempts. Please try again later or reset your password.';
+            } else if (error.code === 'auth/user-disabled') {
+                errorMessage = 'This account has been disabled. Please contact support.';
+            }
+
             Swal.fire({
                 icon: 'error',
                 title: 'Login Failed!',
-                text: 'Invalid email or password. Please try again.',
+                text: errorMessage,
+                confirmButtonColor: '#457B9D'
             });
         } finally {
             setIsLoading(false);
@@ -91,6 +196,7 @@ const Login = () => {
             const user = result.user;
             console.log('Google authentication successful:', user.email);
 
+            // Google accounts are pre-verified
             await checkAndCreateUser(user, 'google');
 
             Swal.fire({
@@ -103,10 +209,20 @@ const Login = () => {
             navigate('/dashboard', { replace: true });
         } catch (error) {
             console.error('Google sign-in error:', error);
+
+            let errorMessage = 'Failed to sign in with Google. Please try again.';
+
+            if (error.message.includes('popup')) {
+                errorMessage = 'Sign-in popup was closed. Please try again.';
+            } else if (error.message.includes('network')) {
+                errorMessage = 'Network error. Please check your connection and try again.';
+            }
+
             Swal.fire({
                 icon: 'error',
-                title: 'Error!',
-                text: 'Failed to sign in with Google. Please try again.',
+                title: 'Google Sign-In Failed!',
+                text: errorMessage,
+                confirmButtonColor: '#457B9D'
             });
         } finally {
             setIsLoading(false);
@@ -114,10 +230,12 @@ const Login = () => {
     };
 
     return (
-        <div className="bg-[#DCE8F5] font-poppins text-black min-h-screen">
+        <div className="bg-[#DCE8F5] font-poppins text-black">
             <div className="max-w-[1250px] mx-auto px-4 sm:px-6 lg:px-8">
                 <Helmet>
                     <title>EduGrid | Login</title>
+                    <meta name="description" content="Login to EduGrid - Smart Learning Platform. Access your classes, assignments, and educational resources." />
+                    <meta name="robots" content="index, follow" />
                 </Helmet>
 
                 <div className="flex flex-col lg:flex-row lg:justify-between items-center gap-6 lg:gap-8 py-6 lg:py-8">
@@ -175,7 +293,7 @@ const Login = () => {
                                     alt="Google"
                                     className="w-4 h-4 sm:w-5 sm:h-5"
                                 />
-                                Sign in with Google
+                                {isLoading ? 'Signing in...' : 'Sign in with Google'}
                             </button>
                         </div>
 
