@@ -15,10 +15,12 @@ import {
     MdSchool,
     MdContentCopy,
     MdCheck,
-    MdBarChart,
-    MdSettings
+    MdEmail,
+    MdLocationOn,
+    MdBusiness,
+    MdClose,
+    MdStar
 } from 'react-icons/md';
-
 
 const Classroom = () => {
     const { user, loading } = useContext(AuthContext);
@@ -29,6 +31,9 @@ const Classroom = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
     const [copiedCode, setCopiedCode] = useState(false);
+    const [showMembersModal, setShowMembersModal] = useState(false);
+    const [membersDetails, setMembersDetails] = useState([]);
+    const [loadingMembers, setLoadingMembers] = useState(false);
 
     const isClassroomOwner = user && classroom && classroom.teacherEmail === user.email;
 
@@ -39,6 +44,43 @@ const Classroom = () => {
             setTimeout(() => setCopiedCode(false), 2000);
         } catch (err) {
             console.error('Failed to copy code:', err);
+        }
+    };
+
+    // Fetch detailed member information
+    const fetchMembersDetails = async () => {
+        if (!classroom?.students) return;
+
+        setLoadingMembers(true);
+        try {
+            // Fetch all student details
+            const studentPromises = classroom.students.map(studentEmail =>
+                axiosPublic.get(`/users/${studentEmail}`).catch(err => {
+                    console.error(`Failed to fetch user ${studentEmail}:`, err);
+                    return null;
+                })
+            );
+
+            // Fetch teacher details
+            const teacherPromise = axiosPublic.get(`/users/${classroom.teacherEmail}`).catch(err => {
+                console.error(`Failed to fetch teacher:`, err);
+                return null;
+            });
+
+            const responses = await Promise.all([teacherPromise, ...studentPromises]);
+
+            const members = responses
+                .filter(response => response && response.data && response.data.success)
+                .map(response => ({
+                    ...response.data.user,
+                    isTeacher: response.data.user.email === classroom.teacherEmail
+                }));
+
+            setMembersDetails(members);
+        } catch (error) {
+            console.error('Error fetching member details:', error);
+        } finally {
+            setLoadingMembers(false);
         }
     };
 
@@ -75,7 +117,23 @@ const Classroom = () => {
         setShowEditModal(false);
     };
 
+    const handleViewMembers = () => {
+        setShowMembersModal(true);
+        fetchMembersDetails();
+    };
+
     const classroomOptions = [
+        {
+            id: 'members',
+            title: 'Members',
+            icon: MdPeople,
+            onClick: handleViewMembers,
+            iconColor: 'text-indigo-600',
+            bgColor: 'bg-indigo-100',
+            borderColor: 'border-indigo-200',
+            stats: `${(classroom?.students?.length || 0) + 1} People`,
+            description: 'View all classroom members'
+        },
         {
             id: 'attendance',
             title: 'Attendance',
@@ -214,16 +272,19 @@ const Classroom = () => {
                                 {/* Stats Row */}
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${isClassroomOwner
-                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                         }`}>
                                         {isClassroomOwner ? '👨‍🏫' : '👨‍🎓'}
                                     </span>
 
-                                    <div className="flex items-center text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full border border-slate-200">
+                                    <button
+                                        onClick={handleViewMembers}
+                                        className="flex items-center text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors"
+                                    >
                                         <MdPeople className="w-3 h-3 mr-1" />
-                                        <span className="font-medium">{classroom?.students?.length || 0}</span>
-                                    </div>
+                                        <span className="font-medium">{(classroom?.students?.length || 0) + 1}</span>
+                                    </button>
 
                                     {isClassroomOwner && (
                                         <button
@@ -270,17 +331,20 @@ const Classroom = () => {
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center space-x-3">
                                         <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isClassroomOwner
-                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                             }`}>
                                             {isClassroomOwner ? '👨‍🏫 Teacher' : '👨‍🎓 Student'}
                                         </span>
 
-                                        <div className="flex items-center text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+                                        <button
+                                            onClick={handleViewMembers}
+                                            className="flex items-center text-sm text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200 hover:bg-slate-100 transition-colors"
+                                        >
                                             <MdPeople className="w-4 h-4 mr-2" />
-                                            <span className="font-medium">{classroom?.students?.length || 0}</span>
-                                            <span className="ml-1">students</span>
-                                        </div>
+                                            <span className="font-medium">{(classroom?.students?.length || 0) + 1}</span>
+                                            <span className="ml-1">members</span>
+                                        </button>
 
                                         {isClassroomOwner && (
                                             <button
@@ -347,17 +411,20 @@ const Classroom = () => {
 
                         {/* Stats Grid - Responsive */}
                         <div className={`grid grid-cols-2 ${isClassroomOwner ? 'sm:grid-cols-2 lg:grid-cols-4' : 'sm:grid-cols-3'} gap-3 sm:gap-6 mb-6 sm:mb-8`}>
-                            {/* Students Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                            {/* Members Card */}
+                            <div
+                                onClick={handleViewMembers}
+                                className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 cursor-pointer"
+                            >
                                 <div className="flex items-center justify-between mb-3 sm:mb-4">
                                     <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                                         <MdPeople className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                                     </div>
                                     <div className="text-right">
                                         <div className="text-xl sm:text-2xl font-bold text-slate-900">
-                                            {classroom?.students?.length || 0}
+                                            {(classroom?.students?.length || 0) + 1}
                                         </div>
-                                        <div className="text-xs text-slate-500 font-medium">Students</div>
+                                        <div className="text-xs text-slate-500 font-medium">Members</div>
                                     </div>
                                 </div>
                                 <div className="w-full bg-slate-100 rounded-full h-2">
@@ -454,14 +521,14 @@ const Classroom = () => {
                             </div>
 
                             <div className="p-4 sm:p-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
                                     {classroomOptions.map((option) => {
                                         const IconComponent = option.icon;
 
                                         return (
                                             <div
                                                 key={option.id}
-                                                onClick={() => navigate(option.path)}
+                                                onClick={() => option.onClick ? option.onClick() : navigate(option.path)}
                                                 className="bg-slate-50 rounded-xl border border-slate-200 hover:bg-white hover:shadow-md hover:shadow-slate-200/50 transition-all duration-300 cursor-pointer group p-4 sm:p-6"
                                             >
                                                 <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -496,7 +563,7 @@ const Classroom = () => {
                 </div>
             </div>
 
-            {/* Modal */}
+            {/* Edit Classroom Modal */}
             {showEditModal && (
                 <EditClassroomModal
                     classroom={classroom}
@@ -504,6 +571,133 @@ const Classroom = () => {
                     onUpdate={handleClassroomUpdate}
                     axiosPublic={axiosPublic}
                 />
+            )}
+
+            {/* Members Modal */}
+            {showMembersModal && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    <div className="flex min-h-screen items-center justify-center p-4">
+                        <div
+                            className="fixed inset-0 bg-black/50 transition-opacity"
+                            onClick={() => setShowMembersModal(false)}
+                        ></div>
+
+                        <div className="relative bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+                            {/* Modal Header */}
+                            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900">Classroom Members</h3>
+                                    <p className="text-sm text-slate-600 mt-1">
+                                        {(classroom?.students?.length || 0) + 1} total members
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowMembersModal(false)}
+                                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                                >
+                                    <MdClose className="w-5 h-5 text-slate-600" />
+                                </button>
+                            </div>
+
+                            {/* Modal Content */}
+                            <div className="overflow-y-auto max-h-[calc(80vh-80px)] p-6">
+                                {loadingMembers ? (
+                                    <div className="text-center py-12">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                        <p className="text-slate-600">Loading members...</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {membersDetails.map((member) => (
+                                            <div
+                                                key={member.email}
+                                                className="bg-slate-50 rounded-xl border border-slate-200 p-4 hover:bg-white hover:shadow-md transition-all duration-200"
+                                            >
+                                                <div className="flex items-start gap-4">
+                                                    {/* Profile Photo */}
+                                                    <div className="relative flex-shrink-0">
+                                                        <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-slate-200 bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                                                            {member.photoURL ? (
+                                                                <img
+                                                                    src={member.photoURL}
+                                                                    alt={member.name}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            ) : (
+                                                                <span className="text-white text-xl font-bold">
+                                                                    {member.name?.charAt(0) || member.email?.charAt(0) || 'U'}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {member.isTeacher && (
+                                                            <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center border-2 border-white">
+                                                                <MdStar className="w-3 h-3 text-white" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Member Info */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <h4 className="text-base font-semibold text-slate-900 truncate">
+                                                                {member.name || 'Unknown User'}
+                                                            </h4>
+                                                            {member.isTeacher && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                                                    Teacher
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Email */}
+                                                        <div className="flex items-center text-sm text-slate-600 mb-2">
+                                                            <MdEmail className="w-4 h-4 mr-2 text-slate-400" />
+                                                            <span className="truncate">{member.email}</span>
+                                                        </div>
+
+                                                        {/* Institution */}
+                                                        {member.profile?.institution && (
+                                                            <div className="flex items-center text-sm text-slate-600 mb-2">
+                                                                <MdBusiness className="w-4 h-4 mr-2 text-slate-400" />
+                                                                <span className="truncate">{member.profile.institution}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Location */}
+                                                        {(member.profile?.country || member.profile?.district || member.profile?.city) && (
+                                                            <div className="flex items-center text-sm text-slate-600">
+                                                                <MdLocationOn className="w-4 h-4 mr-2 text-slate-400" />
+                                                                <span className="truncate">
+                                                                    {[member.profile?.city, member.profile?.district, member.profile?.country]
+                                                                        .filter(Boolean)
+                                                                        .join(', ')}
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Bio */}
+                                                        {member.profile?.bio && (
+                                                            <p className="text-sm text-slate-500 mt-2 line-clamp-2">
+                                                                {member.profile.bio}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {membersDetails.length === 0 && !loadingMembers && (
+                                            <div className="text-center py-12">
+                                                <MdPeople className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                                                <p className="text-slate-600">No members found</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
