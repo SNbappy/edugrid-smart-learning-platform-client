@@ -238,127 +238,71 @@ const AllClasses = () => {
     }
 
     return (
-        <div className="min-h-screen bg-[#DCE8F5] font-poppins" style={{
-            // backgroundColor: '#f8fafc',
-            colorScheme: 'light'
-        }}>
+        <div className="min-h-screen bg-[#DCE8F5] font-poppins">
             <Helmet>
                 <title>EduGrid | All Classes</title>
-                <meta name="color-scheme" content="light" />
             </Helmet>
 
-            <style>{`
-                input, select {
-                    color-scheme: light;
-                    background-color: #ffffff !important;
-                    color: #1e293b !important;
-                    border-color: #cbd5e1 !important;
-                }
-                
-                input::placeholder {
-                    color: #94a3b8 !important;
-                }
-                
-                select option {
-                    background-color: #ffffff !important;
-                    color: #1e293b !important;
-                }
-            `}</style>
-
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Simplified Header */}
-                <div className="mb-12">
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4" style={{ color: '#0f172a' }}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+                {/* Header */}
+                <div className="mb-8 sm:mb-12">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 text-slate-900">
                         All Classes
                     </h1>
-                    <p className="text-lg" style={{ color: '#64748b' }}>
+                    <p className="text-base sm:text-lg text-slate-600">
                         Browse and join classes that interest you
                     </p>
                 </div>
 
                 {/* Stats Bar */}
-                <div className="grid grid-cols-3 gap-6 mb-8">
-                    <div className="rounded-xl p-6" style={{
-                        backgroundColor: '#ffffff',
-                        borderWidth: '1px',
-                        borderStyle: 'solid',
-                        borderColor: '#e2e8f0'
-                    }}>
-                        <div className="text-3xl font-bold mb-1" style={{ color: '#0f172a' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                    <div className="bg-white rounded-xl p-4 sm:p-6 border border-slate-200">
+                        <div className="text-2xl sm:text-3xl font-bold mb-1 text-slate-900">
                             {classrooms.length}
                         </div>
-                        <div className="text-sm font-medium" style={{ color: '#64748b' }}>
+                        <div className="text-xs sm:text-sm font-medium text-slate-600">
                             Active Classes
                         </div>
                     </div>
-                    <div className="rounded-xl p-6" style={{
-                        backgroundColor: '#ffffff',
-                        borderWidth: '1px',
-                        borderStyle: 'solid',
-                        borderColor: '#e2e8f0'
-                    }}>
-                        <div className="text-3xl font-bold mb-1" style={{ color: '#0f172a' }}>
+                    <div className="bg-white rounded-xl p-4 sm:p-6 border border-slate-200">
+                        <div className="text-2xl sm:text-3xl font-bold mb-1 text-slate-900">
                             {subjects.length}
                         </div>
-                        <div className="text-sm font-medium" style={{ color: '#64748b' }}>
+                        <div className="text-xs sm:text-sm font-medium text-slate-600">
                             Subjects
                         </div>
                     </div>
-                    <div className="rounded-xl p-6" style={{
-                        backgroundColor: '#ffffff',
-                        borderWidth: '1px',
-                        borderStyle: 'solid',
-                        borderColor: '#e2e8f0'
-                    }}>
-                        <div className="text-3xl font-bold mb-1" style={{ color: '#0f172a' }}>
+                    <div className="bg-white rounded-xl p-4 sm:p-6 border border-slate-200">
+                        <div className="text-2xl sm:text-3xl font-bold mb-1 text-slate-900">
                             {classrooms.reduce((acc, c) => acc + (c.students?.length || 0), 0)}
                         </div>
-                        <div className="text-sm font-medium" style={{ color: '#64748b' }}>
+                        <div className="text-xs sm:text-sm font-medium text-slate-600">
                             Students
                         </div>
                     </div>
                 </div>
 
-                {/* Search and Filter Section */}
-                <div className="rounded-xl p-6 mb-8" style={{
-                    backgroundColor: '#ffffff',
-                    borderWidth: '1px',
-                    borderStyle: 'solid',
-                    borderColor: '#e2e8f0'
-                }}>
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {/* Search and Filter */}
+                <div className="bg-white rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 border border-slate-200">
+                    <div className="grid grid-cols-1 gap-3 sm:gap-4">
                         {/* Search Bar */}
-                        <div className="lg:col-span-3 relative">
+                        <div className="relative">
                             <input
                                 type="text"
                                 placeholder="Search classes, subjects, or instructors..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full px-5 py-3 pl-12 rounded-lg transition-all text-base"
-                                style={{
-                                    backgroundColor: '#f8fafc',
-                                    color: '#1e293b',
-                                    borderWidth: '1px',
-                                    borderStyle: 'solid',
-                                    borderColor: '#e2e8f0'
-                                }}
+                                className="w-full px-4 sm:px-5 py-2.5 sm:py-3 pl-10 sm:pl-12 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#457B9D]"
                             />
-                            <MdSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-xl" style={{ color: '#94a3b8' }} />
+                            <MdSearch className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-lg sm:text-xl text-slate-400" />
                         </div>
 
                         {/* Subject Filter */}
-                        <div className="lg:col-span-1">
+                        <div>
                             <select
                                 value={selectedSubject}
                                 onChange={(e) => setSelectedSubject(e.target.value)}
-                                className="w-full px-4 py-3 rounded-lg transition-all text-base"
-                                style={{
-                                    backgroundColor: '#f8fafc',
-                                    color: '#1e293b',
-                                    borderWidth: '1px',
-                                    borderStyle: 'solid',
-                                    borderColor: '#e2e8f0'
-                                }}
+                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#457B9D]"
                             >
                                 <option value="">All Subjects</option>
                                 {subjects.map(subject => (
@@ -369,9 +313,9 @@ const AllClasses = () => {
                     </div>
 
                     {/* Results Count */}
-                    <div className="mt-4 flex items-center justify-between">
-                        <p style={{ color: '#64748b' }}>
-                            <span className="font-semibold" style={{ color: '#0f172a' }}>{filteredClassrooms.length}</span> classes found
+                    <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <p className="text-sm sm:text-base text-slate-600">
+                            <span className="font-semibold text-slate-900">{filteredClassrooms.length}</span> classes found
                         </p>
                         {(searchTerm || selectedSubject) && (
                             <button
@@ -379,13 +323,7 @@ const AllClasses = () => {
                                     setSearchTerm('');
                                     setSelectedSubject('');
                                 }}
-                                className="text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-                                style={{
-                                    color: '#457B9D',
-                                    backgroundColor: 'transparent'
-                                }}
-                                onMouseEnter={(e) => e.target.style.backgroundColor = '#f1f5f9'}
-                                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                                className="text-xs sm:text-sm font-medium px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-[#457B9D] hover:bg-slate-50 transition-colors self-start sm:self-auto"
                             >
                                 Clear filters
                             </button>
@@ -395,7 +333,7 @@ const AllClasses = () => {
 
                 {/* Classes Grid */}
                 {filteredClassrooms.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                         {filteredClassrooms.map((classroom) => {
                             const buttonConfig = getButtonConfig(classroom);
                             const isTeacher = isUserTeacher(classroom);
@@ -404,26 +342,10 @@ const AllClasses = () => {
                             return (
                                 <div
                                     key={classroom._id}
-                                    className="rounded-xl overflow-hidden transition-all duration-300"
-                                    style={{
-                                        backgroundColor: '#ffffff',
-                                        borderWidth: '1px',
-                                        borderStyle: 'solid',
-                                        borderColor: '#e2e8f0'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.boxShadow = '0 10px 25px -5px rgba(0, 0, 0, 0.1)';
-                                        e.currentTarget.style.transform = 'translateY(-4px)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.boxShadow = 'none';
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                    }}
+                                    className="bg-white rounded-xl overflow-hidden border border-slate-200 hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
                                 >
                                     {/* Image Section */}
-                                    <div className="relative h-40 overflow-hidden" style={{
-                                        background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)'
-                                    }}>
+                                    <div className="relative h-36 sm:h-40 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
                                         {classroom.imageUrl ? (
                                             <img
                                                 src={classroom.imageUrl}
@@ -432,26 +354,20 @@ const AllClasses = () => {
                                             />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center">
-                                                <MdSchool className="text-4xl" style={{ color: '#94a3b8' }} />
+                                                <MdSchool className="text-3xl sm:text-4xl text-slate-400" />
                                             </div>
                                         )}
 
                                         {/* Status Badge */}
                                         {(isTeacher || isEnrolledStudent) && (
-                                            <div className="absolute top-3 right-3">
+                                            <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
                                                 {isTeacher ? (
-                                                    <div className="px-3 py-1 rounded-full text-xs font-semibold flex items-center" style={{
-                                                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                                        color: '#ffffff'
-                                                    }}>
+                                                    <div className="px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold flex items-center bg-slate-900/90 text-white">
                                                         <MdVerified className="w-3 h-3 mr-1" />
                                                         Instructor
                                                     </div>
                                                 ) : (
-                                                    <div className="px-3 py-1 rounded-full text-xs font-semibold flex items-center" style={{
-                                                        backgroundColor: 'rgba(5, 150, 105, 0.9)',
-                                                        color: '#ffffff'
-                                                    }}>
+                                                    <div className="px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold flex items-center bg-green-600/90 text-white">
                                                         <MdCheckCircle className="w-3 h-3 mr-1" />
                                                         Enrolled
                                                     </div>
@@ -461,51 +377,39 @@ const AllClasses = () => {
                                     </div>
 
                                     {/* Content Section */}
-                                    <div className="p-5">
+                                    <div className="p-4 sm:p-5">
                                         {/* Title */}
-                                        <h3 className="text-base font-bold mb-3 line-clamp-2" style={{ color: '#0f172a' }}>
+                                        <h3 className="text-sm sm:text-base font-bold mb-2 sm:mb-3 line-clamp-2 text-slate-900">
                                             {classroom.name}
                                         </h3>
 
                                         {/* Subject Badge */}
-                                        <div className="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium mb-4" style={{
-                                            backgroundColor: '#f1f5f9',
-                                            color: '#334155'
-                                        }}>
+                                        <div className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium mb-3 sm:mb-4 bg-slate-100 text-slate-700">
                                             {classroom.subject}
                                         </div>
 
                                         {/* Meta Info */}
-                                        <div className="flex items-center justify-between text-sm mb-4" style={{ color: '#64748b' }}>
-                                            <div className="flex items-center">
-                                                <MdPersonOutline className="w-4 h-4 mr-1" />
-                                                <span className="truncate">{classroom.teacherName}</span>
+                                        <div className="flex items-center justify-between text-xs sm:text-sm mb-3 sm:mb-4 text-slate-600">
+                                            <div className="flex items-center min-w-0 flex-1 mr-2">
+                                                <MdPersonOutline className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 flex-shrink-0" />
+                                                <span className="truncate text-xs sm:text-sm">{classroom.teacherName}</span>
                                             </div>
-                                            <div className="flex items-center">
-                                                <MdPeople className="w-4 h-4 mr-1" />
-                                                <span>{classroom.students?.length || 0}</span>
+                                            <div className="flex items-center flex-shrink-0">
+                                                <MdPeople className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
+                                                <span className="text-xs sm:text-sm">{classroom.students?.length || 0}</span>
                                             </div>
                                         </div>
 
                                         {/* Action Button */}
                                         <button
                                             onClick={buttonConfig.action}
-                                            className="w-full py-3 px-4 rounded-lg transition-all duration-200 font-semibold text-sm flex items-center justify-center"
-                                            style={{
-                                                backgroundColor: buttonConfig.bgColor,
-                                                color: '#ffffff'
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.target.style.backgroundColor = buttonConfig.hoverBgColor;
-                                                e.target.style.transform = 'scale(1.02)';
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.target.style.backgroundColor = buttonConfig.bgColor;
-                                                e.target.style.transform = 'scale(1)';
-                                            }}
+                                            className="w-full py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg transition-all duration-200 font-semibold text-xs sm:text-sm flex items-center justify-center text-white hover:scale-105"
+                                            style={{ backgroundColor: buttonConfig.bgColor }}
+                                            onMouseEnter={(e) => e.target.style.backgroundColor = buttonConfig.hoverBgColor}
+                                            onMouseLeave={(e) => e.target.style.backgroundColor = buttonConfig.bgColor}
                                         >
                                             {buttonConfig.text}
-                                            <buttonConfig.icon className="w-4 h-4 ml-2" />
+                                            <buttonConfig.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1.5 sm:ml-2" />
                                         </button>
                                     </div>
                                 </div>
@@ -514,17 +418,15 @@ const AllClasses = () => {
                     </div>
                 ) : (
                     /* Empty State */
-                    <div className="text-center py-16">
-                        <div className="max-w-md mx-auto">
-                            <div className="w-20 h-20 rounded-xl flex items-center justify-center mx-auto mb-6" style={{
-                                backgroundColor: '#f1f5f9'
-                            }}>
-                                <MdSchool className="text-4xl" style={{ color: '#94a3b8' }} />
+                    <div className="text-center py-12 sm:py-16">
+                        <div className="max-w-md mx-auto px-4">
+                            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                                <MdSchool className="text-3xl sm:text-4xl text-slate-400" />
                             </div>
-                            <h3 className="text-xl font-bold mb-3" style={{ color: '#1e293b' }}>
+                            <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3 text-slate-900">
                                 {searchTerm || selectedSubject ? 'No classes found' : 'No classes available'}
                             </h3>
-                            <p className="mb-6" style={{ color: '#64748b' }}>
+                            <p className="mb-4 sm:mb-6 text-sm sm:text-base text-slate-600">
                                 {searchTerm || selectedSubject
                                     ? 'Try adjusting your search criteria.'
                                     : 'Check back later for new courses.'
@@ -536,13 +438,7 @@ const AllClasses = () => {
                                         setSearchTerm('');
                                         setSelectedSubject('');
                                     }}
-                                    className="inline-flex items-center px-6 py-3 rounded-xl transition-all font-semibold"
-                                    style={{
-                                        backgroundColor: '#0f172a',
-                                        color: '#ffffff'
-                                    }}
-                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#1e293b'}
-                                    onMouseLeave={(e) => e.target.style.backgroundColor = '#0f172a'}
+                                    className="inline-flex items-center px-5 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-slate-900 text-white hover:bg-slate-800 transition-all font-semibold text-sm sm:text-base"
                                 >
                                     Clear Filters
                                 </button>

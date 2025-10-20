@@ -29,9 +29,10 @@ const Navbar = () => {
             <div className='max-w-[1300px] mx-auto px-4 sm:px-6 lg:px-8 font-poppins'>
                 <div className='flex justify-between items-center pt-4 pb-3 md:pt-[26px] md:pb-[12px]'>
                     {/* Logo */}
-                    <NavLink to="/" className='font-bold text-2xl sm:text-3xl md:text-[43px] z-50'>
-                        <span className='text-[#003366] [-webkit-text-stroke:0.5px_black] md:[-webkit-text-stroke:1px_black]'>Edu</span>
-                        <span className='text-white [-webkit-text-stroke:0.5px_black] md:[-webkit-text-stroke:1px_black]'>Grid</span>
+                    <NavLink to="/" className='font-bold text-2xl sm:text-3xl md:text-[43px] z-50 flex justify-center gap-2'>
+                        <img src="/public/photo_2025-07-25_14-57-55.jpg" alt="" className='w-7 h-7 md:w-12 md:h-12' />
+                        <div><span className='text-[#003366] [-webkit-text-stroke:0.5px_black] md:[-webkit-text-stroke:1px_black]'>Edu</span>
+                            <span className='text-white [-webkit-text-stroke:0.5px_black] md:[-webkit-text-stroke:1px_black]'>Grid</span></div>
                     </NavLink>
 
                     {/* Desktop Navigation Links */}
