@@ -48,41 +48,55 @@ const Classroom = () => {
     };
 
     // Fetch detailed member information
+    // Fixed member loading logic
     const fetchMembersDetails = async () => {
-        if (!classroom?.students) return;
-
         setLoadingMembers(true);
+
         try {
-            // Fetch all student details
-            const studentPromises = classroom.students.map(studentEmail =>
-                axiosPublic.get(`/users/${studentEmail}`).catch(err => {
-                    console.error(`Failed to fetch user ${studentEmail}:`, err);
-                    return null;
-                })
+            // PRIORITY 1 — use full member objects (already loaded in classroom)
+            if (classroom?.members && Array.isArray(classroom.members)) {
+                const formattedMembers = classroom.members.map(member => ({
+                    ...member,
+                    isTeacher:
+                        member.role?.toLowerCase() === 'teacher' ||
+                        member.role?.toLowerCase() === 'owner' ||
+                        member.email === classroom.teacherEmail,
+                }));
+                setMembersDetails(formattedMembers);
+                return;
+            }
+
+            // PRIORITY 2 — fallback to students + teacher data
+            let studentEmails = [];
+            if (Array.isArray(classroom?.students)) {
+                if (typeof classroom.students[0] === 'string') {
+                    studentEmails = classroom.students;
+                } else if (typeof classroom.students[0] === 'object') {
+                    studentEmails = classroom.students.map(s => s.email || s.studentEmail);
+                }
+            }
+
+            const allEmails = [classroom.teacherEmail, ...studentEmails.filter(Boolean)];
+            const userPromises = allEmails.map(email =>
+                axiosPublic.get(`/users/${email}`).catch(() => null)
             );
-
-            // Fetch teacher details
-            const teacherPromise = axiosPublic.get(`/users/${classroom.teacherEmail}`).catch(err => {
-                console.error(`Failed to fetch teacher:`, err);
-                return null;
-            });
-
-            const responses = await Promise.all([teacherPromise, ...studentPromises]);
+            const responses = await Promise.all(userPromises);
 
             const members = responses
-                .filter(response => response && response.data && response.data.success)
-                .map(response => ({
-                    ...response.data.user,
-                    isTeacher: response.data.user.email === classroom.teacherEmail
+                .filter(r => r && r.data.success)
+                .map(res => ({
+                    ...res.data.user,
+                    isTeacher: res.data.user.email === classroom.teacherEmail,
                 }));
 
             setMembersDetails(members);
         } catch (error) {
-            console.error('Error fetching member details:', error);
+            console.error('Error displaying members:', error);
         } finally {
             setLoadingMembers(false);
         }
     };
+
 
     useEffect(() => {
         const fetchClassroom = async () => {
