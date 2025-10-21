@@ -26,6 +26,8 @@ import ClassroomRoute from "../pages/Classroom/ClassroomRoute";
 import PublicProfile from "../pages/Dashboard/Dashboard/PublicProfile";
 import VerifyEmail from "../pages/VerifyEmail/VerifyEmail";
 import CompleteProfile from "../pages/CompleteProfile/CompleteProfile";
+import VerifyPasswordReset from "../pages/VerifyPasswordReset/VerifyPasswordReset";
+import ResetPassword from "../pages/ResetPassword/ResetPassword";
 
 export const router = createBrowserRouter([
     {
@@ -113,5 +115,13 @@ export const router = createBrowserRouter([
     {
         path: '/complete-profile',
         element: <CompleteProfile/>
-    }
+    },
+    {
+        path: '/verify-password-reset',
+        element: <VerifyPasswordReset/>
+    },
+    {
+        path: '/reset-password',
+        element: <ResetPassword/>
+    },
 ]);

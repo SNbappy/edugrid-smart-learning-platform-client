@@ -32,7 +32,7 @@ const Navbar = () => {
                     <NavLink to="/" className='font-bold text-2xl sm:text-3xl md:text-[43px] z-50 flex justify-center gap-2'>
                         <img src="/photo_2025-07-25_14-57-55.jpg" alt="" className='w-7 h-7 md:w-12 md:h-12' />
                         <div><span className='text-[#003366] [-webkit-text-stroke:0.5px_black] md:[-webkit-text-stroke:1px_black]'>Edu</span>
-                            <span className='text-white [-webkit-text-stroke:0.5px_black] md:[-webkit-text-stroke:1px_black]'>Grid</span></div>
+                            <span className='text-white [-webkit-text-stroke:0.5px_black] md:[-webkit-text-stroke:1px_black]'>Grid</span><sup><span className='text-xs font-semibold lg:text-lg text-blue-800'>beta</span></sup></div>
                     </NavLink>
 
                     {/* Desktop Navigation Links */}

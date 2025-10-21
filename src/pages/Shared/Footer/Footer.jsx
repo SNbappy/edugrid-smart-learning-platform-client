@@ -6,10 +6,10 @@ import { FaInfoCircle, FaCalendarAlt, FaUsers, FaEnvelope } from "react-icons/fa
 const Footer = () => {
 
     const links = [
-        { name: "About Us", icon: <FaInfoCircle />, href: "#about" },
-        { name: "All Classes", icon: <FaCalendarAlt />, href: "#events" },
-        { name: "Join Us", icon: <FaUsers />, href: "#join" },
-        { name: "Contact", icon: <FaEnvelope />, href: "#contact" },
+        { name: "About Us", icon: <FaInfoCircle />, href: "/about" },
+        { name: "All Classes", icon: <FaCalendarAlt />, href: "/all-classes" },
+        { name: "Join Us", icon: <FaUsers />, href: "/sign-up" },
+        { name: "Contact", icon: <FaEnvelope />, href: "/contact" },
     ];
 
     return (
@@ -44,7 +44,10 @@ const Footer = () => {
                 <div>
                     <h3 className="mb-4 font-sans text-2xl font-bold uppercase text-[22px]">Contact Us</h3>
                     <p className="flex items-center gap-2 text-gray-300 text-[16px] lg:text-lg hover:text-blue-400">
-                        <IoLocationOutline className="font-bold" />EduGrid Office
+                        <IoLocationOutline className="font-bold" />Main Branch:<br />EduGrid Office, MM Hall 119
+                    </p>
+                    <p className="flex items-center gap-2 text-gray-300 text-[16px] lg:text-lg hover:text-blue-400">
+                        <IoLocationOutline className="font-bold" />MR Hall Branch: <br />EduGrid Office, MR Hall 407
                     </p>
                     <p className="flex items-center gap-2 text-gray-300 text-[16px] lg:text-lg py-2 hover:text-blue-400">
                         <IoMailOutline />
