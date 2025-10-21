@@ -8,6 +8,7 @@ import useAxiosPublic from '../../hooks/useAxiosPublic';
 import Sidebar from '../Dashboard/Dashboard/Sidebar';
 import { Country, State } from 'country-state-city';
 import { uploadImageToImgBB, validateImageFile, compressImage } from '../../services/imageUpload';
+import { updateProfile } from 'firebase/auth'; // ✅ ADDED THIS
 
 const EditProfile = () => {
     const { user, loading } = useContext(AuthContext);
@@ -239,7 +240,7 @@ const EditProfile = () => {
         }
     };
 
-    // THE onSubmit FUNCTION
+    // THE onSubmit FUNCTION - UPDATED
     const onSubmit = async (data) => {
         setIsLoading(true);
 
@@ -284,6 +285,17 @@ const EditProfile = () => {
             const response = await axiosPublic.put(`/users/${user.email}`, updateData);
 
             if (response.data.success) {
+                // ✅ CRITICAL FIX: Update Firebase Auth profile to prevent name flashing
+                try {
+                    await updateProfile(user, {
+                        displayName: data.name,
+                        photoURL: photoURL
+                    });
+                } catch (firebaseError) {
+                    console.error('Firebase profile update error:', firebaseError);
+                    // Continue even if Firebase update fails
+                }
+
                 Swal.fire({
                     position: "top-end",
                     icon: "success",
@@ -556,7 +568,9 @@ const EditProfile = () => {
                                             {/* User Info */}
                                             <div className="flex-1 pt-4">
                                                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2" style={{ color: '#1e293b' }}>
-                                                    {userData?.name || user?.displayName || 'User Name'}
+                                                    {userData?.studentID && userData?.name
+                                                        ? `${userData.studentID} - ${userData.name}`
+                                                        : userData?.name || user?.displayName || 'User Name'}
                                                 </h2>
                                                 <div className="flex items-center space-x-2 mb-2">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
@@ -586,13 +600,19 @@ const EditProfile = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
-                                                    Full Name *
+                                                    Full Name (Format: 6-Digit StudentID - Name) *
                                                 </label>
                                                 <input
                                                     type="text"
-                                                    {...register('name', { required: 'Full name is required' })}
+                                                    {...register('name', {
+                                                        required: 'Full name is required',
+                                                        pattern: {
+                                                            value: /^\d{6}\s*-\s*.+$/,
+                                                            message: 'Name must follow format: 6-digit StudentID - Name (e.g., 210101 - John Doe)'
+                                                        }
+                                                    })}
                                                     className="w-full px-4 py-3 text-base rounded-lg transition-all"
-                                                    placeholder="Enter your full name"
+                                                    placeholder="e.g., 210101 - John Doe"
                                                     style={{
                                                         backgroundColor: '#ffffff',
                                                         color: '#1e293b',
@@ -653,10 +673,10 @@ const EditProfile = () => {
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
                                                 <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
-                                                    Country *
+                                                    Country
                                                 </label>
                                                 <select
-                                                    {...register('country', { required: 'Please select a country' })}
+                                                    {...register('country')}
                                                     onChange={handleCountryChange}
                                                     className="w-full px-4 py-3 text-base rounded-lg transition-all"
                                                     style={{
@@ -674,9 +694,6 @@ const EditProfile = () => {
                                                         </option>
                                                     ))}
                                                 </select>
-                                                {errors.country && (
-                                                    <p className="mt-2 text-sm" style={{ color: '#dc2626' }}>{errors.country.message}</p>
-                                                )}
                                             </div>
 
                                             <div>
