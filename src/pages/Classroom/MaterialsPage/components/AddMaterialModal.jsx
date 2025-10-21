@@ -293,7 +293,7 @@ const AddMaterialModal = ({ onClose, onSubmit, classroomId }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 p-4 overflow-y-auto text-black">
             {/* Glassmorphism Background with Blur */}
             <div
                 className="fixed inset-0 bg-gradient-to-br from-blue-50/30 via-white/20 to-purple-50/30 backdrop-blur-lg"

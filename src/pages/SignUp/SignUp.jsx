@@ -6,10 +6,12 @@ import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 
+
 const SignUp = () => {
     const axiosPublic = useAxiosPublic();
     const [isLoading, setIsLoading] = useState(false);
     const [isNavigating, setIsNavigating] = useState(false);
+
 
     const {
         register,
@@ -19,11 +21,14 @@ const SignUp = () => {
         formState: { errors },
     } = useForm();
 
+
     const { createUser, updateUserProfile, signInWithGoogle, logOut } = useContext(AuthContext);
     const navigate = useNavigate();
 
+
     const onSubmit = async (data) => {
-        setIsLoading(true);
+        // ✅ Show full-screen loader IMMEDIATELY
+        setIsNavigating(true);
         console.log('Starting sign up process...');
 
         try {
@@ -35,6 +40,8 @@ const SignUp = () => {
             // Step 2: Update Firebase profile
             await updateUserProfile(data.name, data.photoURL || "");
             console.log('✅ Firebase profile updated');
+
+            // ✅ NO LOGOUT - Keep user logged in to prevent login page flash
 
             // Step 3: Prepare user info for backend
             const userInfo = {
@@ -66,16 +73,11 @@ const SignUp = () => {
             if (res.data.insertedId || res.data.message === 'User created successfully') {
                 console.log('✅ User successfully saved to database');
 
-                // ✅ CRITICAL: Show loader IMMEDIATELY (before any async operations)
-                setIsLoading(false);
-                setIsNavigating(true);
-
-                // Step 5: Send verification code first (while loader is showing)
-                // Step 5: Send verification code first (while loader is showing)
+                // Step 5: Send verification code (while loader is showing)
                 try {
                     const codeResponse = await axiosPublic.post('/send-verification-code', {
                         email: data.email,
-                        userName: data.name  // ✅ ADD THIS LINE
+                        userName: data.name
                     });
                     console.log('🔑 Verification code sent:', codeResponse.data.code);
                 } catch (emailError) {
@@ -85,15 +87,12 @@ const SignUp = () => {
                 // Step 6: Reset form
                 reset();
 
-                // Step 7: Log out user (loader is already showing)
-                console.log('🚪 Logging out user...');
-                await logOut();
-                console.log('✅ User logged out successfully');
-
-                // Step 8: Navigate immediately after logout
+                // Step 7: Navigate to verification page (user stays logged in)
                 console.log('🚀 Navigating to verify-email');
-                navigate('/verify-email', { state: { email: data.email } }, { replace: true });
-
+                navigate('/verify-email', {
+                    state: { email: data.email },
+                    replace: true
+                });
                 console.log('✅ Sign up process completed');
             }
         } catch (error) {
@@ -131,41 +130,30 @@ const SignUp = () => {
             const user = result.user;
             console.log('Google authentication successful:', user);
 
-            const userInfo = {
-                name: user.displayName,
-                email: user.email,
-                photoURL: user.photoURL || "",
-                loginMethod: 'google',
-                createdAt: new Date(),
-                role: 'user',
-                emailVerified: true,
-                profile: {
-                    bio: '',
-                    institution: '',
-                    country: '',
-                    district: '',
-                    city: '',
-                    facebook: '',
-                    linkedin: '',
-                    mailLink: ''
+            // ✅ Check if user already exists in database
+            try {
+                const userResponse = await axiosPublic.get(`/users/${user.email}`);
+
+                if (userResponse.data.user) {
+                    // User exists - direct login
+                    console.log('✅ Existing Google user - redirecting to dashboard');
+                    Swal.fire({
+                        position: "top-end",
+                        icon: "success",
+                        title: "Signed in with Google successfully",
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    navigate('/dashboard', { replace: true });
                 }
-            };
-
-            console.log('Sending to backend:', userInfo);
-
-            const res = await axiosPublic.post('/users', userInfo);
-            console.log('User creation response:', res.data);
-
-            if (res.data.insertedId || res.data.message === 'User created successfully') {
-                console.log('User successfully saved to database');
-                Swal.fire({
-                    position: "top-end",
-                    icon: "success",
-                    title: "Account created with Google successfully",
-                    showConfirmButton: false,
-                    timer: 1500
-                });
-                navigate('/dashboard');
+            } catch (error) {
+                // User doesn't exist (404) - redirect to complete profile
+                if (error.response?.status === 404) {
+                    console.log('🆕 New Google user - redirecting to complete profile');
+                    navigate('/complete-profile', { replace: true });
+                } else {
+                    throw error;
+                }
             }
         } catch (error) {
             console.error('Google sign-up error:', error);
@@ -179,6 +167,8 @@ const SignUp = () => {
             setIsLoading(false);
         }
     };
+
+
 
     return (
         <div className="bg-[#DCE8F5] font-poppins text-black min-h-screen">
@@ -194,11 +184,18 @@ const SignUp = () => {
                         <p className="font-bold text-2xl sm:text-[26px] lg:text-[28.5px] pb-4 lg:pb-5">Create a new account</p>
 
                         <form onSubmit={handleSubmit(onSubmit)}>
-                            <p className="font-medium text-xs sm:text-sm pb-1">Enter Your Name</p>
+                            {/* ✅ UPDATED: Student ID - Name Format */}
+                            <p className="font-medium text-xs sm:text-sm pb-1">Enter Student ID and Name</p>
                             <input
                                 type="text"
-                                {...register('name', { required: 'Name is required' })}
-                                placeholder="Your Full Name"
+                                {...register('name', {
+                                    required: 'Student ID and name are required',
+                                    pattern: {
+                                        value: /^\d{6}\s-\s.+$/,
+                                        message: 'Format must be: 6-digit ID - Name (e.g., 200109 - Md. Sabbir Hossain Bappy)'
+                                    }
+                                })}
+                                placeholder="200109 - Md. Sabbir Hossain Bappy"
                                 className="bg-white rounded-[4px] py-2.5 sm:py-3 pl-3 sm:pl-4 w-full mb-5 sm:mb-[30px] text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-[#457B9D]"
                             />
                             {errors.name && (
@@ -226,6 +223,7 @@ const SignUp = () => {
                                 </span>
                             )}
 
+                            {/* ✅ UPDATED: Password with All Special Characters Allowed */}
                             <p className="font-medium text-xs sm:text-sm pb-1">Enter Password</p>
                             <input
                                 type="password"
@@ -236,8 +234,8 @@ const SignUp = () => {
                                         message: 'Password must be at least 8 characters'
                                     },
                                     pattern: {
-                                        value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/,
-                                        message: 'Password must include uppercase, lowercase, number, and special character (@$!%*?&#)'
+                                        value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9]).{8,}$/,
+                                        message: 'Password must include uppercase, lowercase, number, and special character'
                                     }
                                 })}
                                 placeholder="Password"
@@ -249,6 +247,7 @@ const SignUp = () => {
                                 </span>
                             )}
 
+                            {/* ✅ UPDATED: Password Requirements */}
                             <div className="bg-blue-50 border border-blue-200 rounded-[4px] p-3 sm:p-4 mb-5 sm:mb-6">
                                 <p className="font-semibold text-xs sm:text-sm text-gray-700 mb-2">Password Requirements:</p>
                                 <ul className="text-[10px] sm:text-xs text-gray-600 space-y-1">
@@ -256,7 +255,7 @@ const SignUp = () => {
                                     <li>• One uppercase letter (A-Z)</li>
                                     <li>• One lowercase letter (a-z)</li>
                                     <li>• One number (0-9)</li>
-                                    <li>• One special character (@$!%*?&#)</li>
+                                    <li>• One special character (any symbol like -_@#$!%*?&)</li>
                                 </ul>
                             </div>
 
@@ -353,5 +352,6 @@ const SignUp = () => {
         </div>
     );
 };
+
 
 export default SignUp;

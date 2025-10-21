@@ -5,11 +5,13 @@ import { Helmet } from 'react-helmet-async';
 import Swal from 'sweetalert2';
 import useAxiosPublic from '../../hooks/useAxiosPublic';
 
+
 const Login = () => {
     const { signIn, signInWithGoogle, logOut } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+
 
     const checkAndCreateUser = async (user, loginMethod) => {
         try {
@@ -48,6 +50,7 @@ const Login = () => {
         }
     };
 
+
     const handleLogin = async (event) => {
         event.preventDefault();
         setIsLoading(true);
@@ -77,9 +80,13 @@ const Login = () => {
 
                 console.log('Database user:', dbUser);
                 console.log('Email verified status:', dbUser.emailVerified);
+                console.log('Login method:', dbUser.loginMethod);
 
-                // Check if email is verified (strict check - must be exactly true)
-                if (dbUser.emailVerified !== true) {
+                // ✅ FIX: Skip verification check for Google users
+                if (dbUser.loginMethod === 'google') {
+                    console.log('✅ Google user - skipping email verification check');
+                } else if (dbUser.emailVerified !== true) {
+                    // Only check verification for email/password users
                     console.log('⚠️ Email not verified - blocking access');
 
                     // Log out immediately
@@ -126,8 +133,8 @@ const Login = () => {
                     return; // Block login
                 }
 
-                // ✅ Email is verified - allow login
-                console.log('✅ Email verified - access granted');
+                // ✅ Email is verified OR user is Google user - allow login
+                console.log('✅ Access granted');
 
             } catch (dbError) {
                 console.error('Error checking user in database:', dbError);
@@ -187,6 +194,7 @@ const Login = () => {
         }
     };
 
+
     const handleGoogleSignIn = async () => {
         try {
             setIsLoading(true);
@@ -196,17 +204,31 @@ const Login = () => {
             const user = result.user;
             console.log('Google authentication successful:', user.email);
 
-            // Google accounts are pre-verified
-            await checkAndCreateUser(user, 'google');
+            // ✅ Check if user already exists in database
+            try {
+                const userResponse = await axiosPublic.get(`/users/${user.email}`);
 
-            Swal.fire({
-                position: "top-end",
-                icon: "success",
-                title: "Signed in with Google successfully",
-                showConfirmButton: false,
-                timer: 1500
-            });
-            navigate('/dashboard', { replace: true });
+                if (userResponse.data.user) {
+                    // User exists - direct login
+                    console.log('✅ Existing Google user - logging in');
+                    Swal.fire({
+                        position: "top-end",
+                        icon: "success",
+                        title: "Signed in with Google successfully",
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    navigate('/dashboard', { replace: true });
+                }
+            } catch (error) {
+                // User doesn't exist (404) - redirect to complete profile
+                if (error.response?.status === 404) {
+                    console.log('🆕 New Google user - redirecting to complete profile');
+                    navigate('/complete-profile', { replace: true });
+                } else {
+                    throw error;
+                }
+            }
         } catch (error) {
             console.error('Google sign-in error:', error);
 
@@ -229,8 +251,10 @@ const Login = () => {
         }
     };
 
+
+
     return (
-        <div className="bg-[#DCE8F5] font-poppins text-black">
+        <div className="bg-[#DCE8F5] font-poppins text-black min-h-screen">
             <div className="max-w-[1250px] mx-auto px-4 sm:px-6 lg:px-8">
                 <Helmet>
                     <title>EduGrid | Login</title>
@@ -320,5 +344,6 @@ const Login = () => {
         </div>
     );
 };
+
 
 export default Login;

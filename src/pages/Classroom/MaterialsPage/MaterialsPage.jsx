@@ -229,7 +229,7 @@ const MaterialsPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 text-black">
             <Helmet>
                 <title>Materials - {classroom?.name} | EduGrid</title>
                 <meta name="description" content={`Manage materials for ${classroom?.name} classroom`} />

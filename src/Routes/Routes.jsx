@@ -25,6 +25,7 @@ import PublicRoute from "./PublicRoute";
 import ClassroomRoute from "../pages/Classroom/ClassroomRoute";
 import PublicProfile from "../pages/Dashboard/Dashboard/PublicProfile";
 import VerifyEmail from "../pages/VerifyEmail/VerifyEmail";
+import CompleteProfile from "../pages/CompleteProfile/CompleteProfile";
 
 export const router = createBrowserRouter([
     {
@@ -108,5 +109,9 @@ export const router = createBrowserRouter([
     {
         path: '/classroom/:classroomId/marks',
         element: <ClassroomRoute><MarksPage /></ClassroomRoute>
+    },
+    {
+        path: '/complete-profile',
+        element: <CompleteProfile/>
     }
 ]);

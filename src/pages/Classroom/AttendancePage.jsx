@@ -416,7 +416,7 @@ const AttendancePage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 text-black">
             <Helmet>
                 <title>Attendance - {classroom?.name} | EduGrid</title>
                 <meta name="description" content={`Manage attendance for ${classroom?.name} classroom`} />

@@ -3,12 +3,15 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../providers/AuthProvider';
 import useAxiosPublic from '../hooks/useAxiosPublic';
 
+
 const PrivateRoute = ({ children }) => {
     const { user, loading } = useContext(AuthContext);
     const location = useLocation();
     const axiosPublic = useAxiosPublic();
     const [verificationLoading, setVerificationLoading] = useState(true);
     const [isVerified, setIsVerified] = useState(false);
+    const [needsProfileCompletion, setNeedsProfileCompletion] = useState(false);
+
 
     useEffect(() => {
         const checkVerification = async () => {
@@ -18,12 +21,33 @@ const PrivateRoute = ({ children }) => {
                     const response = await axiosPublic.get(`/users/${user.email}`);
                     const dbUser = response.data.user;
 
+                    console.log('Database user:', dbUser);
+                    console.log('Login method:', dbUser.loginMethod);
                     console.log('Verification status:', dbUser.emailVerified);
-                    setIsVerified(dbUser.emailVerified === true);
+
+                    // ✅ User exists in database
+                    setNeedsProfileCompletion(false);
+
+                    // Check verification based on login method
+                    if (dbUser.loginMethod === 'google') {
+                        console.log('✅ Google user - auto-verified');
+                        setIsVerified(true);
+                    } else {
+                        console.log('📧 Email/password user - checking verification');
+                        setIsVerified(dbUser.emailVerified === true);
+                    }
                 } catch (error) {
                     console.error('Error checking verification:', error);
-                    // If check fails, assume verified (fail-safe)
-                    setIsVerified(true);
+
+                    // ✅ User doesn't exist in database (404)
+                    if (error.response?.status === 404) {
+                        console.log('⚠️ User not found in database - needs profile completion');
+                        setNeedsProfileCompletion(true);
+                        setIsVerified(false);
+                    } else {
+                        // Other errors - assume verified (fail-safe)
+                        setIsVerified(true);
+                    }
                 } finally {
                     setVerificationLoading(false);
                 }
@@ -37,6 +61,7 @@ const PrivateRoute = ({ children }) => {
         }
     }, [user, loading, axiosPublic]);
 
+
     // Show loader while checking auth or verification
     if (loading || verificationLoading) {
         return (
@@ -47,19 +72,37 @@ const PrivateRoute = ({ children }) => {
         );
     }
 
+
     // Not logged in - redirect to login
     if (!user) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Logged in but not verified - redirect to verification page
-    if (!isVerified) {
-        console.log('⚠️ User not verified - redirecting to verification page');
-        return <Navigate to="/verify-email" state={{ email: user.email }} replace />;
+
+    // ✅ NEW: User needs to complete profile (Google users without database entry)
+    if (needsProfileCompletion) {
+        console.log('⚠️ User needs to complete profile - redirecting');
+        // Allow access only to complete-profile page
+        if (location.pathname !== '/complete-profile') {
+            return <Navigate to="/complete-profile" replace />;
+        }
     }
 
-    // Logged in and verified - allow access
+
+    // Logged in but not verified (email/password users only) - redirect to verification page
+    if (!isVerified && !needsProfileCompletion) {
+        console.log('⚠️ Email/password user not verified - redirecting to verification page');
+        // Allow access only to verify-email page
+        if (location.pathname !== '/verify-email') {
+            return <Navigate to="/verify-email" state={{ email: user.email }} replace />;
+        }
+    }
+
+
+    // Logged in and verified (or on completion/verification pages) - allow access
+    console.log('✅ Access granted to protected route');
     return children;
 };
+
 
 export default PrivateRoute;
