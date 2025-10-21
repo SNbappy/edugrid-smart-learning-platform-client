@@ -27,10 +27,12 @@ import {
 } from 'react-icons/fa';
 
 
+
 const Dashboard = () => {
     const { user, loading } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
     const navigate = useNavigate();
+
 
     const [dashboardData, setDashboardData] = useState({
         teachingClasses: [],
@@ -40,6 +42,7 @@ const Dashboard = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [greeting, setGreeting] = useState('');
 
+
     // Dynamic greeting based on time
     useEffect(() => {
         const hour = new Date().getHours();
@@ -48,12 +51,15 @@ const Dashboard = () => {
         else setGreeting('Good Evening');
     }, []);
 
+
     useEffect(() => {
         const fetchDashboardData = async () => {
             if (!user?.email) return;
 
+
             try {
                 setIsLoading(true);
+
 
                 // Fetch all data in parallel
                 const [teachingResponse, enrolledResponse, userResponse] = await Promise.all([
@@ -62,15 +68,18 @@ const Dashboard = () => {
                     axiosPublic.get(`/users/${user.email}`)
                 ]);
 
+
                 const teachingClasses = teachingResponse.data.success ? teachingResponse.data.classrooms : [];
                 const enrolledClasses = enrolledResponse.data.success ? enrolledResponse.data.classrooms : [];
                 const userData = userResponse.data.success ? userResponse.data.user : null;
+
 
                 setDashboardData({
                     teachingClasses,
                     enrolledClasses,
                     userData
                 });
+
 
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -79,10 +88,12 @@ const Dashboard = () => {
             }
         };
 
+
         if (!loading && user) {
             fetchDashboardData();
         }
     }, [user, loading, axiosPublic]);
+
 
     // Handle join classroom
     const handleJoinClass = async () => {
@@ -104,6 +115,7 @@ const Dashboard = () => {
             }
         });
 
+
         if (classCode) {
             try {
                 const response = await axiosPublic.post('/classrooms/join', {
@@ -112,6 +124,7 @@ const Dashboard = () => {
                     studentName: user.displayName || user.email
                 });
 
+
                 if (response.data.success) {
                     await Swal.fire({
                         icon: 'success',
@@ -119,6 +132,7 @@ const Dashboard = () => {
                         text: `Welcome to "${response.data.classroom.name}"`,
                         confirmButtonColor: '#457B9D'
                     });
+
 
                     // Refresh data
                     window.location.reload();
@@ -134,6 +148,7 @@ const Dashboard = () => {
             }
         }
     };
+
 
     const quickActions = [
         {
@@ -156,11 +171,14 @@ const Dashboard = () => {
         }
     ];
 
+
     // Get combined location string
     const getLocationString = () => {
         if (!dashboardData.userData?.profile) return null;
 
+
         const { city, district, country } = dashboardData.userData.profile;
+
 
         if (city && country) {
             return `${city}, ${country}`;
@@ -172,8 +190,10 @@ const Dashboard = () => {
             return city || district;
         }
 
+
         return null;
     };
+
 
     if (loading || isLoading) {
         return (
@@ -194,14 +214,17 @@ const Dashboard = () => {
         );
     }
 
+
     return (
         <div className="min-h-screen bg-slate-50">
             <Helmet>
                 <title>EduGrid | Dashboard</title>
             </Helmet>
 
+
             <div className="flex">
                 <Sidebar />
+
 
                 <div className="flex-1 lg:ml-[320px]">
                     {/* Professional Responsive Header */}
@@ -223,6 +246,7 @@ const Dashboard = () => {
                                     </div>
                                 </div>
 
+
                                 {/* Bottom Row - Actions */}
                                 <div className="flex items-center justify-between py-2.5 space-x-2">
                                     <div className="flex items-center text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg text-xs flex-1">
@@ -235,6 +259,7 @@ const Dashboard = () => {
                                         </span>
                                     </div>
 
+
                                     <button
                                         onClick={handleJoinClass}
                                         className="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-xs font-medium rounded-lg transition-colors flex items-center whitespace-nowrap"
@@ -242,6 +267,7 @@ const Dashboard = () => {
                                         <MdLogin className="w-3.5 h-3.5 mr-1" />
                                         Join
                                     </button>
+
 
                                     <button
                                         onClick={() => navigate('/create-class')}
@@ -252,6 +278,7 @@ const Dashboard = () => {
                                     </button>
                                 </div>
                             </div>
+
 
                             {/* Desktop Layout (≥ lg) */}
                             <div className="hidden lg:flex items-center justify-between h-16">
@@ -267,6 +294,7 @@ const Dashboard = () => {
                                     </div>
                                 </div>
 
+
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center text-slate-600 bg-slate-100 px-4 py-2 rounded-lg text-sm">
                                         <MdCalendarToday className="w-4 h-4 mr-2 text-slate-500" />
@@ -277,6 +305,7 @@ const Dashboard = () => {
                                         })}</span>
                                     </div>
 
+
                                     <button
                                         onClick={handleJoinClass}
                                         className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium rounded-lg transition-colors flex items-center"
@@ -284,6 +313,7 @@ const Dashboard = () => {
                                         <MdLogin className="w-4 h-4 mr-2" />
                                         Join Class
                                     </button>
+
 
                                     <button
                                         onClick={() => navigate('/create-class')}
@@ -296,6 +326,7 @@ const Dashboard = () => {
                             </div>
                         </div>
                     </div>
+
 
                     {/* Main Content - Responsive Padding */}
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12">
@@ -318,6 +349,7 @@ const Dashboard = () => {
                                             <div className="w-full h-full bg-slate-100"></div>
                                         )}
 
+
                                         <button
                                             onClick={() => navigate('/edit-profile')}
                                             className="absolute top-2 right-2 sm:top-4 sm:right-4 px-2 py-1.5 sm:px-3 sm:py-2 bg-white/90 backdrop-blur-sm rounded-lg text-slate-700 hover:bg-white text-xs sm:text-sm font-medium transition-colors flex items-center space-x-1 sm:space-x-2 shadow-sm"
@@ -326,6 +358,7 @@ const Dashboard = () => {
                                             <span>Edit</span>
                                         </button>
                                     </div>
+
 
                                     {/* Profile Content - Responsive */}
                                     <div className="relative px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
@@ -344,6 +377,7 @@ const Dashboard = () => {
                                             </div>
                                         </div>
 
+
                                         {/* User Info Grid - Responsive */}
                                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                                             {/* Basic Info */}
@@ -351,7 +385,7 @@ const Dashboard = () => {
                                                 <div className="mb-4 sm:mb-6">
                                                     <h3 className="text-lg sm:text-xl font-semibold text-slate-800 flex items-center mb-1">
                                                         {dashboardData.userData?.name || user?.displayName || 'User Name'}
-                                                        {user?.emailVerified && (
+                                                        {dashboardData.userData?.emailVerified && (
                                                             <MdVerified className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 ml-2" />
                                                         )}
                                                     </h3>
@@ -359,6 +393,7 @@ const Dashboard = () => {
                                                         {dashboardData.teachingClasses.length > 0 ? 'Educator' : 'Student'}
                                                     </p>
                                                 </div>
+
 
                                                 {/* Bio */}
                                                 {dashboardData.userData?.profile?.bio && (
@@ -368,6 +403,7 @@ const Dashboard = () => {
                                                         </p>
                                                     </div>
                                                 )}
+
 
                                                 {/* Simple Stats - Responsive */}
                                                 <div className="grid grid-cols-2 gap-3 sm:gap-4">
@@ -382,6 +418,7 @@ const Dashboard = () => {
                                                 </div>
                                             </div>
 
+
                                             {/* Contact Info - Responsive */}
                                             <div>
                                                 <h4 className="text-base sm:text-lg font-medium text-slate-800 mb-3 sm:mb-4">Information</h4>
@@ -394,6 +431,7 @@ const Dashboard = () => {
                                                         </div>
                                                     </div>
 
+
                                                     {getLocationString() && (
                                                         <div className="flex items-start">
                                                             <MdLocationOn className="w-4 h-4 text-slate-500 mr-3 flex-shrink-0 mt-0.5" />
@@ -404,6 +442,7 @@ const Dashboard = () => {
                                                         </div>
                                                     )}
 
+
                                                     {dashboardData.userData?.profile?.institution && (
                                                         <div className="flex items-start">
                                                             <MdBusiness className="w-4 h-4 text-slate-500 mr-3 flex-shrink-0 mt-0.5" />
@@ -413,6 +452,7 @@ const Dashboard = () => {
                                                             </div>
                                                         </div>
                                                     )}
+
 
                                                     {dashboardData.userData?.createdAt && (
                                                         <div className="flex items-start">
@@ -430,6 +470,7 @@ const Dashboard = () => {
                                                     )}
                                                 </div>
                                             </div>
+
 
                                             {/* Social Links - Responsive */}
                                             <div>
@@ -479,6 +520,7 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
+
                             {/* Responsive Quick Actions */}
                             <div className="bg-white rounded-lg border border-slate-200 p-4 sm:p-6 lg:p-8 shadow-sm">
                                 <div className="mb-4 sm:mb-6">
@@ -515,5 +557,6 @@ const Dashboard = () => {
         </div>
     );
 };
+
 
 export default Dashboard;
