@@ -608,11 +608,11 @@ const EditProfile = () => {
                                                         required: 'Full name is required',
                                                         pattern: {
                                                             value: /^\d{6}\s*-\s*.+$/,
-                                                            message: 'Name must follow format: 6-digit StudentID - Name (e.g., 210101 - John Doe)'
+                                                            message: 'Name must follow format: 6-digit StudentID - Name (e.g., 200109 - Md. Sabbir Hossain Bappy)'
                                                         }
                                                     })}
                                                     className="w-full px-4 py-3 text-base rounded-lg transition-all"
-                                                    placeholder="e.g., 210101 - John Doe"
+                                                    placeholder="e.g., 200109 - Md. Sabbir Hossain Bappy"
                                                     style={{
                                                         backgroundColor: '#ffffff',
                                                         color: '#1e293b',

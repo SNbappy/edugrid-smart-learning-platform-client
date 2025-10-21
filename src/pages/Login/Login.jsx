@@ -304,7 +304,7 @@ const Login = () => {
                             </button>
                         </form>
 
-                        <p className="text-xs sm:text-sm py-5 sm:py-[30px] text-center font-medium">or continue with</p>
+                        {/* <p className="text-xs sm:text-sm py-5 sm:py-[30px] text-center font-medium">or continue with</p>
 
                         <div className="flex justify-center">
                             <button
@@ -319,7 +319,7 @@ const Login = () => {
                                 />
                                 {isLoading ? 'Signing in...' : 'Sign in with Google'}
                             </button>
-                        </div>
+                        </div> */}
 
                         <div className="text-center mt-5 sm:mt-6">
                             <p className="text-xs sm:text-sm font-medium">
