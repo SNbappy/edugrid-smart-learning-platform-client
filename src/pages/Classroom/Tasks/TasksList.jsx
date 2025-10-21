@@ -26,13 +26,13 @@ const TasksList = ({
 }) => {
     // Memoize task processing to prevent unnecessary re-renders
     const processedTasks = useMemo(() => {
-        console.log('📋 TasksList: Processing tasks', {
-            tasksCount: filteredTasks?.length || 0,
-            filterStatus,
-            refreshTrigger, // Include trigger in dependency tracking
-            userRole,
-            userEmail
-        });
+        // console.log('📋 TasksList: Processing tasks', {
+        //     tasksCount: filteredTasks?.length || 0,
+        //     filterStatus,
+        //     refreshTrigger, // Include trigger in dependency tracking
+        //     userRole,
+        //     userEmail
+        // }); 
 
         if (!filteredTasks || filteredTasks.length === 0) {
             return [];
@@ -50,7 +50,7 @@ const TasksList = ({
     }, [filteredTasks, filterStatus, refreshTrigger, userRole, userEmail, getSubmissionCount, hasUserSubmitted, getUserSubmission]);
 
     const handleViewSubmissions = (task) => {
-        console.log('👁️ TasksList: View submissions clicked for task:', task._id || task.id);
+        // console.log('👁️ TasksList: View submissions clicked for task:', task._id || task.id);
 
         // Use the new ViewSubmissionModal handler if available, otherwise fall back to legacy
         if (onViewSubmissions) {

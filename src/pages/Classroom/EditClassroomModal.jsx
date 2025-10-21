@@ -85,7 +85,7 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
 
         setIsUploadingImage(true);
         try {
-            console.log('📤 Uploading classroom image to ImgBB...');
+            // console.log('📤 Uploading classroom image to ImgBB...');
 
             // Compress image before upload using your existing service
             const compressedFile = await compressImage(newImage, 1200, 0.8);
@@ -94,7 +94,7 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
             const uploadResult = await uploadImageToImgBB(compressedFile);
 
             if (uploadResult.success) {
-                console.log('✅ Classroom image uploaded successfully:', uploadResult.url);
+                // console.log('✅ Classroom image uploaded successfully:', uploadResult.url);
                 return uploadResult.url;
             } else {
                 throw new Error(uploadResult.error);
@@ -172,21 +172,21 @@ const EditClassroomModal = ({ classroom, onClose, onUpdate, axiosPublic }) => {
                 imageUrl: imageUrl
             };
 
-            console.log('Sending update data:', updateData);
+            // console.log('Sending update data:', updateData);
 
             const response = await axiosPublic.put(`/classrooms/${classroom._id}`, updateData);
 
-            console.log('Full update response:', response.data);
+            // console.log('Full update response:', response.data);
 
             // *** IMPROVED ERROR HANDLING ***
             if (response.data.success) {
                 if (response.data.classroom) {
                     // We have the updated classroom data
-                    console.log('✅ Classroom updated with data:', response.data.classroom);
+                    // console.log('✅ Classroom updated with data:', response.data.classroom);
                     onUpdate(response.data.classroom);
                 } else {
                     // Success but no classroom data - fetch it manually
-                    console.log('✅ Update successful, fetching fresh data...');
+                    // console.log('✅ Update successful, fetching fresh data...');
                     try {
                         const fetchResponse = await axiosPublic.get(`/classrooms/${classroom._id}`);
                         if (fetchResponse.data.success) {

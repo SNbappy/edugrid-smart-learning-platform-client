@@ -5,8 +5,6 @@ import {
     onAuthStateChanged,
     signOut,
     updateProfile,
-    GoogleAuthProvider,
-    signInWithPopup,
     sendPasswordResetEmail,
     sendEmailVerification
 } from 'firebase/auth';
@@ -17,12 +15,6 @@ export const AuthContext = createContext(null);
 const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    const googleProvider = new GoogleAuthProvider();
-
-    googleProvider.setCustomParameters({
-        prompt: 'select_account'
-    });
 
     const createUser = async (email, password) => {
         setLoading(true);
@@ -50,42 +42,6 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    const signInWithGoogle = async () => {
-        setLoading(true);
-        try {
-            const result = await signInWithPopup(auth, googleProvider);
-
-            if (!result || !result.user) {
-                throw new Error('Google sign-in failed - no user data received');
-            }
-
-            if (!result.user.email) {
-                throw new Error('Google sign-in failed - no email provided');
-            }
-
-            console.log('Google sign-in successful:', result.user);
-            return result;
-        } catch (error) {
-            console.error('Google sign-in error:', error);
-
-            if (error.code === 'auth/popup-closed-by-user') {
-                throw new Error('Sign-in was cancelled. Please try again.');
-            } else if (error.code === 'auth/popup-blocked') {
-                throw new Error('Popup was blocked by browser. Please allow popups and try again.');
-            } else if (error.code === 'auth/cancelled-popup-request') {
-                throw new Error('Sign-in request was cancelled. Please try again.');
-            } else if (error.code === 'auth/network-request-failed') {
-                throw new Error('Network error. Please check your connection and try again.');
-            } else if (error.code === 'auth/internal-error') {
-                throw new Error('An internal error occurred. Please try again later.');
-            }
-
-            throw error;
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const updateUserProfile = async (name, photoURL = '') => {
         try {
             if (!auth.currentUser) {
@@ -103,7 +59,7 @@ const AuthProvider = ({ children }) => {
                 photoURL: photoURL
             }));
 
-            console.log('User profile updated successfully');
+            // console.log('User profile updated successfully');
         } catch (error) {
             console.error('Update profile error:', error);
             throw error;
@@ -131,14 +87,13 @@ const AuthProvider = ({ children }) => {
         }
     };
 
-    // Send email verification function
     const sendVerificationEmail = async () => {
         try {
             if (!auth.currentUser) {
                 throw new Error('No user is currently signed in');
             }
             await sendEmailVerification(auth.currentUser);
-            console.log('✅ Verification email sent successfully');
+            // console.log('✅ Verification email sent successfully');
             return true;
         } catch (error) {
             console.error('❌ Send verification email error:', error);
@@ -148,7 +103,7 @@ const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            console.log('Auth state changed:', currentUser?.email || 'No user');
+            // console.log('Auth state changed:', currentUser?.email || 'No user');
             setUser(currentUser);
             setLoading(false);
         });
@@ -163,11 +118,10 @@ const AuthProvider = ({ children }) => {
         loading,
         createUser,
         signIn,
-        signInWithGoogle,
         updateUserProfile,
         logOut,
         resetPassword,
-        sendVerificationEmail  // ✅ ADDED THIS
+        sendVerificationEmail
     };
 
     return (

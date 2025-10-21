@@ -21,36 +21,36 @@ const ClassroomRoute = ({ children }) => {
             }
 
             try {
-                console.log('🔍 Checking access for user:', user.email);
-                console.log('🔍 Classroom ID:', classroomId);
+                // console.log('🔍 Checking access for user:', user.email);
+                // console.log('🔍 Classroom ID:', classroomId);
 
                 // Fetch classroom data
                 const response = await axiosPublic.get(`/classrooms/${classroomId}`);
-                console.log('📦 Full classroom response:', response.data);
+                // console.log('📦 Full classroom response:', response.data);
 
                 // Handle different response formats
                 const classroom = response.data.classroom || response.data;
 
-                console.log('🏫 Classroom data:', classroom);
-                console.log('🔍 FULL CLASSROOM OBJECT:', JSON.stringify(classroom, null, 2));
-                console.log('👤 Current user email:', user.email);
+                // console.log('🏫 Classroom data:', classroom);
+                // console.log('🔍 FULL CLASSROOM OBJECT:', JSON.stringify(classroom, null, 2));
+                // console.log('👤 Current user email:', user.email);
 
                 // Normalize user email for comparison
                 const userEmailNormalized = user.email?.trim().toLowerCase();
 
                 // Log all possible creator fields
-                console.log('🔍 Creator field values:', {
-                    creatorEmail: classroom.creatorEmail,
-                    teacher: classroom.teacher,
-                    owner: classroom.owner,
-                    createdBy: classroom.createdBy,
-                    creator: classroom.creator,
-                    teacherEmail: classroom.teacherEmail,
-                    ownerEmail: classroom.ownerEmail,
-                    userId: classroom.userId,
-                    userEmail: user.email,
-                    userEmailNormalized
-                });
+                // console.log('🔍 Creator field values:', {
+                //     creatorEmail: classroom.creatorEmail,
+                //     teacher: classroom.teacher,
+                //     owner: classroom.owner,
+                //     createdBy: classroom.createdBy,
+                //     creator: classroom.creator,
+                //     teacherEmail: classroom.teacherEmail,
+                //     ownerEmail: classroom.ownerEmail,
+                //     userId: classroom.userId,
+                //     userEmail: user.email,
+                //     userEmailNormalized
+                // });
 
                 // Check all possible creator/owner fields (expanded list)
                 const creatorFields = [
@@ -71,13 +71,13 @@ const ClassroomRoute = ({ children }) => {
                     return field.toString().trim().toLowerCase() === userEmailNormalized;
                 });
 
-                console.log('✅ Is Creator?', isCreator);
+                // console.log('✅ Is Creator?', isCreator);
 
                 // Check if user is a member
                 let isMember = false;
 
                 if (Array.isArray(classroom.members)) {
-                    console.log('👥 Members array:', classroom.members);
+                    // console.log('👥 Members array:', classroom.members);
 
                     isMember = classroom.members.some(member => {
                         if (typeof member === 'string') {
@@ -89,7 +89,7 @@ const ClassroomRoute = ({ children }) => {
 
                 // Check students array as fallback
                 if (!isMember && Array.isArray(classroom.students)) {
-                    console.log('👨‍🎓 Students array:', classroom.students);
+                    // console.log('👨‍🎓 Students array:', classroom.students);
 
                     isMember = classroom.students.some(student => {
                         if (typeof student === 'string') {
@@ -99,10 +99,10 @@ const ClassroomRoute = ({ children }) => {
                     });
                 }
 
-                console.log('✅ Is Member?', isMember);
+                // console.log('✅ Is Member?', isMember);
 
                 const accessGranted = isCreator || isMember;
-                console.log('🎯 Final access decision:', accessGranted);
+                // console.log('🎯 Final access decision:', accessGranted);
 
                 // Store debug info
                 // setDebugInfo({
@@ -185,13 +185,13 @@ const ClassroomRoute = ({ children }) => {
 
     // Redirect to dashboard if no access
     if (!hasAccess) {
-        console.log('🚫 Access denied, redirecting to dashboard');
+        // console.log('🚫 Access denied, redirecting to dashboard');
         // console.log('Debug info:', debugInfo);
         return <Navigate to="/dashboard" replace />;
     }
 
     // Allow access
-    console.log('✅ Access granted, rendering children');
+    // console.log('✅ Access granted, rendering children');
     return children;
 };
 

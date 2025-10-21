@@ -1,11 +1,11 @@
 // Validate file before upload
 export const validateFile = (file, maxSizeMB = 10) => {
-    console.log('🔍 Validating file:', {
-        name: file?.name,
-        size: file?.size,
-        type: file?.type,
-        maxSizeMB: maxSizeMB
-    });
+    // console.log('🔍 Validating file:', {
+    //     name: file?.name,
+    //     size: file?.size,
+    //     type: file?.type,
+    //     maxSizeMB: maxSizeMB
+    // });
 
     const maxSize = maxSizeMB * 1024 * 1024; // Convert MB to bytes
 
@@ -43,17 +43,17 @@ export const validateFile = (file, maxSizeMB = 10) => {
     ];
 
     if (!file) {
-        console.log('❌ Validation failed: No file selected');
+        // console.log('❌ Validation failed: No file selected');
         return { valid: false, error: 'No file selected' };
     }
 
     if (file.size > maxSize) {
-        console.log('❌ Validation failed: File too large', {
-            fileSize: file.size,
-            maxSize: maxSize,
-            fileSizeMB: (file.size / (1024 * 1024)).toFixed(2),
-            maxSizeMB: maxSizeMB
-        });
+        // console.log('❌ Validation failed: File too large', {
+        //     fileSize: file.size,
+        //     maxSize: maxSize,
+        //     fileSizeMB: (file.size / (1024 * 1024)).toFixed(2),
+        //     maxSizeMB: maxSizeMB
+        // });
         return {
             valid: false,
             error: `File size must be less than ${maxSizeMB}MB. Current size: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
@@ -61,14 +61,14 @@ export const validateFile = (file, maxSizeMB = 10) => {
     }
 
     if (!allowedTypes.includes(file.type)) {
-        console.log('❌ Validation failed: File type not allowed', file.type);
+        // console.log('❌ Validation failed: File type not allowed', file.type);
         return {
             valid: false,
             error: `File type "${file.type}" not supported. Allowed: PDF, Word, Excel, PowerPoint, Images, Videos, Audio, and Archives.`
         };
     }
 
-    console.log('✅ File validation passed');
+    // console.log('✅ File validation passed');
     return { valid: true };
 };
 
@@ -82,12 +82,12 @@ export const getResourceType = (file) => {
 // Upload to Cloudinary function
 export const uploadToCloudinary = async (file, resourceType = 'auto') => {
     try {
-        console.log('📤 Starting Cloudinary upload:', {
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type,
-            resourceType: resourceType
-        });
+        // console.log('📤 Starting Cloudinary upload:', {
+        //     fileName: file.name,
+        //     fileSize: file.size,
+        //     fileType: file.type,
+        //     resourceType: resourceType
+        // });
 
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
         const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
@@ -121,13 +121,13 @@ export const uploadToCloudinary = async (file, resourceType = 'auto') => {
 
         const data = await response.json();
 
-        console.log('✅ Cloudinary upload successful:', {
-            url: data.secure_url,
-            publicId: data.public_id,
-            resourceType: data.resource_type,
-            format: data.format,
-            bytes: data.bytes
-        });
+        // console.log('✅ Cloudinary upload successful:', {
+        //     url: data.secure_url,
+        //     publicId: data.public_id,
+        //     resourceType: data.resource_type,
+        //     format: data.format,
+        //     bytes: data.bytes
+        // });
 
         return {
             success: true,

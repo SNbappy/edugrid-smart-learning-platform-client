@@ -40,7 +40,7 @@ const MyClasses = () => {
 
             try {
                 setIsLoadingData(true);
-                console.log('Loading classrooms for user:', user.email);
+                // console.log('Loading classrooms for user:', user.email);
 
                 const [teacherRes, studentRes] = await Promise.all([
                     axiosPublic.get(`/classrooms/teacher/${user.email}`),

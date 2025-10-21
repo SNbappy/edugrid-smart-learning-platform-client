@@ -144,11 +144,11 @@ const AddMaterialModal = ({ onClose, onSubmit, classroomId }) => {
                     type: 'youtube'
                 };
 
-                console.log('🔍 YouTube URL Processing:', {
-                    originalUrl: cleanUrl,
-                    embedUrl: embedUrl,
-                    videoId: videoIdMatch[1]
-                });
+                // console.log('🔍 YouTube URL Processing:', {
+                //     originalUrl: cleanUrl,
+                //     embedUrl: embedUrl,
+                //     videoId: videoIdMatch[1]
+                // });
             } catch (error) {
                 console.error('YouTube URL processing error:', error);
                 setError('Error processing YouTube URL. Please try again.');
@@ -230,17 +230,17 @@ const AddMaterialModal = ({ onClose, onSubmit, classroomId }) => {
             };
         }
 
-        console.log('📤 Submitting material:', {
-            ...submitData,
-            file: submitData.file ? `${submitData.file.name} (${(submitData.file.size / 1024 / 1024).toFixed(2)}MB)` : undefined
-        });
+        // console.log('📤 Submitting material:', {
+        //     ...submitData,
+        //     file: submitData.file ? `${submitData.file.name} (${(submitData.file.size / 1024 / 1024).toFixed(2)}MB)` : undefined
+        // });
 
         setIsUploading(true);
 
         try {
             const result = await onSubmit(submitData);
 
-            console.log('📥 Backend response:', result);
+            // console.log('📥 Backend response:', result);
 
             if (result && (result.success || result.material)) {
                 // Reset form and close modal on success

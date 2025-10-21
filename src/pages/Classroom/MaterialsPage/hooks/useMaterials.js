@@ -42,7 +42,7 @@ export const useMaterials = (classroomId, user, loading, axiosPublic) => {
     // Add material function
     const addMaterial = async (materialData) => {
         try {
-            console.log('📤 Sending material data:', materialData);
+            // console.log('📤 Sending material data:', materialData);
 
             let requestData = {
                 title: materialData.title,
@@ -66,7 +66,7 @@ export const useMaterials = (classroomId, user, loading, axiosPublic) => {
             }
             else if (materialData.type === 'file') {
                 // File upload - upload to Cloudinary first
-                console.log('📁 Uploading file to Cloudinary...');
+                // console.log('📁 Uploading file to Cloudinary...');
                 const uploadResult = await uploadFileToCloudinary(materialData.file);
 
                 if (!uploadResult.success) {
@@ -80,7 +80,7 @@ export const useMaterials = (classroomId, user, loading, axiosPublic) => {
                 requestData.publicId = uploadResult.publicId;
             }
 
-            console.log('📤 Final request data:', requestData);
+            // console.log('📤 Final request data:', requestData);
 
             const response = await axiosPublic.post(`/classrooms/${classroomId}/materials`, requestData);
 

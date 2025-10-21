@@ -76,12 +76,12 @@ const CreateClass = () => {
 
         setIsUploadingImage(true);
         try {
-            console.log('📤 Uploading class image to ImgBB...');
+            // console.log('📤 Uploading class image to ImgBB...');
 
             const uploadResult = await uploadImageToImgBB(selectedFile);
 
             if (uploadResult.success) {
-                console.log('✅ Image uploaded successfully:', uploadResult.url);
+                // console.log('✅ Image uploaded successfully:', uploadResult.url);
                 return uploadResult.url;
             } else {
                 throw new Error(uploadResult.error);
@@ -96,7 +96,7 @@ const CreateClass = () => {
 
     const onSubmit = async (data) => {
         setIsLoading(true);
-        console.log('📚 Creating class with data:', data);
+        // console.log('📚 Creating class with data:', data);
 
         try {
             let imageUrl = '';
@@ -107,12 +107,12 @@ const CreateClass = () => {
 
                 // If upload fails, use default image
                 if (!imageUrl) {
-                    console.log('⚠️ Upload failed, using default image');
+                    // console.log('⚠️ Upload failed, using default image');
                     imageUrl = getRandomDefaultImage();
                 }
             } else {
                 // No image selected, use random default
-                console.log('ℹ️ No image selected, using default image');
+                // console.log('ℹ️ No image selected, using default image');
                 imageUrl = getRandomDefaultImage();
             }
 
@@ -127,7 +127,7 @@ const CreateClass = () => {
 
             const response = await axiosPublic.post('/classrooms', classroomData);
 
-            console.log('✅ Class creation response:', response.data);
+            // console.log('✅ Class creation response:', response.data);
 
             if (response.data.success) {
                 Swal.fire({

@@ -23,8 +23,8 @@ class TaskAPIConfig {
         if (process.env.NODE_ENV === 'development') {
             const hostname = window.location.hostname;
             if (hostname === 'localhost' || hostname === '127.0.0.1') {
-                // return 'https://edugrid-smart-learning-platform-ser.vercel.app';
-                return 'http://localhost:5000';
+                return 'https://edugrid-smart-learning-platform-ser.vercel.app';
+                // return 'http://localhost:5000';
             }
             return `http://${hostname}:5000`;
         }
@@ -61,7 +61,7 @@ class TaskAPIConfig {
 // Create singleton instance
 const apiConfig = new TaskAPIConfig();
 
-console.log('🔧 Task API Configuration:', apiConfig.getDebugInfo());
+// console.log('🔧 Task API Configuration:', apiConfig.getDebugInfo());
 
 /**
  * Enhanced axios wrapper with dynamic URL building
@@ -69,11 +69,11 @@ console.log('🔧 Task API Configuration:', apiConfig.getDebugInfo());
 const makeAPICall = async (axiosPublic, method, endpoint, data = null, options = {}) => {
     try {
         const fullURL = apiConfig.buildURL(endpoint);
-        console.log(`📡 ${method.toUpperCase()} API Call:`, {
-            endpoint,
-            fullURL,
-            hasData: !!data
-        });
+        // console.log(`📡 ${method.toUpperCase()} API Call:`, {
+        //     endpoint,
+        //     fullURL,
+        //     hasData: !!data
+        // });
 
         let response;
         switch (method.toLowerCase()) {
@@ -93,11 +93,11 @@ const makeAPICall = async (axiosPublic, method, endpoint, data = null, options =
                 throw new Error(`Unsupported HTTP method: ${method}`);
         }
 
-        console.log(`📥 ${method.toUpperCase()} Response:`, {
-            status: response.status,
-            success: response.data?.success,
-            url: fullURL
-        });
+        // console.log(`📥 ${method.toUpperCase()} Response:`, {
+        //     status: response.status,
+        //     success: response.data?.success,
+        //     url: fullURL
+        // });
 
         return response;
     } catch (error) {
@@ -116,7 +116,7 @@ const makeAPICall = async (axiosPublic, method, endpoint, data = null, options =
  */
 export const createTaskAPI = async (axiosPublic, classroomId, taskData, userEmail) => {
     try {
-        console.log('Creating task with data:', taskData);
+        // console.log('Creating task with data:', taskData);
 
         const taskPayload = {
             ...taskData,
@@ -182,7 +182,7 @@ export const deleteTaskAPI = async (axiosPublic, classroomId, taskId) => {
             return { success: false, cancelled: true };
         }
 
-        console.log('Deleting task:', taskId);
+        // console.log('Deleting task:', taskId);
 
         const response = await makeAPICall(
             axiosPublic,
@@ -225,7 +225,7 @@ export const deleteTaskAPI = async (axiosPublic, classroomId, taskId) => {
  */
 export const updateTaskAPI = async (axiosPublic, classroomId, taskId, updateData) => {
     try {
-        console.log('Updating task:', taskId, updateData);
+        // console.log('Updating task:', taskId, updateData);
 
         const response = await makeAPICall(
             axiosPublic,
@@ -270,7 +270,7 @@ export const updateTaskAPI = async (axiosPublic, classroomId, taskId, updateData
  */
 export const getTaskSubmissionsAPI = async (axiosPublic, classroomId, taskId) => {
     try {
-        console.log('🎯 Fetching task submissions:', { classroomId, taskId });
+        // console.log('🎯 Fetching task submissions:', { classroomId, taskId });
 
         const response = await makeAPICall(
             axiosPublic,
@@ -278,11 +278,11 @@ export const getTaskSubmissionsAPI = async (axiosPublic, classroomId, taskId) =>
             `classrooms/${classroomId}/tasks/${taskId}/submissions`
         );
 
-        console.log('📋 Task submissions response:', {
-            success: response.data.success,
-            count: response.data.count,
-            submissions: response.data.submissions?.length || 0
-        });
+        // console.log('📋 Task submissions response:', {
+        //     success: response.data.success,
+        //     count: response.data.count,
+        //     submissions: response.data.submissions?.length || 0
+        // });
 
         if (response.data.success) {
             return {
@@ -313,7 +313,7 @@ export const getTaskSubmissionsAPI = async (axiosPublic, classroomId, taskId) =>
  */
 export const submitTaskAPI = async (axiosPublic, classroomId, taskId, submissionData) => {
     try {
-        console.log('🎯 Submitting task:', { classroomId, taskId, submissionData });
+        // console.log('🎯 Submitting task:', { classroomId, taskId, submissionData });
 
         const response = await makeAPICall(
             axiosPublic,
@@ -358,7 +358,7 @@ export const submitTaskAPI = async (axiosPublic, classroomId, taskId, submission
  */
 export const resubmitTaskAPI = async (axiosPublic, classroomId, taskId, submissionData) => {
     try {
-        console.log('🔄 Resubmitting task:', { classroomId, taskId });
+        // console.log('🔄 Resubmitting task:', { classroomId, taskId });
 
         const response = await makeAPICall(
             axiosPublic,
@@ -403,7 +403,7 @@ export const resubmitTaskAPI = async (axiosPublic, classroomId, taskId, submissi
  */
 export const gradeSubmissionAPI = async (axiosPublic, classroomId, taskId, submissionId, gradeData) => {
     try {
-        console.log('📝 Grading submission:', { classroomId, taskId, submissionId, gradeData });
+        // console.log('📝 Grading submission:', { classroomId, taskId, submissionId, gradeData });
 
         const response = await makeAPICall(
             axiosPublic,
@@ -447,7 +447,7 @@ export const gradeSubmissionAPI = async (axiosPublic, classroomId, taskId, submi
  */
 export const getMySubmissionAPI = async (axiosPublic, classroomId, taskId) => {
     try {
-        console.log('👤 Fetching my submission:', { classroomId, taskId });
+        // console.log('👤 Fetching my submission:', { classroomId, taskId });
 
         const response = await makeAPICall(
             axiosPublic,
@@ -478,7 +478,7 @@ export const getMySubmissionAPI = async (axiosPublic, classroomId, taskId) => {
  */
 export const getSubmissionStatusAPI = async (axiosPublic, classroomId, taskId) => {
     try {
-        console.log('📊 Fetching submission status:', { classroomId, taskId });
+        // console.log('📊 Fetching submission status:', { classroomId, taskId });
 
         const response = await makeAPICall(
             axiosPublic,

@@ -102,10 +102,10 @@ const Classroom = () => {
         const fetchClassroom = async () => {
             if (classroomId) {
                 try {
-                    console.log('Fetching classroom:', classroomId);
+                    // console.log('Fetching classroom:', classroomId);
                     const response = await axiosPublic.get(`/classrooms/${classroomId}`);
                     if (response.data.success) {
-                        console.log('Classroom data received:', response.data.classroom);
+                        // console.log('Classroom data received:', response.data.classroom);
                         setClassroom(response.data.classroom);
                     } else {
                         console.error('Classroom not found');
@@ -126,7 +126,7 @@ const Classroom = () => {
     }, [classroomId, user, loading, axiosPublic, navigate]);
 
     const handleClassroomUpdate = (updatedClassroom) => {
-        console.log('Updating classroom state with:', updatedClassroom);
+        // console.log('Updating classroom state with:', updatedClassroom);
         setClassroom(updatedClassroom);
         setShowEditModal(false);
     };

@@ -19,7 +19,7 @@ const Contact = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log('Form submitted:', formData);
+        // console.log('Form submitted:', formData);
         alert('Message sent successfully! We\'ll get back to you within 24 hours.');
         setFormData({
             name: '',

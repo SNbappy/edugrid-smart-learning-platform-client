@@ -5,8 +5,8 @@ export const uploadFileToCloudinary = async (file) => {
         const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
         const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
-        console.log('🌤️ Cloud Name:', cloudName);
-        console.log('🎯 Upload Preset:', uploadPreset);
+        // console.log('🌤️ Cloud Name:', cloudName);
+        // console.log('🎯 Upload Preset:', uploadPreset);
 
         // Check if environment variables are set
         if (!cloudName) {
@@ -22,7 +22,7 @@ export const uploadFileToCloudinary = async (file) => {
         formData.append('upload_preset', uploadPreset);
 
         const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/upload`;
-        console.log('📤 Uploading to:', uploadUrl);
+        // console.log('📤 Uploading to:', uploadUrl);
 
         const response = await fetch(uploadUrl, {
             method: 'POST',
@@ -35,7 +35,7 @@ export const uploadFileToCloudinary = async (file) => {
         }
 
         const data = await response.json();
-        console.log('✅ Upload successful:', data.secure_url);
+        // console.log('✅ Upload successful:', data.secure_url);
 
         return {
             success: true,

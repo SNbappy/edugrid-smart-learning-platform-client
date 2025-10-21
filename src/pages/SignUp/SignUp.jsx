@@ -6,12 +6,9 @@ import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import useAxiosPublic from "../../hooks/useAxiosPublic";
 
-
 const SignUp = () => {
     const axiosPublic = useAxiosPublic();
-    const [isLoading, setIsLoading] = useState(false);
     const [isNavigating, setIsNavigating] = useState(false);
-
 
     const {
         register,
@@ -21,27 +18,23 @@ const SignUp = () => {
         formState: { errors },
     } = useForm();
 
-
-    const { createUser, updateUserProfile, signInWithGoogle, logOut } = useContext(AuthContext);
+    const { createUser, updateUserProfile } = useContext(AuthContext);
     const navigate = useNavigate();
-
 
     const onSubmit = async (data) => {
         // ✅ Show full-screen loader IMMEDIATELY
         setIsNavigating(true);
-        console.log('Starting sign up process...');
+        // console.log('Starting sign up process...');
 
         try {
             // Step 1: Create Firebase user
             const result = await createUser(data.email, data.password);
             const loggedUser = result.user;
-            console.log('✅ Firebase user created:', loggedUser.email);
+            // console.log('✅ Firebase user created:', loggedUser.email);
 
             // Step 2: Update Firebase profile
             await updateUserProfile(data.name, data.photoURL || "");
-            console.log('✅ Firebase profile updated');
-
-            // ✅ NO LOGOUT - Keep user logged in to prevent login page flash
+            // console.log('✅ Firebase profile updated');
 
             // Step 3: Prepare user info for backend
             const userInfo = {
@@ -64,14 +57,14 @@ const SignUp = () => {
                 }
             };
 
-            console.log('Sending to backend:', userInfo);
+            // console.log('Sending to backend:', userInfo);
 
             // Step 4: Save to database
             const res = await axiosPublic.post('/users', userInfo);
-            console.log('Backend response:', res.data);
+            // console.log('Backend response:', res.data);
 
             if (res.data.insertedId || res.data.message === 'User created successfully') {
-                console.log('✅ User successfully saved to database');
+                // console.log('✅ User successfully saved to database');
 
                 // Step 5: Send verification code (while loader is showing)
                 try {
@@ -79,7 +72,7 @@ const SignUp = () => {
                         email: data.email,
                         userName: data.name
                     });
-                    console.log('🔑 Verification code sent:', codeResponse.data.code);
+                    // console.log('🔑 Verification code sent:', codeResponse.data.code);
                 } catch (emailError) {
                     console.error('Error sending verification code:', emailError);
                 }
@@ -87,13 +80,13 @@ const SignUp = () => {
                 // Step 6: Reset form
                 reset();
 
-                // Step 7: Navigate to verification page (user stays logged in)
-                console.log('🚀 Navigating to verify-email');
+                // Step 7: Navigate to verification page
+                // console.log('🚀 Navigating to verify-email');
                 navigate('/verify-email', {
                     state: { email: data.email },
                     replace: true
                 });
-                console.log('✅ Sign up process completed');
+                // console.log('✅ Sign up process completed');
             }
         } catch (error) {
             console.error('❌ Sign up error:', error);
@@ -115,60 +108,9 @@ const SignUp = () => {
                 confirmButtonColor: '#457B9D'
             });
 
-            setIsLoading(false);
             setIsNavigating(false);
         }
     };
-
-
-    const handleGoogleSignUp = async () => {
-        try {
-            setIsLoading(true);
-            console.log('Starting Google sign up process...');
-
-            const result = await signInWithGoogle();
-            const user = result.user;
-            console.log('Google authentication successful:', user);
-
-            // ✅ Check if user already exists in database
-            try {
-                const userResponse = await axiosPublic.get(`/users/${user.email}`);
-
-                if (userResponse.data.user) {
-                    // User exists - direct login
-                    console.log('✅ Existing Google user - redirecting to dashboard');
-                    Swal.fire({
-                        position: "top-end",
-                        icon: "success",
-                        title: "Signed in with Google successfully",
-                        showConfirmButton: false,
-                        timer: 1500
-                    });
-                    navigate('/dashboard', { replace: true });
-                }
-            } catch (error) {
-                // User doesn't exist (404) - redirect to complete profile
-                if (error.response?.status === 404) {
-                    console.log('🆕 New Google user - redirecting to complete profile');
-                    navigate('/complete-profile', { replace: true });
-                } else {
-                    throw error;
-                }
-            }
-        } catch (error) {
-            console.error('Google sign-up error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'Sign Up Failed!',
-                text: error.message || 'Failed to create account with Google. Please try again.',
-                confirmButtonColor: '#457B9D'
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-
 
     return (
         <div className="bg-[#DCE8F5] font-poppins text-black min-h-screen">
@@ -184,7 +126,7 @@ const SignUp = () => {
                         <p className="font-bold text-2xl sm:text-[26px] lg:text-[28.5px] pb-4 lg:pb-5">Create a new account</p>
 
                         <form onSubmit={handleSubmit(onSubmit)}>
-                            {/* ✅ UPDATED: Student ID - Name Format */}
+                            {/* Student ID - Name Format */}
                             <p className="font-medium text-xs sm:text-sm pb-1">Enter Student ID and Name</p>
                             <input
                                 type="text"
@@ -223,7 +165,7 @@ const SignUp = () => {
                                 </span>
                             )}
 
-                            {/* ✅ UPDATED: Password with All Special Characters Allowed */}
+                            {/* Password with All Special Characters Allowed */}
                             <p className="font-medium text-xs sm:text-sm pb-1">Enter Password</p>
                             <input
                                 type="password"
@@ -247,7 +189,7 @@ const SignUp = () => {
                                 </span>
                             )}
 
-                            {/* ✅ UPDATED: Password Requirements */}
+                            {/* Password Requirements */}
                             <div className="bg-blue-50 border border-blue-200 rounded-[4px] p-3 sm:p-4 mb-5 sm:mb-6">
                                 <p className="font-semibold text-xs sm:text-sm text-gray-700 mb-2">Password Requirements:</p>
                                 <ul className="text-[10px] sm:text-xs text-gray-600 space-y-1">
@@ -277,29 +219,12 @@ const SignUp = () => {
 
                             <button
                                 type="submit"
-                                disabled={isLoading}
+                                disabled={isNavigating}
                                 className="w-full text-white bg-[#457B9D] py-3 sm:py-4 rounded-[4px] hover:bg-[#3a6b8a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm sm:text-base"
                             >
-                                {isLoading ? 'Creating Account...' : 'Sign up'}
+                                {isNavigating ? 'Creating Account...' : 'Sign up'}
                             </button>
                         </form>
-
-                        {/* <p className="text-xs sm:text-sm py-5 sm:py-[30px] text-center font-medium">or continue with</p> */}
-
-                        {/* <div className="flex justify-center">
-                            <button
-                                onClick={handleGoogleSignUp}
-                                disabled={isLoading}
-                                className="flex items-center justify-center gap-2 sm:gap-3 w-full bg-white border border-gray-300 py-2.5 sm:py-3 px-3 sm:px-4 rounded-[8px] hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium text-gray-700 text-sm sm:text-base"
-                            >
-                                <img
-                                    src="LoginImg/Google__G__logo.svg.png"
-                                    alt="Google"
-                                    className="w-4 h-4 sm:w-5 sm:h-5"
-                                />
-                                {isLoading ? 'Creating Account...' : 'Sign up with Google'}
-                            </button>
-                        </div> */}
 
                         <div className="text-center mt-5 sm:mt-6">
                             <p className="text-xs sm:text-sm font-medium">
@@ -322,7 +247,7 @@ const SignUp = () => {
                 </div>
             </div>
 
-            {/* ✅ Professional Navigation Loader Overlay */}
+            {/* Professional Navigation Loader Overlay */}
             {isNavigating && (
                 <div className="fixed inset-0 bg-[#DCE8F5] z-50 flex flex-col items-center justify-center">
                     <div className="text-center">
@@ -352,6 +277,5 @@ const SignUp = () => {
         </div>
     );
 };
-
 
 export default SignUp;

@@ -112,16 +112,16 @@ export const router = createBrowserRouter([
         path: '/classroom/:classroomId/marks',
         element: <ClassroomRoute><MarksPage /></ClassroomRoute>
     },
-    {
-        path: '/complete-profile',
-        element: <CompleteProfile/>
-    },
-    {
-        path: '/verify-password-reset',
-        element: <VerifyPasswordReset/>
-    },
-    {
-        path: '/reset-password',
-        element: <ResetPassword/>
-    },
+    // {
+    //     path: '/complete-profile',
+    //     element: <CompleteProfile/>
+    // },
+    // {
+    //     path: '/verify-password-reset',
+    //     element: <VerifyPasswordReset/>
+    // },
+    // {
+    //     path: '/reset-password',
+    //     element: <ResetPassword/>
+    // },
 ]);

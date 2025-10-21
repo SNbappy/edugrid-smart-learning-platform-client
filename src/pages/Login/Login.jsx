@@ -15,11 +15,11 @@ const Login = () => {
 
     const checkAndCreateUser = async (user, loginMethod) => {
         try {
-            console.log('🔍 Checking if user exists:', user.email);
-            console.log('User already exists in database');
+            // console.log('🔍 Checking if user exists:', user.email);
+            // console.log('User already exists in database');
         } catch (error) {
             if (error.response?.status === 404) {
-                console.log('User not found, creating new user...');
+                // console.log('User not found, creating new user...');
 
                 const userData = {
                     name: user.displayName || user.email.split('@')[0],
@@ -41,9 +41,9 @@ const Login = () => {
                     }
                 };
 
-                console.log('Creating user with data:', userData);
+                // console.log('Creating user with data:', userData);
                 const createResponse = await axiosPublic.post('/users', userData);
-                console.log('User created successfully:', createResponse.data);
+                // console.log('User created successfully:', createResponse.data);
             } else {
                 console.error('Error checking user existence:', error);
             }
@@ -62,32 +62,32 @@ const Login = () => {
         try {
             const result = await signIn(email, password);
             const user = result.user;
-            console.log('Firebase login successful:', user.email);
+            // console.log('Firebase login successful:', user.email);
 
             // ✅ CHECK DATABASE FOR EMAIL VERIFICATION STATUS
             try {
                 const userResponse = await axiosPublic.get(`/users/${email}`);
 
-                console.log('API Response:', userResponse.data);
+                // console.log('API Response:', userResponse.data);
 
                 // Access the user object from response
                 const dbUser = userResponse.data.user;
 
                 if (!dbUser) {
-                    console.log('⚠️ User not found in database');
+                    // console.log('⚠️ User not found in database');
                     throw new Error('User not found in database');
                 }
 
-                console.log('Database user:', dbUser);
-                console.log('Email verified status:', dbUser.emailVerified);
-                console.log('Login method:', dbUser.loginMethod);
+                // console.log('Database user:', dbUser);
+                // console.log('Email verified status:', dbUser.emailVerified);
+                // console.log('Login method:', dbUser.loginMethod);
 
                 // ✅ FIX: Skip verification check for Google users
                 if (dbUser.loginMethod === 'google') {
-                    console.log('✅ Google user - skipping email verification check');
+                    // console.log('✅ Google user - skipping email verification check');
                 } else if (dbUser.emailVerified !== true) {
                     // Only check verification for email/password users
-                    console.log('⚠️ Email not verified - blocking access');
+                    // console.log('⚠️ Email not verified - blocking access');
 
                     // Log out immediately
                     await logOut();
@@ -120,7 +120,7 @@ const Login = () => {
                         // Send new verification code
                         try {
                             await axiosPublic.post('/send-verification-code', { email });
-                            console.log('New verification code sent');
+                            // console.log('New verification code sent');
                         } catch (error) {
                             console.error('Failed to send code:', error);
                         }
@@ -134,14 +134,14 @@ const Login = () => {
                 }
 
                 // ✅ Email is verified OR user is Google user - allow login
-                console.log('✅ Access granted');
+                // console.log('✅ Access granted');
 
             } catch (dbError) {
                 console.error('Error checking user in database:', dbError);
 
                 // If user not found in database but exists in Firebase
                 if (dbError.response?.status === 404) {
-                    console.log('⚠️ User exists in Firebase but not in database - logging out');
+                    // console.log('⚠️ User exists in Firebase but not in database - logging out');
                     await logOut();
                     Swal.fire({
                         icon: 'error',
@@ -154,7 +154,7 @@ const Login = () => {
                 }
 
                 // For other errors, allow login (fail-safe)
-                console.log('⚠️ Database check failed - allowing login as fail-safe');
+                // console.log('⚠️ Database check failed - allowing login as fail-safe');
             }
 
             Swal.fire({
@@ -198,11 +198,11 @@ const Login = () => {
     const handleGoogleSignIn = async () => {
         try {
             setIsLoading(true);
-            console.log('Starting Google sign-in...');
+            // console.log('Starting Google sign-in...');
 
             const result = await signInWithGoogle();
             const user = result.user;
-            console.log('Google authentication successful:', user.email);
+            // console.log('Google authentication successful:', user.email);
 
             // ✅ Check if user already exists in database
             try {
@@ -210,7 +210,7 @@ const Login = () => {
 
                 if (userResponse.data.user) {
                     // User exists - direct login
-                    console.log('✅ Existing Google user - logging in');
+                    // console.log('✅ Existing Google user - logging in');
                     Swal.fire({
                         position: "top-end",
                         icon: "success",
@@ -223,7 +223,7 @@ const Login = () => {
             } catch (error) {
                 // User doesn't exist (404) - redirect to complete profile
                 if (error.response?.status === 404) {
-                    console.log('🆕 New Google user - redirecting to complete profile');
+                    // console.log('🆕 New Google user - redirecting to complete profile');
                     navigate('/complete-profile', { replace: true });
                 } else {
                     throw error;

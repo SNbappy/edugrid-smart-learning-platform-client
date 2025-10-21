@@ -78,48 +78,48 @@ export const useTasksLogic = (user, classroomId, axiosPublic, loading) => {
     // ENHANCED: Debug logging similar to AttendancePage
     useEffect(() => {
         if (classroom && user && process.env.NODE_ENV === 'development') {
-            console.log('=== TASKS DEBUG INFO ===');
-            console.log('Classroom data:', {
-                id: classroom._id || classroom.id,
-                name: classroom.name,
-                owner: classroom.owner,
-                teacher: classroom.teacher,
-                createdBy: classroom.createdBy,
-                teachers: classroom.teachers,
-                instructors: classroom.instructors,
-                members: classroom.members
-            });
-            console.log('Current user:', {
-                email: user.email,
-                uid: user.uid,
-                displayName: user.displayName
-            });
-            console.log('Owner check result:', isOwner());
-            console.log('=========================');
+            // console.log('=== TASKS DEBUG INFO ===');
+            // console.log('Classroom data:', {
+            //     id: classroom._id || classroom.id,
+            //     name: classroom.name,
+            //     owner: classroom.owner,
+            //     teacher: classroom.teacher,
+            //     createdBy: classroom.createdBy,
+            //     teachers: classroom.teachers,
+            //     instructors: classroom.instructors,
+            //     members: classroom.members
+            // });
+            // console.log('Current user:', {
+            //     email: user.email,
+            //     uid: user.uid,
+            //     displayName: user.displayName
+            // });
+            // console.log('Owner check result:', isOwner());
+            // console.log('=========================');
         }
     }, [classroom, user, isOwner]);
 
     // SIMPLIFIED: Fetch classroom data directly from backend
     useEffect(() => {
         const fetchData = async () => {
-            console.log('📡 STARTING DATA FETCH:', {
-                classroomId,
-                userEmail: user?.email,
-                loading,
-                timestamp: new Date().toISOString()
-            });
+            // console.log('📡 STARTING DATA FETCH:', {
+            //     classroomId,
+            //     userEmail: user?.email,
+            //     loading,
+            //     timestamp: new Date().toISOString()
+            // });
 
             try {
                 setIsLoading(true);
                 const response = await axiosPublic.get(`/classrooms/${classroomId}`);
 
-                console.log('📨 CLASSROOM API RESPONSE:', {
-                    success: response.data.success,
-                    classroomId: response.data.classroom?._id || response.data.classroom?.id,
-                    classroomName: response.data.classroom?.name,
-                    hasTasksData: !!response.data.classroom?.tasks,
-                    tasksCount: response.data.classroom?.tasks?.assignments?.length || 0
-                });
+                // console.log('📨 CLASSROOM API RESPONSE:', {
+                //     success: response.data.success,
+                //     classroomId: response.data.classroom?._id || response.data.classroom?.id,
+                //     classroomName: response.data.classroom?.name,
+                //     hasTasksData: !!response.data.classroom?.tasks,
+                //     tasksCount: response.data.classroom?.tasks?.assignments?.length || 0
+                // });
 
                 if (response.data.success) {
                     const classroomData = response.data.classroom;
@@ -128,12 +128,12 @@ export const useTasksLogic = (user, classroomId, axiosPublic, loading) => {
                     setClassroom(classroomData);
                     setTasks(classroomData.tasks?.assignments || []);
 
-                    console.log('✅ DATA FETCH COMPLETED:', {
-                        classroomId: classroomData._id || classroomData.id,
-                        classroomName: classroomData.name,
-                        tasksLoaded: (classroomData.tasks?.assignments || []).length,
-                        timestamp: new Date().toISOString()
-                    });
+                    // console.log('✅ DATA FETCH COMPLETED:', {
+                    //     classroomId: classroomData._id || classroomData.id,
+                    //     classroomName: classroomData.name,
+                    //     tasksLoaded: (classroomData.tasks?.assignments || []).length,
+                    //     timestamp: new Date().toISOString()
+                    // });
                 }
             } catch (error) {
                 console.error('❌ ERROR FETCHING CLASSROOM:', {
@@ -147,28 +147,28 @@ export const useTasksLogic = (user, classroomId, axiosPublic, loading) => {
                 navigate(`/classroom/${classroomId}`);
             } finally {
                 setIsLoading(false);
-                console.log('🏁 FETCH OPERATION COMPLETED:', {
-                    classroomId,
-                    timestamp: new Date().toISOString()
-                });
+                // console.log('🏁 FETCH OPERATION COMPLETED:', {
+                //     classroomId,
+                //     timestamp: new Date().toISOString()
+                // });
             }
         };
 
         if (!loading && user && classroomId) {
-            console.log('🎯 FETCH CONDITIONS MET:', {
-                loading,
-                hasUser: !!user,
-                hasClassroomId: !!classroomId,
-                userEmail: user?.email
-            });
+            // console.log('🎯 FETCH CONDITIONS MET:', {
+            //     loading,
+            //     hasUser: !!user,
+            //     hasClassroomId: !!classroomId,
+            //     userEmail: user?.email
+            // });
             fetchData();
         } else {
-            console.log('⏳ FETCH CONDITIONS NOT MET:', {
-                loading,
-                hasUser: !!user,
-                hasClassroomId: !!classroomId,
-                reason: 'Waiting for required data'
-            });
+            // console.log('⏳ FETCH CONDITIONS NOT MET:', {
+            //     loading,
+            //     hasUser: !!user,
+            //     hasClassroomId: !!classroomId,
+            //     reason: 'Waiting for required data'
+            // });
         }
     }, [classroomId, user, loading, axiosPublic, navigate]);
 
@@ -178,13 +178,13 @@ export const useTasksLogic = (user, classroomId, axiosPublic, loading) => {
             const role = isOwner() ? 'teacher' : 'student';
             setUserRole(role);
 
-            console.log('🎭 ROLE DETERMINED FROM BACKEND DATA:', {
-                finalRole: role,
-                userEmail: user.email,
-                classroomId: classroom._id || classroom.id,
-                classroomName: classroom.name,
-                timestamp: new Date().toISOString()
-            });
+            // console.log('🎭 ROLE DETERMINED FROM BACKEND DATA:', {
+            //     finalRole: role,
+            //     userEmail: user.email,
+            //     classroomId: classroom._id || classroom.id,
+            //     classroomName: classroom.name,
+            //     timestamp: new Date().toISOString()
+            // });
         }
     }, [classroom, user, isOwner]);
 
@@ -204,7 +204,7 @@ export const useTasksLogic = (user, classroomId, axiosPublic, loading) => {
                 return;
             }
 
-            console.log('🎯 Creating task with role:', userRole, 'Data:', taskData);
+            // console.log('🎯 Creating task with role:', userRole, 'Data:', taskData);
             const result = await createTaskAPI(axiosPublic, classroomId, taskData, user.email);
 
             if (result.success) {
@@ -317,20 +317,20 @@ export const useTasksLogic = (user, classroomId, axiosPublic, loading) => {
 
             const endpoint = `/classrooms/${classroomId}/tasks/${taskId}/submit`;
 
-            console.log('📤 SUBMISSION DEBUG:', {
-                endpoint,
-                method: 'POST',
-                payload,
-                taskId,
-                classroomId,
-                userEmail: user.email,
-                isResubmission: alreadySubmitted || isResubmission
-            });
+            // console.log('📤 SUBMISSION DEBUG:', {
+            //     endpoint,
+            //     method: 'POST',
+            //     payload,
+            //     taskId,
+            //     classroomId,
+            //     userEmail: user.email,
+            //     isResubmission: alreadySubmitted || isResubmission
+            // });
 
             // Make the API call
             const response = await axiosPublic.post(endpoint, payload);
 
-            console.log('✅ SUBMISSION SUCCESS:', response.data);
+            // console.log('✅ SUBMISSION SUCCESS:', response.data);
 
             if (response.data.success) {
                 // Update local state immediately
@@ -371,7 +371,7 @@ export const useTasksLogic = (user, classroomId, axiosPublic, loading) => {
                         const classroomResponse = await axiosPublic.get(`/classrooms/${classroomId}`);
                         if (classroomResponse.data.success) {
                             setTasks(classroomResponse.data.classroom.tasks?.assignments || []);
-                            console.log('✅ Tasks refreshed from backend after submission');
+                            // console.log('✅ Tasks refreshed from backend after submission');
                         }
                     } catch (error) {
                         console.error('Error refreshing tasks:', error);

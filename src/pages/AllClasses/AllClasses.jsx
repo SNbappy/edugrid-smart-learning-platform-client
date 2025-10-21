@@ -31,14 +31,14 @@ const AllClasses = () => {
         const fetchData = async () => {
             try {
                 setIsLoading(true);
-                console.log('📋 Fetching all classrooms...');
+                // console.log('📋 Fetching all classrooms...');
 
                 // Fetch all classrooms (ALWAYS - public data)
                 const allClassroomsResponse = await axiosPublic.get('/classrooms');
 
                 if (allClassroomsResponse.data.success) {
                     setClassrooms(allClassroomsResponse.data.classrooms);
-                    console.log('✅ Found classrooms:', allClassroomsResponse.data.classrooms);
+                    // console.log('✅ Found classrooms:', allClassroomsResponse.data.classrooms);
                 }
 
                 // Fetch user's enrolled classrooms ONLY if user is logged in
@@ -48,10 +48,10 @@ const AllClasses = () => {
 
                         if (userClassroomsResponse?.data.success) {
                             setUserEnrolledClassrooms(userClassroomsResponse.data.classrooms || []);
-                            console.log('✅ User enrolled classrooms:', userClassroomsResponse.data.classrooms);
+                            // console.log('✅ User enrolled classrooms:', userClassroomsResponse.data.classrooms);
                         }
                     } catch (error) {
-                        console.log('No student classrooms found or error:', error);
+                        // console.log('No student classrooms found or error:', error);
                         setUserEnrolledClassrooms([]);
                     }
                 } else {
@@ -161,7 +161,7 @@ const AllClasses = () => {
 
         if (classCode) {
             try {
-                console.log('🚪 Attempting to join classroom with code:', classCode);
+                // console.log('🚪 Attempting to join classroom with code:', classCode);
 
                 const response = await axiosPublic.post('/classrooms/join', {
                     classCode: classCode.toUpperCase(),
@@ -169,7 +169,7 @@ const AllClasses = () => {
                     studentName: user.displayName || user.email
                 });
 
-                console.log('✅ Join response:', response.data);
+                // console.log('✅ Join response:', response.data);
 
                 if (response.data.success) {
                     const result = await Swal.fire({

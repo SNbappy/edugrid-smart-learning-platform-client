@@ -2,7 +2,7 @@
 
 // Enhanced calculateMaterialStats function
 export const calculateMaterialStats = (materials = []) => {
-    console.log('🔍 calculateMaterialStats input:', materials);
+    // console.log('🔍 calculateMaterialStats input:', materials);
 
     // Always initialize with all required properties
     const stats = {
@@ -19,17 +19,17 @@ export const calculateMaterialStats = (materials = []) => {
     }
 
     materials.forEach((material, index) => {
-        console.log(`📊 Processing material ${index + 1}:`, {
-            id: material.id,
-            type: material.type,
-            title: material.title
-        });
+        // console.log(`📊 Processing material ${index + 1}:`, {
+        //     id: material.id,
+        //     type: material.type,
+        //     title: material.title
+        // });
 
         const type = material.type?.toLowerCase();
 
         if (type === 'youtube') {
             stats.videos += 1;  // ✅ Count YouTube as videos
-            console.log('📹 Found YouTube video, videos count now:', stats.videos);
+            // console.log('📹 Found YouTube video, videos count now:', stats.videos);
         } else if (type === 'file') {
             stats.files += 1;
         } else if (type === 'link') {
@@ -38,13 +38,13 @@ export const calculateMaterialStats = (materials = []) => {
         stats.total += 1;
     });
 
-    console.log('📊 Final stats:', stats);
+    // console.log('📊 Final stats:', stats);
     return stats;
 };
 
 // Enhanced filterMaterialsByType function
 export const filterMaterialsByType = (materials = [], filterType) => {
-    console.log('🔍 filterMaterialsByType:', { materials: materials.length, filterType });
+    // console.log('🔍 filterMaterialsByType:', { materials: materials.length, filterType });
 
     if (!Array.isArray(materials)) {
         console.warn('⚠️ Materials is not an array for filtering:', materials);
@@ -66,6 +66,6 @@ export const filterMaterialsByType = (materials = [], filterType) => {
         return type === filterType;
     });
 
-    console.log('📋 Filtered results:', filtered.length, 'materials');
+    // console.log('📋 Filtered results:', filtered.length, 'materials');
     return filtered;
 };

@@ -1,7 +1,7 @@
 // Image upload service using ImgBB
 export const uploadImageToImgBB = async (imageFile) => {
     try {
-        console.log('📤 Starting image upload to ImgBB...');
+        // console.log('📤 Starting image upload to ImgBB...');
 
         const apiKey = import.meta.env.VITE_IMGBB_API_KEY;
 
@@ -22,7 +22,7 @@ export const uploadImageToImgBB = async (imageFile) => {
         const result = await response.json();
 
         if (result.success) {
-            console.log('✅ Image uploaded successfully:', result.data.url);
+            // console.log('✅ Image uploaded successfully:', result.data.url);
             return {
                 success: true,
                 url: result.data.url,

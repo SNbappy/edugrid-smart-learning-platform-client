@@ -37,15 +37,15 @@ const SubmitTaskModal = ({ task, onClose, onSubmit, isResubmission, existingSubm
 
             // Verify upload success
             if (result.secure_url && result.public_id) {
-                console.log('✅ File uploaded successfully to Cloudinary:', {
-                    url: result.secure_url,
-                    publicId: result.public_id,
-                    format: result.format,
-                    bytes: result.bytes,
-                    resourceType: result.resource_type,
-                    created_at: result.created_at,
-                    originalFilename: result.original_filename
-                });
+                // console.log('✅ File uploaded successfully to Cloudinary:', {
+                //     url: result.secure_url,
+                //     publicId: result.public_id,
+                //     format: result.format,
+                //     bytes: result.bytes,
+                //     resourceType: result.resource_type,
+                //     created_at: result.created_at,
+                //     originalFilename: result.original_filename
+                // });
 
                 // Verify file accessibility
                 await verifyFileAccess(result.secure_url);
@@ -65,7 +65,7 @@ const SubmitTaskModal = ({ task, onClose, onSubmit, isResubmission, existingSubm
         try {
             const response = await fetch(fileUrl, { method: 'HEAD' });
             if (response.ok) {
-                console.log('✅ File is accessible and verified at:', fileUrl);
+                // console.log('✅ File is accessible and verified at:', fileUrl);
                 return true;
             } else {
                 console.warn('⚠️ File upload successful but accessibility check failed:', response.status);
@@ -109,21 +109,21 @@ const SubmitTaskModal = ({ task, onClose, onSubmit, isResubmission, existingSubm
             setUploadProgress(0);
 
             try {
-                console.log('📤 Starting upload for file:', {
-                    name: selectedFile.name,
-                    size: selectedFile.size,
-                    type: selectedFile.type
-                });
+                // console.log('📤 Starting upload for file:', {
+                //     name: selectedFile.name,
+                //     size: selectedFile.size,
+                //     type: selectedFile.type
+                // });
 
                 const uploadResult = await uploadToCloudinary(selectedFile);
                 setFileUrl(uploadResult.secure_url);
 
                 // Upload success - no alert, just console log
-                console.log('✅ File uploaded successfully!', {
-                    filename: uploadResult.original_filename,
-                    size: `${(uploadResult.bytes / 1024).toFixed(2)} KB`,
-                    url: uploadResult.secure_url
-                });
+                // console.log('✅ File uploaded successfully!', {
+                //     filename: uploadResult.original_filename,
+                //     size: `${(uploadResult.bytes / 1024).toFixed(2)} KB`,
+                //     url: uploadResult.secure_url
+                // });
 
             } catch (error) {
                 console.error('Upload error:', error);
@@ -166,12 +166,12 @@ const SubmitTaskModal = ({ task, onClose, onSubmit, isResubmission, existingSubm
                 fileName: file?.name || null
             };
 
-            console.log('📝 MODAL SUBMISSION DATA:', {
-                submissionData,
-                isResubmission,
-                taskId: task._id || task.id,
-                taskTitle: task.title
-            });
+            // console.log('📝 MODAL SUBMISSION DATA:', {
+            //     submissionData,
+            //     isResubmission,
+            //     taskId: task._id || task.id,
+            //     taskTitle: task.title
+            // });
 
             const result = await onSubmit(submissionData, isResubmission);
 

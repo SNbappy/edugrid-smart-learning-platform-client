@@ -14,16 +14,16 @@ const SubmissionDisplay = ({
     const isTeacher = userRole === 'teacher';
     const submissionCount = task.submissions?.length || 0;
 
-    console.log('🔍 SUBMISSION DISPLAY DEBUG:', {
-        taskId: task._id || task.id,
-        taskTitle: task.title,
-        userEmail,
-        userRole,
-        hasSubmitted,
-        userSubmission,
-        totalSubmissions: submissionCount,
-        allSubmissions: task.submissions
-    });
+    // console.log('🔍 SUBMISSION DISPLAY DEBUG:', {
+    //     taskId: task._id || task.id,
+    //     taskTitle: task.title,
+    //     userEmail,
+    //     userRole,
+    //     hasSubmitted,
+    //     userSubmission,
+    //     totalSubmissions: submissionCount,
+    //     allSubmissions: task.submissions
+    // });
 
     if (isTeacher) {
         // TEACHER VIEW

@@ -4,17 +4,17 @@ import { MdFolder, MdInsertDriveFile, MdLink, MdVideoLibrary } from 'react-icons
 const MaterialStats = ({ materialStats, filterType, setFilterType }) => {
     // Debug logging to track the materialStats props
     React.useEffect(() => {
-        console.log('📊 MaterialStats received props:', {
-            materialStats,
-            isUndefined: materialStats === undefined,
-            isNull: materialStats === null,
-            keys: materialStats ? Object.keys(materialStats) : 'N/A',
-            videosValue: materialStats?.videos,
-            videosType: typeof materialStats?.videos,
-            filesValue: materialStats?.files,
-            linksValue: materialStats?.links,
-            totalValue: materialStats?.total
-        });
+        // console.log('📊 MaterialStats received props:', {
+        //     materialStats,
+        //     isUndefined: materialStats === undefined,
+        //     isNull: materialStats === null,
+        //     keys: materialStats ? Object.keys(materialStats) : 'N/A',
+        //     videosValue: materialStats?.videos,
+        //     videosType: typeof materialStats?.videos,
+        //     filesValue: materialStats?.files,
+        //     linksValue: materialStats?.links,
+        //     totalValue: materialStats?.total
+        // });
     }, [materialStats]);
 
     // Safe access to materialStats with comprehensive defaults
@@ -31,7 +31,7 @@ const MaterialStats = ({ materialStats, filterType, setFilterType }) => {
             videos: materialStats.videos || 0  // ✅ This should now work with the fixed calculateMaterialStats
         };
 
-        console.log('📋 MaterialStats using safe stats:', safeStats);
+        // console.log('📋 MaterialStats using safe stats:', safeStats);
         return safeStats;
     }, [materialStats]);
 

@@ -23,7 +23,7 @@ const VerifyEmail = () => {
         const handleLogout = async () => {
             try {
                 await logOut();
-                console.log('✅ User logged out on verify-email page');
+                // console.log('✅ User logged out on verify-email page');
             } catch (error) {
                 console.error('Logout error:', error);
             }
@@ -140,7 +140,7 @@ const VerifyEmail = () => {
                     confirmButtonColor: '#457B9D'
                 });
 
-                console.log('🔑 Verification code:', response.data.code);
+                // console.log('🔑 Verification code:', response.data.code);
 
                 setCode(['', '', '', '', '', '']);
                 setTimer(300);

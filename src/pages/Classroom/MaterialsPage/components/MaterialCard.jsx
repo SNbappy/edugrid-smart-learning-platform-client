@@ -136,7 +136,7 @@ const MaterialCard = ({ material, onDelete, isOwner = false }) => {
                 // Try different capture groups
                 const videoId = match[1] || match[7] || match[2];
                 if (videoId && videoId.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-                    console.log('✅ YouTube Video ID extracted:', videoId, 'from URL:', url);
+                    // console.log('✅ YouTube Video ID extracted:', videoId, 'from URL:', url);
                     return videoId;
                 }
             }
@@ -182,14 +182,14 @@ const MaterialCard = ({ material, onDelete, isOwner = false }) => {
         if (material.type === 'youtube') {
             const videoId = getYouTubeVideoId(material.youtubeUrl || material.url || material.embedUrl);
 
-            console.log('🔍 YouTube Debug Info:', {
-                materialType: material.type,
-                youtubeUrl: material.youtubeUrl,
-                url: material.url,
-                embedUrl: material.embedUrl,
-                extractedVideoId: videoId,
-                title: material.title
-            });
+            // console.log('🔍 YouTube Debug Info:', {
+            //     materialType: material.type,
+            //     youtubeUrl: material.youtubeUrl,
+            //     url: material.url,
+            //     embedUrl: material.embedUrl,
+            //     extractedVideoId: videoId,
+            //     title: material.title
+            // });
 
             if (videoId) {
                 return (

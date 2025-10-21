@@ -35,12 +35,12 @@ const CompleteProfile = () => {
 
     const onSubmit = async (data) => {
         setIsLoading(true);
-        console.log('Completing profile with:', data.name);
+        // console.log('Completing profile with:', data.name);
 
         try {
             // ✅ Update Firebase profile with formatted name and NO PHOTO
             await updateUserProfile(data.name, "");
-            console.log('✅ Firebase profile updated with formatted name (no photo)');
+            // console.log('✅ Firebase profile updated with formatted name (no photo)');
 
             // ✅ Create user in database with formatted name and NO PHOTO
             const userInfo = {
@@ -63,12 +63,12 @@ const CompleteProfile = () => {
                 }
             };
 
-            console.log('Saving user to database:', userInfo);
+            // console.log('Saving user to database:', userInfo);
             const res = await axiosPublic.post('/users', userInfo);
-            console.log('Backend response:', res.data);
+            // console.log('Backend response:', res.data);
 
             if (res.data.insertedId || res.data.message === 'User created successfully') {
-                console.log('✅ User successfully saved to database without photo');
+                // console.log('✅ User successfully saved to database without photo');
 
                 Swal.fire({
                     position: "top-end",

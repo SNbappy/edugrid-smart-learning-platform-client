@@ -8,7 +8,7 @@ import useAxiosPublic from '../../hooks/useAxiosPublic';
 import Sidebar from '../Dashboard/Dashboard/Sidebar';
 import { Country, State } from 'country-state-city';
 import { uploadImageToImgBB, validateImageFile, compressImage } from '../../services/imageUpload';
-import { updateProfile } from 'firebase/auth'; // ✅ ADDED THIS
+import { updateProfile } from 'firebase/auth';
 
 const EditProfile = () => {
     const { user, loading } = useContext(AuthContext);
@@ -240,7 +240,7 @@ const EditProfile = () => {
         }
     };
 
-    // THE onSubmit FUNCTION - UPDATED
+    // THE onSubmit FUNCTION
     const onSubmit = async (data) => {
         setIsLoading(true);
 
@@ -285,7 +285,7 @@ const EditProfile = () => {
             const response = await axiosPublic.put(`/users/${user.email}`, updateData);
 
             if (response.data.success) {
-                // ✅ CRITICAL FIX: Update Firebase Auth profile to prevent name flashing
+                // Update Firebase Auth profile
                 try {
                     await updateProfile(user, {
                         displayName: data.name,
@@ -293,7 +293,6 @@ const EditProfile = () => {
                     });
                 } catch (firebaseError) {
                     console.error('Firebase profile update error:', firebaseError);
-                    // Continue even if Firebase update fails
                 }
 
                 Swal.fire({
@@ -344,29 +343,29 @@ const EditProfile = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center" style={{
+            <div className="min-h-screen flex items-center justify-center px-4" style={{
                 backgroundColor: '#f8fafc',
                 colorScheme: 'light'
             }}>
-                <div className="text-center rounded-2xl p-8 shadow-xl" style={{
+                <div className="text-center rounded-2xl p-6 sm:p-8 shadow-xl w-full max-w-sm" style={{
                     backgroundColor: '#ffffff',
                     borderColor: '#e2e8f0',
                     borderWidth: '1px',
                     borderStyle: 'solid'
                 }}>
                     <div className="relative">
-                        <div className="animate-spin rounded-full h-16 w-16 border-4 mx-auto mb-6" style={{
+                        <div className="animate-spin rounded-full h-14 w-14 sm:h-16 sm:w-16 border-4 mx-auto mb-4 sm:mb-6" style={{
                             borderColor: 'rgba(69, 123, 157, 0.2)',
                             borderTopColor: '#457B9D'
                         }}></div>
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-6 h-6 rounded-full animate-pulse" style={{
+                            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full animate-pulse" style={{
                                 background: 'linear-gradient(to right, #457B9D, #5D8FB8)'
                             }}></div>
                         </div>
                     </div>
-                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#1e293b' }}>Loading Your Profile</h3>
-                    <p style={{ color: '#475569' }}>Please wait while we fetch your information...</p>
+                    <h3 className="text-base sm:text-lg font-semibold mb-2" style={{ color: '#1e293b' }}>Loading Your Profile</h3>
+                    <p className="text-sm sm:text-base" style={{ color: '#475569' }}>Please wait while we fetch your information...</p>
                 </div>
             </div>
         );
@@ -410,27 +409,34 @@ const EditProfile = () => {
                     background-color: #ffffff !important;
                     color: #1e293b !important;
                 }
+
+                /* Responsive text sizing */
+                @media (max-width: 640px) {
+                    input, textarea, select {
+                        font-size: 16px !important; /* Prevents zoom on iOS */
+                    }
+                }
             `}</style>
 
-            <div className="flex">
+            <div className="flex flex-col lg:flex-row">
                 <Sidebar />
 
-                {/* Main Content - Responsive with sidebar adjustment */}
-                <div className="flex-1 lg:ml-[320px] p-4 sm:p-6">
-                    <div className="max-w-5xl mx-auto">
+                {/* Main Content - Fully Responsive with sidebar adjustment */}
+                <div className="flex-1 lg:ml-[320px] p-3 sm:p-4 md:p-6 w-full">
+                    <div className="max-w-5xl mx-auto w-full">
                         {/* Simplified Professional Header */}
-                        <div className="mb-6 sm:mb-8">
-                            <nav className="flex items-center space-x-2 text-sm mb-4">
-                                <span style={{ color: '#64748b' }}>Dashboard</span>
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#64748b' }}>
+                        <div className="mb-4 sm:mb-6 md:mb-8">
+                            <nav className="flex items-center space-x-2 text-xs sm:text-sm mb-3 sm:mb-4 overflow-x-auto">
+                                <span style={{ color: '#64748b' }} className="whitespace-nowrap">Dashboard</span>
+                                <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#64748b' }}>
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                                 </svg>
-                                <span className="font-medium" style={{ color: '#0f172a' }}>Edit Profile</span>
+                                <span className="font-medium whitespace-nowrap" style={{ color: '#0f172a' }}>Edit Profile</span>
                             </nav>
                         </div>
 
                         {/* Main Content Card */}
-                        <div className="rounded-2xl shadow-sm overflow-hidden" style={{
+                        <div className="rounded-xl sm:rounded-2xl shadow-sm overflow-hidden w-full" style={{
                             backgroundColor: '#ffffff',
                             borderColor: '#e2e8f0',
                             borderWidth: '1px',
@@ -439,8 +445,8 @@ const EditProfile = () => {
                             <form onSubmit={handleSubmit(onSubmit)}>
                                 {/* Cover and Profile Photo Section */}
                                 <div className="relative">
-                                    {/* Cover Photo Section */}
-                                    <div className="relative h-40 sm:h-48 md:h-56 overflow-hidden" style={{
+                                    {/* Cover Photo Section - Responsive Heights */}
+                                    <div className="relative h-32 xs:h-36 sm:h-40 md:h-48 lg:h-56 overflow-hidden" style={{
                                         background: 'linear-gradient(to bottom right, #457B9D, #5D8FB8, #3a6b8a)'
                                     }}>
                                         {coverPreview ? (
@@ -453,25 +459,26 @@ const EditProfile = () => {
                                             <div className="w-full h-full flex items-center justify-center" style={{
                                                 background: 'linear-gradient(to bottom right, #457B9D, #5D8FB8, #3a6b8a)'
                                             }}>
-                                                <div className="text-center" style={{ color: '#ffffff' }}>
-                                                    <svg className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ opacity: 0.7 }}>
+                                                <div className="text-center px-4" style={{ color: '#ffffff' }}>
+                                                    <svg className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 mx-auto mb-2 sm:mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ opacity: 0.7 }}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                     </svg>
-                                                    <p className="text-sm sm:text-base font-medium" style={{ opacity: 0.9 }}>Add Cover Photo</p>
+                                                    <p className="text-xs sm:text-sm md:text-base font-medium" style={{ opacity: 0.9 }}>Add Cover Photo</p>
                                                 </div>
                                             </div>
                                         )}
 
-                                        {/* Cover Photo Upload Button */}
-                                        <label className="absolute top-4 right-4 sm:top-6 sm:right-6 px-4 py-2 sm:px-5 sm:py-2.5 rounded-xl cursor-pointer transition-all shadow-md text-sm font-medium" style={{
+                                        {/* Cover Photo Upload Button - Responsive */}
+                                        <label className="absolute top-2 right-2 xs:top-3 xs:right-3 sm:top-4 sm:right-4 md:top-6 md:right-6 px-3 py-1.5 xs:px-3.5 xs:py-2 sm:px-4 sm:py-2 md:px-5 md:py-2.5 rounded-lg sm:rounded-xl cursor-pointer transition-all shadow-md text-xs sm:text-sm font-medium" style={{
                                             backgroundColor: '#ffffff',
                                             color: '#334155'
                                         }}>
-                                            <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
-                                            {coverPreview ? 'Change Cover' : 'Add Cover'}
+                                            <span className="hidden xs:inline">{coverPreview ? 'Change Cover' : 'Add Cover'}</span>
+                                            <span className="xs:hidden">{coverPreview ? 'Change' : 'Add'}</span>
                                             <input
                                                 type="file"
                                                 accept="image/*"
@@ -487,27 +494,27 @@ const EditProfile = () => {
                                                 backgroundColor: 'rgba(0, 0, 0, 0.6)',
                                                 backdropFilter: 'blur(4px)'
                                             }}>
-                                                <div className="rounded-xl p-6 flex items-center shadow-xl" style={{ backgroundColor: '#ffffff' }}>
-                                                    <div className="animate-spin rounded-full h-5 w-5 mr-3" style={{
+                                                <div className="rounded-lg sm:rounded-xl p-4 sm:p-6 flex items-center shadow-xl" style={{ backgroundColor: '#ffffff' }}>
+                                                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" style={{
                                                         borderWidth: '3px',
                                                         borderStyle: 'solid',
                                                         borderColor: '#457B9D',
                                                         borderTopColor: 'transparent'
                                                     }}></div>
-                                                    <span className="font-semibold" style={{ color: '#334155' }}>Uploading cover photo...</span>
+                                                    <span className="font-semibold text-xs sm:text-sm md:text-base" style={{ color: '#334155' }}>Uploading...</span>
                                                 </div>
                                             </div>
                                         )}
                                     </div>
 
-                                    {/* Profile Photo Section */}
-                                    <div className="relative px-6 sm:px-8 md:px-10 pb-8 sm:pb-10" style={{ backgroundColor: '#ffffff' }}>
-                                        <div className="flex items-start -mt-12 sm:-mt-14 mb-6 sm:mb-8 relative z-10">
-                                            <div className="relative mr-6">
-                                                {/* Profile Photo */}
-                                                <div className="w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-3xl overflow-hidden shadow-xl" style={{
+                                    {/* Profile Photo Section - Responsive */}
+                                    <div className="relative px-4 xs:px-5 sm:px-6 md:px-8 lg:px-10 pb-6 sm:pb-8 md:pb-10" style={{ backgroundColor: '#ffffff' }}>
+                                        <div className="flex flex-col xs:flex-row items-start xs:items-end -mt-10 xs:-mt-12 sm:-mt-14 mb-4 sm:mb-6 md:mb-8 relative z-10">
+                                            <div className="relative mr-0 xs:mr-4 sm:mr-6 mb-3 xs:mb-0">
+                                                {/* Profile Photo - Responsive Sizes */}
+                                                <div className="w-20 h-20 xs:w-24 xs:h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl" style={{
                                                     backgroundColor: '#ffffff',
-                                                    borderWidth: '4px',
+                                                    borderWidth: '3px',
                                                     borderStyle: 'solid',
                                                     borderColor: '#ffffff'
                                                 }}>
@@ -521,22 +528,22 @@ const EditProfile = () => {
                                                         <div className="w-full h-full flex items-center justify-center" style={{
                                                             background: 'linear-gradient(to bottom right, #f1f5f9, #e2e8f0)'
                                                         }}>
-                                                            <svg className="w-12 h-12 sm:w-14 sm:h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
+                                                            <svg className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12 md:w-14 md:h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
                                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                                             </svg>
                                                         </div>
                                                     )}
                                                 </div>
 
-                                                {/* Profile Photo Upload Button */}
-                                                <label className="absolute bottom-2 right-2 p-2.5 rounded-full cursor-pointer transition-all duration-300 shadow-lg" style={{
+                                                {/* Profile Photo Upload Button - Responsive */}
+                                                <label className="absolute bottom-1 right-1 xs:bottom-1.5 xs:right-1.5 sm:bottom-2 sm:right-2 p-1.5 xs:p-2 sm:p-2.5 rounded-full cursor-pointer transition-all duration-300 shadow-lg" style={{
                                                     background: 'linear-gradient(to right, #457B9D, #5D8FB8)',
                                                     color: '#ffffff',
-                                                    borderWidth: '3px',
+                                                    borderWidth: '2px',
                                                     borderStyle: 'solid',
                                                     borderColor: '#ffffff'
                                                 }}>
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg className="w-3 h-3 xs:w-3.5 xs:h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     </svg>
@@ -551,11 +558,11 @@ const EditProfile = () => {
 
                                                 {/* Profile Photo Upload Loading */}
                                                 {isUploadingImage && (
-                                                    <div className="absolute inset-0 rounded-3xl flex items-center justify-center" style={{
+                                                    <div className="absolute inset-0 rounded-2xl sm:rounded-3xl flex items-center justify-center" style={{
                                                         backgroundColor: 'rgba(0, 0, 0, 0.6)',
                                                         backdropFilter: 'blur(4px)'
                                                     }}>
-                                                        <div className="animate-spin rounded-full h-8 w-8" style={{
+                                                        <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8" style={{
                                                             borderWidth: '3px',
                                                             borderStyle: 'solid',
                                                             borderColor: '#ffffff',
@@ -565,25 +572,25 @@ const EditProfile = () => {
                                                 )}
                                             </div>
 
-                                            {/* User Info */}
-                                            <div className="flex-1 pt-4">
-                                                <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-2" style={{ color: '#1e293b' }}>
+                                            {/* User Info - Responsive */}
+                                            <div className="flex-1 pt-2 xs:pt-4 w-full xs:w-auto">
+                                                <h2 className="text-base xs:text-lg sm:text-xl md:text-2xl font-bold mb-1 sm:mb-2 break-words" style={{ color: '#1e293b' }}>
                                                     {userData?.studentID && userData?.name
                                                         ? `${userData.studentID} - ${userData.name}`
                                                         : userData?.name || user?.displayName || 'User Name'}
                                                 </h2>
-                                                <div className="flex items-center space-x-2 mb-2">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
+                                                <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 sm:mb-2">
+                                                    <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                                     </svg>
-                                                    <p className="text-sm sm:text-base" style={{ color: '#64748b' }}>{user?.email}</p>
+                                                    <p className="text-xs xs:text-sm sm:text-base truncate" style={{ color: '#64748b' }}>{user?.email}</p>
                                                 </div>
                                                 {userData?.profile?.institution && (
-                                                    <div className="flex items-center space-x-2">
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
+                                                    <div className="flex items-center space-x-1.5 sm:space-x-2">
+                                                        <svg className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#94a3b8' }}>
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                                         </svg>
-                                                        <p className="text-sm sm:text-base font-medium" style={{ color: '#64748b' }}>{userData.profile.institution}</p>
+                                                        <p className="text-xs xs:text-sm sm:text-base font-medium break-words" style={{ color: '#64748b' }}>{userData.profile.institution}</p>
                                                     </div>
                                                 )}
                                             </div>
@@ -591,15 +598,15 @@ const EditProfile = () => {
                                     </div>
                                 </div>
 
-                                {/* Form Content */}
-                                <div className="px-6 sm:px-8 md:px-10 pb-8 space-y-8">
+                                {/* Form Content - Responsive Spacing */}
+                                <div className="px-4 xs:px-5 sm:px-6 md:px-8 lg:px-10 pb-6 sm:pb-8 space-y-5 sm:space-y-6 md:space-y-8">
                                     {/* Personal Information Section */}
-                                    <div className="rounded-xl p-6 sm:p-8" style={{ backgroundColor: '#f8fafc' }}>
-                                        <h3 className="text-lg font-bold mb-6" style={{ color: '#1e293b' }}>Personal Information</h3>
+                                    <div className="rounded-lg sm:rounded-xl p-4 xs:p-5 sm:p-6 md:p-8" style={{ backgroundColor: '#f8fafc' }}>
+                                        <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-6" style={{ color: '#1e293b' }}>Personal Information</h3>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div>
-                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
+                                            <div className="md:col-span-2 lg:col-span-1">
+                                                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                     Full Name (Format: 6-Digit StudentID - Name) *
                                                 </label>
                                                 <input
@@ -611,7 +618,7 @@ const EditProfile = () => {
                                                             message: 'Name must follow format: 6-digit StudentID - Name (e.g., 200109 - Md. Sabbir Hossain Bappy)'
                                                         }
                                                     })}
-                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    className="w-full px-3 xs:px-4 py-2.5 xs:py-3 text-sm xs:text-base rounded-lg transition-all"
                                                     placeholder="e.g., 200109 - Md. Sabbir Hossain Bappy"
                                                     style={{
                                                         backgroundColor: '#ffffff',
@@ -622,19 +629,19 @@ const EditProfile = () => {
                                                     }}
                                                 />
                                                 {errors.name && (
-                                                    <p className="mt-2 text-sm" style={{ color: '#dc2626' }}>{errors.name.message}</p>
+                                                    <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm" style={{ color: '#dc2626' }}>{errors.name.message}</p>
                                                 )}
                                             </div>
 
-                                            <div>
-                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                            <div className="md:col-span-2 lg:col-span-1">
+                                                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                     Email Address
                                                 </label>
                                                 <input
                                                     type="email"
                                                     {...register('email')}
                                                     disabled
-                                                    className="w-full px-4 py-3 text-base rounded-lg cursor-not-allowed"
+                                                    className="w-full px-3 xs:px-4 py-2.5 xs:py-3 text-sm xs:text-base rounded-lg cursor-not-allowed"
                                                     style={{
                                                         backgroundColor: '#f1f5f9',
                                                         color: '#64748b',
@@ -646,13 +653,13 @@ const EditProfile = () => {
                                             </div>
 
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                     Institution/Organization
                                                 </label>
                                                 <input
                                                     type="text"
                                                     {...register('institution')}
-                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    className="w-full px-3 xs:px-4 py-2.5 xs:py-3 text-sm xs:text-base rounded-lg transition-all"
                                                     placeholder="Where do you study or work?"
                                                     style={{
                                                         backgroundColor: '#ffffff',
@@ -667,18 +674,18 @@ const EditProfile = () => {
                                     </div>
 
                                     {/* Location Section */}
-                                    <div className="rounded-xl p-6 sm:p-8" style={{ backgroundColor: '#f8fafc' }}>
-                                        <h3 className="text-lg font-bold mb-6" style={{ color: '#1e293b' }}>Location</h3>
+                                    <div className="rounded-lg sm:rounded-xl p-4 xs:p-5 sm:p-6 md:p-8" style={{ backgroundColor: '#f8fafc' }}>
+                                        <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-6" style={{ color: '#1e293b' }}>Location</h3>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
                                             <div>
-                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                     Country
                                                 </label>
                                                 <select
                                                     {...register('country')}
                                                     onChange={handleCountryChange}
-                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    className="w-full px-3 xs:px-4 py-2.5 xs:py-3 text-sm xs:text-base rounded-lg transition-all"
                                                     style={{
                                                         backgroundColor: '#ffffff',
                                                         color: '#1e293b',
@@ -697,12 +704,12 @@ const EditProfile = () => {
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                     State/District
                                                 </label>
                                                 <select
                                                     {...register('district')}
-                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    className="w-full px-3 xs:px-4 py-2.5 xs:py-3 text-sm xs:text-base rounded-lg transition-all"
                                                     disabled={!selectedCountryCode}
                                                     style={{
                                                         backgroundColor: selectedCountryCode ? '#ffffff' : '#f1f5f9',
@@ -726,17 +733,17 @@ const EditProfile = () => {
                                     </div>
 
                                     {/* About Section */}
-                                    <div className="rounded-xl p-6 sm:p-8" style={{ backgroundColor: '#f8fafc' }}>
-                                        <h3 className="text-lg font-bold mb-6" style={{ color: '#1e293b' }}>About</h3>
+                                    <div className="rounded-lg sm:rounded-xl p-4 xs:p-5 sm:p-6 md:p-8" style={{ backgroundColor: '#f8fafc' }}>
+                                        <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-6" style={{ color: '#1e293b' }}>About</h3>
 
                                         <div>
-                                            <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                            <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                 Bio/Description
                                             </label>
                                             <textarea
                                                 {...register('bio')}
                                                 rows="5"
-                                                className="w-full px-4 py-4 text-base rounded-lg transition-all resize-none"
+                                                className="w-full px-3 xs:px-4 py-3 xs:py-4 text-sm xs:text-base rounded-lg transition-all resize-none"
                                                 placeholder="Tell us about yourself..."
                                                 style={{
                                                     backgroundColor: '#ffffff',
@@ -750,18 +757,18 @@ const EditProfile = () => {
                                     </div>
 
                                     {/* Professional Links Section */}
-                                    <div className="rounded-xl p-6 sm:p-8" style={{ backgroundColor: '#f8fafc' }}>
-                                        <h3 className="text-lg font-bold mb-6" style={{ color: '#1e293b' }}>Professional Links</h3>
+                                    <div className="rounded-lg sm:rounded-xl p-4 xs:p-5 sm:p-6 md:p-8" style={{ backgroundColor: '#f8fafc' }}>
+                                        <h3 className="text-base sm:text-lg font-bold mb-4 sm:mb-6" style={{ color: '#1e293b' }}>Professional Links</h3>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 md:gap-6">
                                             <div>
-                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                     LinkedIn Profile
                                                 </label>
                                                 <input
                                                     type="url"
                                                     {...register('linkedin')}
-                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    className="w-full px-3 xs:px-4 py-2.5 xs:py-3 text-sm xs:text-base rounded-lg transition-all"
                                                     placeholder="https://linkedin.com/in/username"
                                                     style={{
                                                         backgroundColor: '#ffffff',
@@ -774,13 +781,13 @@ const EditProfile = () => {
                                             </div>
 
                                             <div>
-                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                     Professional Email
                                                 </label>
                                                 <input
                                                     type="email"
                                                     {...register('mailLink')}
-                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    className="w-full px-3 xs:px-4 py-2.5 xs:py-3 text-sm xs:text-base rounded-lg transition-all"
                                                     placeholder="professional@domain.com"
                                                     style={{
                                                         backgroundColor: '#ffffff',
@@ -793,13 +800,13 @@ const EditProfile = () => {
                                             </div>
 
                                             <div className="md:col-span-2">
-                                                <label className="block text-sm font-semibold mb-2" style={{ color: '#334155' }}>
+                                                <label className="block text-xs sm:text-sm font-semibold mb-2" style={{ color: '#334155' }}>
                                                     Facebook Profile
                                                 </label>
                                                 <input
                                                     type="url"
                                                     {...register('facebook')}
-                                                    className="w-full px-4 py-3 text-base rounded-lg transition-all"
+                                                    className="w-full px-3 xs:px-4 py-2.5 xs:py-3 text-sm xs:text-base rounded-lg transition-all"
                                                     placeholder="https://facebook.com/username"
                                                     style={{
                                                         backgroundColor: '#ffffff',
@@ -813,13 +820,13 @@ const EditProfile = () => {
                                         </div>
                                     </div>
 
-                                    {/* Action Buttons */}
-                                    <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-4">
+                                    {/* Action Buttons - Fully Responsive */}
+                                    <div className="flex flex-col sm:flex-row sm:justify-end space-y-3 sm:space-y-0 sm:space-x-3 md:space-x-4 pt-2 sm:pt-4">
                                         <button
                                             type="button"
                                             onClick={() => navigate('/dashboard')}
                                             disabled={isLoading}
-                                            className="w-full sm:w-auto px-6 py-3 text-base rounded-lg transition-all font-semibold"
+                                            className="w-full sm:w-auto px-5 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg transition-all font-semibold"
                                             style={{
                                                 backgroundColor: '#ffffff',
                                                 color: '#334155',
@@ -834,7 +841,7 @@ const EditProfile = () => {
                                         <button
                                             type="submit"
                                             disabled={isLoading || isUploadingImage || isUploadingCover}
-                                            className="w-full sm:w-auto px-8 py-3 text-base rounded-lg transition-all font-semibold shadow-md"
+                                            className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base rounded-lg transition-all font-semibold shadow-md"
                                             style={{
                                                 background: 'linear-gradient(to right, #457B9D, #5D8FB8)',
                                                 color: '#ffffff',
@@ -843,7 +850,7 @@ const EditProfile = () => {
                                         >
                                             {isLoading ? (
                                                 <>
-                                                    <div className="animate-spin rounded-full h-5 w-5 mr-3 inline-block" style={{
+                                                    <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 inline-block" style={{
                                                         borderWidth: '2px',
                                                         borderStyle: 'solid',
                                                         borderColor: '#ffffff',
