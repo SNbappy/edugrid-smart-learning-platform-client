@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+// import useAxiosPublic from '../../../hooks/useAxiosPublic'; // Same hook as Sidebar
 import {
     MdClose,
     MdPeople,
@@ -11,6 +12,7 @@ import {
     MdSearch,
     MdFilterList
 } from 'react-icons/md';
+import useAxiosPublic from '../hooks/useAxiosPublic';
 
 const SessionDetailsModal = ({
     session,
@@ -20,17 +22,57 @@ const SessionDetailsModal = ({
     currentUserEmail,
     classroomName
 }) => {
+    const axiosPublic = useAxiosPublic(); // Same as Sidebar
     const [localAttendance, setLocalAttendance] = useState([]);
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [isLoadingNames, setIsLoadingNames] = useState(false);
+
+    // Fetch updated user names from the same endpoint as Sidebar
+    const fetchUpdatedUserNames = async (attendanceRecords) => {
+        setIsLoadingNames(true);
+        try {
+            // Use Promise.all for efficient batch fetching
+            const updatedRecords = await Promise.all(
+                attendanceRecords.map(async (record) => {
+                    try {
+                        // Same API call as Sidebar: /users/${email}
+                        const response = await axiosPublic.get(`/users/${record.studentEmail}`);
+
+                        if (response.data.success && response.data.user) {
+                            const userData = response.data.user;
+                            // Use same priority as Sidebar: userData.name
+                            return {
+                                ...record,
+                                studentName: userData.name || record.studentEmail?.split('@')[0] || 'Unknown Student'
+                            };
+                        }
+                        return record;
+                    } catch (error) {
+                        console.error(`Error fetching user data for ${record.studentEmail}:`, error);
+                        return record; // Return original if fetch fails
+                    }
+                })
+            );
+            return updatedRecords;
+        } catch (error) {
+            console.error('Error updating user names:', error);
+            return attendanceRecords;
+        } finally {
+            setIsLoadingNames(false);
+        }
+    };
 
     useEffect(() => {
         if (session?.attendance) {
-            setLocalAttendance([...session.attendance]);
+            // Fetch updated names when modal opens
+            fetchUpdatedUserNames(session.attendance).then((updatedRecords) => {
+                setLocalAttendance(updatedRecords);
+            });
         }
-    }, [session]);
+    }, [session]); // Re-fetch when session changes
 
     const handleStatusChange = (studentEmail, newStatus) => {
         if (!isOwner) return;
@@ -50,7 +92,6 @@ const SessionDetailsModal = ({
 
         setIsSaving(true);
         try {
-            // Find changed records and update them
             const changes = localAttendance.filter((record, index) => {
                 const originalRecord = session.attendance[index];
                 return record.status !== originalRecord?.status;
@@ -115,27 +156,37 @@ const SessionDetailsModal = ({
     const attendancePercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             {/* Professional Blurred Backdrop */}
             <div
                 className="absolute inset-0 bg-slate-900/20 backdrop-blur-md transition-opacity duration-300"
                 onClick={onClose}
             ></div>
 
-            {/* Modal Container - Compact Design */}
-            <div className="relative bg-white rounded-2xl shadow-2xl border border-slate-200/60 w-full max-w-4xl mx-auto h-[85vh] flex flex-col transform transition-all duration-300 scale-100 animate-in zoom-in-95">
+            {/* Modal Container - Fully Responsive */}
+            <div className="relative bg-white rounded-lg sm:rounded-2xl shadow-2xl border border-slate-200/60 w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto h-[95vh] sm:h-[90vh] md:h-[85vh] flex flex-col transform transition-all duration-300 scale-100 animate-in zoom-in-95">
+
+                {/* Loading Overlay */}
+                {isLoadingNames && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg sm:rounded-2xl">
+                        <div className="flex flex-col items-center space-y-3">
+                            <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
+                            <p className="text-sm text-slate-600 font-medium">Loading updated names...</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Compact Header */}
                 <div className="flex-shrink-0">
                     {/* Title Bar */}
-                    <div className="flex items-center justify-between p-4 border-b border-slate-200">
-                        <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <MdVisibility className="w-5 h-5 text-blue-600" />
+                    <div className="flex items-start sm:items-center justify-between p-3 sm:p-4 border-b border-slate-200 gap-2">
+                        <div className="flex items-start sm:items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <MdVisibility className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
                             </div>
-                            <div className="min-w-0">
-                                <h3 className="text-lg font-semibold text-slate-900 truncate">{session?.title}</h3>
-                                <div className="flex items-center space-x-4 text-xs text-slate-500">
+                            <div className="min-w-0 flex-1">
+                                <h3 className="text-sm sm:text-base md:text-lg font-semibold text-slate-900 truncate">{session?.title}</h3>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-1 sm:space-y-0 text-xs text-slate-500">
                                     <span className="flex items-center">
                                         <MdDateRange className="w-3 h-3 mr-1" />
                                         {new Date(session?.date).toLocaleDateString()}
@@ -146,7 +197,7 @@ const SessionDetailsModal = ({
                                     </span>
                                     {isOwner && (
                                         <span className={`font-medium ${attendancePercentage >= 80 ? 'text-emerald-600' :
-                                                attendancePercentage >= 60 ? 'text-amber-600' : 'text-red-600'
+                                            attendancePercentage >= 60 ? 'text-amber-600' : 'text-red-600'
                                             }`}>
                                             {attendancePercentage}% attendance
                                         </span>
@@ -155,9 +206,9 @@ const SessionDetailsModal = ({
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                             {isOwner && hasChanges && (
-                                <div className="flex items-center space-x-1">
+                                <div className="hidden sm:flex items-center space-x-1">
                                     <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
                                     <span className="text-xs text-amber-600 font-medium">Unsaved</span>
                                 </div>
@@ -166,64 +217,61 @@ const SessionDetailsModal = ({
                                 <button
                                     onClick={handleSave}
                                     disabled={isSaving}
-                                    className="inline-flex items-center px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-semibold rounded-md transition-all duration-200"
+                                    className="inline-flex items-center px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-semibold rounded-md transition-all duration-200 touch-manipulation"
                                 >
                                     {isSaving ? (
                                         <>
                                             <div className="animate-spin rounded-full h-3 w-3 border-b border-white mr-1"></div>
-                                            <span>Saving</span>
+                                            <span className="hidden sm:inline">Saving</span>
                                         </>
                                     ) : (
                                         <>
-                                            <MdSave className="w-3 h-3 mr-1" />
-                                            <span>Save</span>
+                                            <MdSave className="w-3 h-3 sm:mr-1" />
+                                            <span className="hidden sm:inline">Save</span>
                                         </>
                                     )}
                                 </button>
                             )}
                             <button
                                 onClick={onClose}
-                                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors duration-200 text-slate-400 hover:text-slate-600"
+                                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors duration-200 text-slate-400 hover:text-slate-600 touch-manipulation"
                             >
                                 <MdClose className="w-5 h-5" />
                             </button>
                         </div>
                     </div>
 
-                    {/* Compact Stats & Controls Bar */}
-                    <div className="flex items-center justify-between p-4 bg-slate-50 border-b border-slate-200">
-                        <div className="flex items-center space-x-4">
-                            {isOwner && (
-                                <>
-                                    <div className="flex items-center space-x-3 text-sm">
-                                        <span className="flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md">
-                                            <MdCheckCircle className="w-3 h-3 mr-1" />
-                                            {presentCount}
-                                        </span>
-                                        <span className="flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-md">
-                                            <MdCancel className="w-3 h-3 mr-1" />
-                                            {absentCount}
-                                        </span>
-                                        <span className="flex items-center px-2 py-1 bg-slate-100 text-slate-700 rounded-md">
-                                            <MdSchedule className="w-3 h-3 mr-1" />
-                                            {unmarkedCount}
-                                        </span>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Search and Filter - Compact */}
+                    {/* Stats & Controls Bar - Responsive */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 sm:p-4 bg-slate-50 border-b border-slate-200 gap-3">
+                        {/* Stats */}
                         {isOwner && (
-                            <div className="flex items-center space-x-2">
-                                <div className="relative">
+                            <div className="flex items-center justify-center sm:justify-start space-x-2 sm:space-x-3 text-xs sm:text-sm overflow-x-auto">
+                                <span className="flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 rounded-md whitespace-nowrap">
+                                    <MdCheckCircle className="w-3 h-3 mr-1" />
+                                    {presentCount}
+                                </span>
+                                <span className="flex items-center px-2 py-1 bg-red-100 text-red-700 rounded-md whitespace-nowrap">
+                                    <MdCancel className="w-3 h-3 mr-1" />
+                                    {absentCount}
+                                </span>
+                                <span className="flex items-center px-2 py-1 bg-slate-100 text-slate-700 rounded-md whitespace-nowrap">
+                                    <MdSchedule className="w-3 h-3 mr-1" />
+                                    {unmarkedCount}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Search and Filter - Responsive */}
+                        {isOwner && (
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                                <div className="relative flex-1 sm:flex-none">
                                     <MdSearch className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
                                     <input
                                         type="text"
                                         placeholder="Search students..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-48 pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                                        className="w-full sm:w-40 md:w-48 pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                     />
                                 </div>
                                 <select
@@ -231,7 +279,7 @@ const SessionDetailsModal = ({
                                     onChange={(e) => setFilterStatus(e.target.value)}
                                     className="text-sm border border-slate-300 rounded-lg px-2 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                                 >
-                                    <option value="all">All</option>
+                                    <option value="all">All Status</option>
                                     <option value="present">Present</option>
                                     <option value="absent">Absent</option>
                                     <option value="unmarked">Unmarked</option>
@@ -243,13 +291,13 @@ const SessionDetailsModal = ({
 
                 {/* Scrollable Student List */}
                 <div className="flex-1 overflow-y-auto bg-slate-50">
-                    <div className="p-4">
-                        <div className="space-y-3">
+                    <div className="p-2 sm:p-3 md:p-4">
+                        <div className="space-y-2 sm:space-y-3">
                             {filteredAttendance.length === 0 ? (
-                                <div className="text-center py-12">
-                                    <MdPeople className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                                    <h3 className="text-base font-semibold text-slate-600 mb-2">No Students Found</h3>
-                                    <p className="text-sm text-slate-500">
+                                <div className="text-center py-8 sm:py-12">
+                                    <MdPeople className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-3" />
+                                    <h3 className="text-sm sm:text-base font-semibold text-slate-600 mb-2">No Students Found</h3>
+                                    <p className="text-xs sm:text-sm text-slate-500 px-4">
                                         {searchTerm ? 'Try adjusting your search terms.' : 'No students match the current filter.'}
                                     </p>
                                 </div>
@@ -262,56 +310,58 @@ const SessionDetailsModal = ({
                                     return (
                                         <div
                                             key={record.studentEmail || index}
-                                            className={`bg-white flex items-center justify-between p-3 rounded-xl border transition-all duration-200 hover:shadow-md ${isCurrentUser ? 'ring-2 ring-blue-500 ring-opacity-50' : 'border-slate-200'
+                                            className={`bg-white flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg sm:rounded-xl border transition-all duration-200 hover:shadow-md gap-3 sm:gap-0 ${isCurrentUser ? 'ring-2 ring-blue-500 ring-opacity-50' : 'border-slate-200'
                                                 }`}
                                         >
-                                            <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${style.bg}`}>
-                                                    <IconComponent className={`w-5 h-5 ${style.iconColor}`} />
+                                            {/* Student Info */}
+                                            <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+                                                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${style.bg}`}>
+                                                    <IconComponent className={`w-4 h-4 sm:w-5 sm:h-5 ${style.iconColor}`} />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="font-medium text-slate-900 truncate">
+                                                    <div className="flex items-center flex-wrap gap-1 sm:gap-2">
+                                                        <span className="font-medium text-sm sm:text-base text-slate-900 truncate">
                                                             {record.studentName || record.studentEmail?.split('@')[0] || 'Unknown Student'}
                                                         </span>
                                                         {isCurrentUser && (
-                                                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded">
+                                                            <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded flex-shrink-0">
                                                                 You
                                                             </span>
                                                         )}
-                                                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded ${style.badge} capitalize`}>
+                                                        <span className={`px-1.5 py-0.5 text-xs font-medium rounded capitalize flex-shrink-0 ${style.badge}`}>
                                                             {record.status}
                                                         </span>
                                                     </div>
-                                                    <div className="text-sm text-slate-500 truncate">
+                                                    <div className="text-xs sm:text-sm text-slate-500 truncate">
                                                         {record.studentEmail}
                                                     </div>
                                                 </div>
                                             </div>
 
+                                            {/* Action Buttons - Responsive */}
                                             {isOwner ? (
-                                                <div className="flex space-x-2 ml-3">
+                                                <div className="flex space-x-2 w-full sm:w-auto sm:ml-3">
                                                     <button
                                                         onClick={() => handleStatusChange(record.studentEmail, 'present')}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${record.status === 'present'
-                                                                ? 'bg-emerald-600 text-white shadow-md'
-                                                                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                                        className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0 ${record.status === 'present'
+                                                            ? 'bg-emerald-600 text-white shadow-md'
+                                                            : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
                                                             }`}
                                                     >
                                                         Present
                                                     </button>
                                                     <button
                                                         onClick={() => handleStatusChange(record.studentEmail, 'absent')}
-                                                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${record.status === 'absent'
-                                                                ? 'bg-red-600 text-white shadow-md'
-                                                                : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                                        className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0 ${record.status === 'absent'
+                                                            ? 'bg-red-600 text-white shadow-md'
+                                                            : 'bg-red-100 text-red-700 hover:bg-red-200'
                                                             }`}
                                                     >
                                                         Absent
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <div className={`px-3 py-1.5 rounded-lg text-sm font-medium ${style.bg} ${style.text} capitalize`}>
+                                                <div className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-medium capitalize text-center ${style.bg} ${style.text}`}>
                                                     {record.status}
                                                 </div>
                                             )}
@@ -323,27 +373,27 @@ const SessionDetailsModal = ({
                     </div>
                 </div>
 
-                {/* Compact Footer */}
-                <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-t border-slate-200">
-                    <div className="text-sm text-slate-600">
+                {/* Footer - Responsive */}
+                <div className="flex-shrink-0 flex flex-col sm:flex-row sm:items-center sm:justify-between px-3 sm:px-4 py-3 bg-white border-t border-slate-200 gap-2">
+                    <div className="text-xs sm:text-sm text-slate-600 text-center sm:text-left">
                         {filteredAttendance.length} of {totalStudents} students
                         {searchTerm && <span className="text-slate-400"> (filtered)</span>}
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-center sm:justify-end space-x-2">
                         {isOwner && hasChanges && (
                             <button
                                 onClick={() => {
                                     setLocalAttendance([...session.attendance]);
                                     setHasChanges(false);
                                 }}
-                                className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all duration-200"
+                                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
                             >
                                 Reset
                             </button>
                         )}
                         <button
                             onClick={onClose}
-                            className="px-4 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all duration-200"
+                            className="flex-1 sm:flex-none px-4 sm:px-5 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
                         >
                             Close
                         </button>
