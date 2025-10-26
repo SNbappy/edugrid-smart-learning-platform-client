@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-// import useAxiosPublic from '../../../hooks/useAxiosPublic'; // Same hook as Sidebar
+import { useState, useEffect, useMemo } from 'react';
 import {
     MdClose,
     MdPeople,
@@ -20,9 +19,11 @@ const SessionDetailsModal = ({
     onUpdateAttendance,
     isOwner,
     currentUserEmail,
-    classroomName
+    classroomName,
+    allClassroomStudents = [],
+    teacherEmail = ''
 }) => {
-    const axiosPublic = useAxiosPublic(); // Same as Sidebar
+    const axiosPublic = useAxiosPublic();
     const [localAttendance, setLocalAttendance] = useState([]);
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -30,20 +31,67 @@ const SessionDetailsModal = ({
     const [filterStatus, setFilterStatus] = useState('all');
     const [isLoadingNames, setIsLoadingNames] = useState(false);
 
-    // Fetch updated user names from the same endpoint as Sidebar
+    // Merge session attendance with all enrolled students
+    const completeAttendance = useMemo(() => {
+        const sessionAttendance = session?.attendance || [];
+
+        const sessionEmailsMap = new Map();
+        sessionAttendance.forEach(record => {
+            if (record.studentEmail) {
+                sessionEmailsMap.set(record.studentEmail.toLowerCase(), record);
+            }
+        });
+
+        const studentsOnly = allClassroomStudents.filter(
+            student => student.email && student.email.toLowerCase() !== teacherEmail.toLowerCase()
+        );
+
+        const mergedList = studentsOnly.map(student => {
+            const emailLower = student.email.toLowerCase();
+
+            if (sessionEmailsMap.has(emailLower)) {
+                return sessionEmailsMap.get(emailLower);
+            }
+
+            return {
+                studentEmail: student.email,
+                studentName: student.name,
+                status: 'unmarked',
+                markedAt: null,
+                markedBy: null
+            };
+        });
+
+        // Sort by student name (ascending order)
+        const sortedList = mergedList.sort((a, b) => {
+            const nameA = (a.studentName || a.studentEmail || '').toLowerCase();
+            const nameB = (b.studentName || b.studentEmail || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        console.log('📊 Modal Attendance Merge Debug:', {
+            sessionId: session?.id,
+            originalRecords: sessionAttendance.length,
+            enrolledStudents: studentsOnly.length,
+            mergedTotal: sortedList.length,
+            existing: sortedList.filter(r => r.status !== 'unmarked').length,
+            newUnmarked: sortedList.filter(r => r.status === 'unmarked').length
+        });
+
+        return sortedList;
+    }, [session?.id, session?.attendance, allClassroomStudents, teacherEmail]);
+
+    // Fetch updated user names from database
     const fetchUpdatedUserNames = async (attendanceRecords) => {
         setIsLoadingNames(true);
         try {
-            // Use Promise.all for efficient batch fetching
             const updatedRecords = await Promise.all(
                 attendanceRecords.map(async (record) => {
                     try {
-                        // Same API call as Sidebar: /users/${email}
                         const response = await axiosPublic.get(`/users/${record.studentEmail}`);
 
                         if (response.data.success && response.data.user) {
                             const userData = response.data.user;
-                            // Use same priority as Sidebar: userData.name
                             return {
                                 ...record,
                                 studentName: userData.name || record.studentEmail?.split('@')[0] || 'Unknown Student'
@@ -52,11 +100,19 @@ const SessionDetailsModal = ({
                         return record;
                     } catch (error) {
                         console.error(`Error fetching user data for ${record.studentEmail}:`, error);
-                        return record; // Return original if fetch fails
+                        return record;
                     }
                 })
             );
-            return updatedRecords;
+
+            // Sort again after fetching updated names
+            const sortedRecords = updatedRecords.sort((a, b) => {
+                const nameA = (a.studentName || a.studentEmail || '').toLowerCase();
+                const nameB = (b.studentName || b.studentEmail || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+            return sortedRecords;
         } catch (error) {
             console.error('Error updating user names:', error);
             return attendanceRecords;
@@ -65,14 +121,27 @@ const SessionDetailsModal = ({
         }
     };
 
+    // Load attendance data whenever session or students change
     useEffect(() => {
-        if (session?.attendance) {
-            // Fetch updated names when modal opens
-            fetchUpdatedUserNames(session.attendance).then((updatedRecords) => {
+        const loadAttendanceData = async () => {
+            console.log('🔄 Loading attendance data for session:', session?.id);
+            if (completeAttendance.length > 0) {
+                const updatedRecords = await fetchUpdatedUserNames(completeAttendance);
                 setLocalAttendance(updatedRecords);
-            });
-        }
-    }, [session]); // Re-fetch when session changes
+            } else {
+                setLocalAttendance([]);
+            }
+        };
+
+        loadAttendanceData();
+    }, [session?.id, JSON.stringify(session?.attendance), allClassroomStudents.length, teacherEmail]); // ✅ Fixed dependencies
+
+    // Reset state when session changes
+    useEffect(() => {
+        setHasChanges(false);
+        setSearchTerm('');
+        setFilterStatus('all');
+    }, [session?.id]);
 
     const handleStatusChange = (studentEmail, newStatus) => {
         if (!isOwner) return;
@@ -83,7 +152,14 @@ const SessionDetailsModal = ({
                 : record
         );
 
-        setLocalAttendance(updatedAttendance);
+        // Keep sorted order after status change
+        const sortedAttendance = updatedAttendance.sort((a, b) => {
+            const nameA = (a.studentName || a.studentEmail || '').toLowerCase();
+            const nameB = (b.studentName || b.studentEmail || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        setLocalAttendance(sortedAttendance);
         setHasChanges(true);
     };
 
@@ -92,10 +168,14 @@ const SessionDetailsModal = ({
 
         setIsSaving(true);
         try {
-            const changes = localAttendance.filter((record, index) => {
-                const originalRecord = session.attendance[index];
+            const changes = localAttendance.filter((record) => {
+                const originalRecord = completeAttendance.find(
+                    r => r.studentEmail === record.studentEmail
+                );
                 return record.status !== originalRecord?.status;
             });
+
+            console.log('💾 Saving changes:', changes.length);
 
             for (const change of changes) {
                 await onUpdateAttendance(session.id, change.studentEmail, change.status);
@@ -138,7 +218,7 @@ const SessionDetailsModal = ({
         }
     };
 
-    // Filter and search logic
+    // Filter and search logic (maintains sorted order)
     const filteredAttendance = localAttendance.filter(record => {
         const matchesSearch = !searchTerm ||
             record.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -382,8 +462,9 @@ const SessionDetailsModal = ({
                     <div className="flex items-center justify-center sm:justify-end space-x-2">
                         {isOwner && hasChanges && (
                             <button
-                                onClick={() => {
-                                    setLocalAttendance([...session.attendance]);
+                                onClick={async () => {
+                                    const updatedRecords = await fetchUpdatedUserNames(completeAttendance);
+                                    setLocalAttendance(updatedRecords);
                                     setHasChanges(false);
                                 }}
                                 className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"

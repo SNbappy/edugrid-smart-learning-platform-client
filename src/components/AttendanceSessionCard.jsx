@@ -1,27 +1,85 @@
 import { MdDateRange, MdPeople, MdTrendingUp, MdVisibility, MdFileDownload, MdCheckCircle, MdCancel, MdSchedule } from 'react-icons/md';
+import { useMemo } from 'react';
 
 const AttendanceSessionCard = ({
     session,
     onUpdateAttendance,
     onViewDetails,
-    onSessionUpdate, // NEW: Add callback for session updates
+    onSessionUpdate,
     isOwner,
     currentUserEmail,
-    refreshTrigger = 0 // NEW: Add refresh trigger prop
+    refreshTrigger = 0,
+    allClassroomStudents = [], // Pass all enrolled students from parent
+    teacherEmail = '' // Pass teacher email to exclude
 }) => {
-    const presentCount = session.attendance.filter(record => record.status === 'present').length;
-    const absentCount = session.attendance.filter(record => record.status === 'absent').length;
-    const unmarkedCount = session.attendance.filter(record => record.status === 'unmarked').length;
-    const totalStudents = session.attendance.length;
+    // Merge session attendance with all enrolled students
+    const completeAttendance = useMemo(() => {
+        const sessionAttendance = session.attendance || [];
+
+        // Create a map of existing attendance records by email (case-insensitive)
+        const sessionEmailsMap = new Map();
+        sessionAttendance.forEach(record => {
+            if (record.studentEmail) {
+                sessionEmailsMap.set(record.studentEmail.toLowerCase(), record);
+            }
+        });
+
+        // Get all students except teacher
+        const studentsOnly = allClassroomStudents.filter(
+            student => student.email && student.email.toLowerCase() !== teacherEmail.toLowerCase()
+        );
+
+        // Create complete attendance list
+        const mergedList = studentsOnly.map(student => {
+            const emailLower = student.email.toLowerCase();
+
+            // If student has existing attendance record, use it (preserves status)
+            if (sessionEmailsMap.has(emailLower)) {
+                return sessionEmailsMap.get(emailLower);
+            }
+
+            // Otherwise, add as unmarked (new students only)
+            return {
+                studentEmail: student.email,
+                studentName: student.name,
+                status: 'unmarked',
+                markedAt: null,
+                markedBy: null
+            };
+        });
+
+        console.log('📊 Attendance Merge Debug:', {
+            originalRecords: sessionAttendance.length,
+            enrolledStudents: studentsOnly.length,
+            mergedTotal: mergedList.length,
+            existing: mergedList.filter(r => r.status !== 'unmarked').length,
+            newUnmarked: mergedList.filter(r => r.status === 'unmarked').length
+        });
+
+        return mergedList;
+    }, [session.attendance, allClassroomStudents, teacherEmail]);
+
+    // Calculate stats from complete attendance
+    const presentCount = completeAttendance.filter(record => record.status === 'present').length;
+    const absentCount = completeAttendance.filter(record => record.status === 'absent').length;
+    const unmarkedCount = completeAttendance.filter(record => record.status === 'unmarked').length;
+    const totalStudents = completeAttendance.length;
     const attendancePercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
 
-    // Get current user's attendance status for this session
-    const userAttendance = session.attendance.find(record => record.studentEmail === currentUserEmail);
+    // Get current user's attendance status
+    const userAttendance = completeAttendance.find(
+        record => record.studentEmail?.toLowerCase() === currentUserEmail?.toLowerCase()
+    );
     const userStatus = userAttendance?.status || 'unmarked';
 
-    // Handle view details with callback for updates
+    // Handle view details - pass complete attendance
     const handleViewDetails = () => {
-        onViewDetails(session, onSessionUpdate); // Pass the update callback
+        // Pass session with merged attendance to modal
+        const sessionWithCompleteAttendance = {
+            ...session,
+            attendance: completeAttendance
+        };
+        onViewDetails(sessionWithCompleteAttendance, onSessionUpdate);
     };
 
     return (

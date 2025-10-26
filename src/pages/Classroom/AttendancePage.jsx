@@ -21,7 +21,6 @@ import CreateAttendanceModal from '../../components/CreateAttendanceModal';
 import SessionDetailsModal from '../../components/SessionDetailsModal';
 import { exportAllSessionsPDF } from '../../utils/attendancePDFExport';
 
-
 const AttendancePage = () => {
     const { user, loading } = useContext(AuthContext);
     const { classroomId } = useParams();
@@ -453,8 +452,8 @@ const AttendancePage = () => {
 
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${isOwner()
-                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                         }`}>
                                         {isOwner() ? '👨‍🏫' : '👨‍🎓'}
                                     </span>
@@ -495,8 +494,8 @@ const AttendancePage = () => {
                                 <div className="flex items-center space-x-4">
                                     <div className="flex items-center space-x-3">
                                         <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium border ${isOwner()
-                                                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                             }`}>
                                             {isOwner() ? '👨‍🏫 Teacher Access' : '👨‍🎓 Student View'}
                                         </span>
@@ -588,7 +587,7 @@ const AttendancePage = () => {
                                     </div>
                                     <div className="text-right">
                                         <div className={`text-xl sm:text-2xl font-bold ${stats.averageAttendance >= 80 ? 'text-emerald-600' :
-                                                stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
+                                            stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
                                             }`}>
                                             {stats.averageAttendance}%
                                         </div>
@@ -600,7 +599,7 @@ const AttendancePage = () => {
                                 <div className="w-full bg-slate-100 rounded-full h-2">
                                     <div
                                         className={`h-2 rounded-full transition-all duration-500 ${stats.averageAttendance >= 80 ? 'bg-emerald-600' :
-                                                stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
+                                            stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
                                             }`}
                                         style={{ width: `${stats.averageAttendance}%` }}
                                     ></div>
@@ -687,7 +686,9 @@ const AttendancePage = () => {
                                                 isOwner={isOwner()}
                                                 currentUserEmail={user?.email}
                                                 classroomName={classroom?.name}
-                                                updateTrigger={updateTrigger}
+                                                allClassroomStudents={classroom?.students || []} // ✅ NEW: Pass all students
+                                                teacherEmail={classroom?.teacherEmail} // ✅ NEW: Pass teacher email
+                                                refreshTrigger={updateTrigger}
                                             />
                                         ))}
                                     </div>
@@ -714,6 +715,8 @@ const AttendancePage = () => {
                     isOwner={isOwner()}
                     currentUserEmail={user?.email}
                     classroomName={classroom?.name}
+                    allClassroomStudents={classroom?.students || []} // ✅ NEW: Pass to modal too
+                    teacherEmail={classroom?.teacherEmail} // ✅ NEW: Pass to modal too
                 />
             )}
         </div>
