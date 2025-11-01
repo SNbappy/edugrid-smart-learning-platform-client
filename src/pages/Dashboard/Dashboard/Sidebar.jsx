@@ -25,22 +25,34 @@ import {
     FaEnvelope
 } from 'react-icons/fa';
 
+
 const Sidebar = () => {
     const { user, logOut } = useContext(AuthContext);
     const axiosPublic = useAxiosPublic();
     const location = useLocation();
     const [userData, setUserData] = useState(null);
+    const [teachingClasses, setTeachingClasses] = useState([]);
     const [showMoreInfo, setShowMoreInfo] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-    // Fetch user data for additional info
+
+    // Fetch user data and teaching classes for role determination
     useEffect(() => {
         const fetchUserData = async () => {
             if (user?.email) {
                 try {
-                    const response = await axiosPublic.get(`/users/${user.email}`);
-                    if (response.data.success) {
-                        setUserData(response.data.user);
+                    // Fetch both user data and teaching classes in parallel
+                    const [userResponse, teachingResponse] = await Promise.all([
+                        axiosPublic.get(`/users/${user.email}`),
+                        axiosPublic.get(`/classrooms/teacher/${user.email}`)
+                    ]);
+
+                    if (userResponse.data.success) {
+                        setUserData(userResponse.data.user);
+                    }
+
+                    if (teachingResponse.data.success) {
+                        setTeachingClasses(teachingResponse.data.classrooms || []);
                     }
                 } catch (error) {
                     console.error('Error fetching user data:', error);
@@ -48,13 +60,16 @@ const Sidebar = () => {
             }
         };
 
+
         fetchUserData();
     }, [user?.email, axiosPublic]);
+
 
     // Close sidebar on route change (mobile)
     useEffect(() => {
         setIsSidebarOpen(false);
     }, [location.pathname]);
+
 
     // Prevent body scroll when mobile sidebar is open
     useEffect(() => {
@@ -64,24 +79,29 @@ const Sidebar = () => {
             document.body.style.overflow = 'unset';
         }
 
+
         return () => {
             document.body.style.overflow = 'unset';
         };
     }, [isSidebarOpen]);
+
 
     const mainMenuItems = [
         { name: 'Dashboard', icon: MdDashboard, path: '/dashboard' },
         { name: 'My Classes', icon: MdSchool, path: '/my-classes' },
     ];
 
+
     const classManagementItems = [
         { name: 'Create Class', icon: MdAdd, path: '/create-class' },
     ];
+
 
     const secondaryMenuItems = [
         { name: 'Homepage', icon: MdHome, path: '/' },
         { name: 'All Classes', icon: MdClass, path: '/all-classes' },
     ];
+
 
     const handleLogout = async () => {
         try {
@@ -92,15 +112,19 @@ const Sidebar = () => {
         }
     };
 
+
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
+
 
     // Get combined location string
     const getLocationString = () => {
         if (!userData?.profile) return null;
 
+
         const { city, district, country } = userData.profile;
+
 
         if (city && country) {
             return `${city}, ${country}`;
@@ -112,8 +136,10 @@ const Sidebar = () => {
             return city || district;
         }
 
+
         return null;
     };
+
 
     // Check if user has additional info to show
     const hasAdditionalInfo = userData?.profile && (
@@ -122,6 +148,7 @@ const Sidebar = () => {
         userData.profile.linkedin ||
         userData.createdAt
     );
+
 
     return (
         <>
@@ -138,6 +165,7 @@ const Sidebar = () => {
                 )}
             </button>
 
+
             {/* Overlay - Only visible on mobile when sidebar is open */}
             {isSidebarOpen && (
                 <div
@@ -145,6 +173,7 @@ const Sidebar = () => {
                     onClick={() => setIsSidebarOpen(false)}
                 ></div>
             )}
+
 
             {/* Sidebar - Responsive Width */}
             <div
@@ -178,22 +207,26 @@ const Sidebar = () => {
                             </div>
                         </div>
 
+
                         {/* User Name */}
                         <div className="px-4 sm:px-6 text-center mb-4">
                             <h3 className="font-bold text-lg sm:text-xl text-gray-800 mb-1">
                                 {userData?.name || user?.displayName || 'User'}
                             </h3>
 
+
                             {/* Bio */}
                             <p className="text-xs sm:text-sm text-gray-600 mb-3 px-2 leading-relaxed">
                                 {userData?.profile?.bio || "Welcome to EduGrid! Update your bio in profile settings."}
                             </p>
 
+
                             {/* Role Badge */}
                             <div className="inline-flex items-center px-2.5 sm:px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white shadow-sm">
-                                {userData?.role === 'user' ? 'Student' : userData?.role || 'Student'}
+                                {teachingClasses.length > 0 ? 'Educator' : 'Student'}
                             </div>
                         </div>
+
 
                         {/* Basic Personal Info (Always Visible) */}
                         {userData && (
@@ -204,6 +237,7 @@ const Sidebar = () => {
                                     <span className="truncate">{userData.email}</span>
                                 </div>
 
+
                                 {/* Combined Location */}
                                 {getLocationString() && (
                                     <div className="flex items-center text-xs text-gray-600 rounded-lg px-2 sm:px-3">
@@ -211,6 +245,7 @@ const Sidebar = () => {
                                         <span className="truncate">{getLocationString()}</span>
                                     </div>
                                 )}
+
 
                                 {/* Institution */}
                                 {userData.profile?.institution && (
@@ -221,6 +256,7 @@ const Sidebar = () => {
                                 )}
                             </div>
                         )}
+
 
                         {/* See More Button */}
                         {hasAdditionalInfo && (
@@ -244,6 +280,7 @@ const Sidebar = () => {
                             </div>
                         )}
 
+
                         {/* Extended Personal Info (Collapsible) */}
                         {userData && showMoreInfo && (
                             <div className="px-3 sm:px-4 mt-3 space-y-2 animate-fadeIn">
@@ -254,6 +291,7 @@ const Sidebar = () => {
                                         <span className="truncate">{userData.profile.mailLink}</span>
                                     </div>
                                 )}
+
 
                                 {/* Facebook */}
                                 {userData.profile?.facebook && (
@@ -270,6 +308,7 @@ const Sidebar = () => {
                                     </div>
                                 )}
 
+
                                 {/* LinkedIn */}
                                 {userData.profile?.linkedin && (
                                     <div className="flex items-center text-xs text-gray-600 rounded-lg px-2 sm:px-3">
@@ -284,6 +323,7 @@ const Sidebar = () => {
                                         </a>
                                     </div>
                                 )}
+
 
                                 {/* Joined Date */}
                                 {userData.createdAt && (
@@ -301,6 +341,7 @@ const Sidebar = () => {
                         )}
                     </div>
 
+
                     {/* Edit Profile Button */}
                     <div className="px-4 sm:px-6 mb-6">
                         <Link
@@ -312,6 +353,7 @@ const Sidebar = () => {
                         </Link>
                     </div>
 
+
                     {/* Main Navigation */}
                     <div className="px-3 sm:px-4 mb-6">
                         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider px-2 mb-3">
@@ -322,18 +364,19 @@ const Sidebar = () => {
                                 const IconComponent = item.icon;
                                 const isActive = location.pathname === item.path;
 
+
                                 return (
                                     <Link
                                         key={index}
                                         to={item.path}
                                         className={`flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all duration-300 group ${isActive
-                                                ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white shadow-lg transform scale-[1.02]'
-                                                : 'hover:bg-white hover:shadow-md text-gray-700'
+                                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white shadow-lg transform scale-[1.02]'
+                                            : 'hover:bg-white hover:shadow-md text-gray-700'
                                             }`}
                                     >
                                         <IconComponent className={`mr-2 sm:mr-3 text-base sm:text-lg transition-all duration-300 ${isActive
-                                                ? 'text-white'
-                                                : 'text-[#457B9D] group-hover:scale-110'
+                                            ? 'text-white'
+                                            : 'text-[#457B9D] group-hover:scale-110'
                                             }`} />
                                         {item.name}
                                         {isActive && (
@@ -344,6 +387,7 @@ const Sidebar = () => {
                             })}
                         </nav>
                     </div>
+
 
                     {/* Class Management Section */}
                     <div className="px-3 sm:px-4 mb-6">
@@ -355,18 +399,19 @@ const Sidebar = () => {
                                 const IconComponent = item.icon;
                                 const isActive = location.pathname === item.path;
 
+
                                 return (
                                     <Link
                                         key={index}
                                         to={item.path}
                                         className={`flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all duration-300 group ${isActive
-                                                ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white shadow-lg transform scale-[1.02]'
-                                                : 'hover:bg-white hover:shadow-md text-gray-700'
+                                            ? 'bg-gradient-to-r from-[#457B9D] to-[#3a6b8a] text-white shadow-lg transform scale-[1.02]'
+                                            : 'hover:bg-white hover:shadow-md text-gray-700'
                                             }`}
                                     >
                                         <IconComponent className={`mr-2 sm:mr-3 text-base sm:text-lg transition-all duration-300 ${isActive
-                                                ? 'text-white'
-                                                : 'text-[#457B9D] group-hover:scale-110'
+                                            ? 'text-white'
+                                            : 'text-[#457B9D] group-hover:scale-110'
                                             }`} />
                                         {item.name}
                                         {isActive && (
@@ -378,6 +423,7 @@ const Sidebar = () => {
                         </nav>
                     </div>
 
+
                     {/* Secondary Navigation */}
                     <div className="px-3 sm:px-4 mb-6">
                         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider px-2 mb-3">
@@ -388,18 +434,19 @@ const Sidebar = () => {
                                 const IconComponent = item.icon;
                                 const isActive = location.pathname === item.path;
 
+
                                 return (
                                     <Link
                                         key={index}
                                         to={item.path}
                                         className={`flex items-center px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all duration-300 group ${isActive
-                                                ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg'
-                                                : 'hover:bg-white hover:shadow-md text-gray-600'
+                                            ? 'bg-gradient-to-r from-gray-600 to-gray-700 text-white shadow-lg'
+                                            : 'hover:bg-white hover:shadow-md text-gray-600'
                                             }`}
                                     >
                                         <IconComponent className={`mr-2 sm:mr-3 text-base sm:text-lg transition-all duration-300 ${isActive
-                                                ? 'text-white'
-                                                : 'text-gray-500 group-hover:scale-110'
+                                            ? 'text-white'
+                                            : 'text-gray-500 group-hover:scale-110'
                                             }`} />
                                         {item.name}
                                     </Link>
@@ -408,8 +455,10 @@ const Sidebar = () => {
                         </nav>
                     </div>
 
+
                     {/* Spacer to push logout button to bottom */}
                     <div className="flex-grow"></div>
+
 
                     {/* Logout Button */}
                     <div className="px-3 sm:px-4 pb-6 mt-8">
@@ -423,6 +472,7 @@ const Sidebar = () => {
                     </div>
                 </div>
 
+
                 {/* Decorative Elements */}
                 <div className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#457B9D]/10 to-transparent rounded-bl-full pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-tr from-[#457B9D]/10 to-transparent rounded-tr-full pointer-events-none"></div>
@@ -430,5 +480,6 @@ const Sidebar = () => {
         </>
     );
 };
+
 
 export default Sidebar;

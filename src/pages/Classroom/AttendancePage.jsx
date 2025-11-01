@@ -11,7 +11,6 @@ import {
     MdPeople,
     MdCalendarToday,
     MdTrendingUp,
-    MdFileDownload,
     MdSchool,
     MdBarChart
 } from 'react-icons/md';
@@ -19,7 +18,7 @@ import {
 import AttendanceSessionCard from '../../components/AttendanceSessionCard';
 import CreateAttendanceModal from '../../components/CreateAttendanceModal';
 import SessionDetailsModal from '../../components/SessionDetailsModal';
-import { exportAllSessionsPDF } from '../../utils/attendancePDFExport';
+import AttendanceRegisterModal from '../../components/AttendanceRegisterModal';
 
 const AttendancePage = () => {
     const { user, loading } = useContext(AuthContext);
@@ -32,8 +31,8 @@ const AttendancePage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showCreateSession, setShowCreateSession] = useState(false);
     const [selectedSession, setSelectedSession] = useState(null);
-    const [isExporting, setIsExporting] = useState(false);
     const [updateTrigger, setUpdateTrigger] = useState(0);
+    const [showRegisterView, setShowRegisterView] = useState(false);
 
     const isOwner = useCallback(() => {
         if (!classroom || !user) return false;
@@ -204,17 +203,7 @@ const AttendancePage = () => {
                 return false;
             }
 
-            Swal.fire({
-                title: 'Updating...',
-                text: 'Please wait while we update the attendance.',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                showConfirmButton: false,
-                willOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-
+            // Silent update - no loading alert
             const response = await axiosPublic.post(`/classrooms/${classroomId}/attendance/sessions/${sessionId}/mark`, {
                 studentEmail: studentEmail,
                 status: status,
@@ -222,57 +211,30 @@ const AttendancePage = () => {
             });
 
             if (response.data.success) {
-                setAttendanceSessions(prevSessions =>
-                    prevSessions.map(session => {
-                        if (session.id === sessionId) {
-                            return {
-                                ...session,
-                                attendance: session.attendance.map(record =>
-                                    record.studentEmail === studentEmail
-                                        ? {
-                                            ...record,
-                                            status,
-                                            markedAt: new Date().toISOString(),
-                                            markedBy: user.email
-                                        }
-                                        : record
-                                )
-                            };
-                        }
-                        return session;
-                    })
-                );
+                // Refresh classroom data to get updated attendance
+                const classroomResponse = await axiosPublic.get(`/classrooms/${classroomId}`);
+                if (classroomResponse.data.success) {
+                    setAttendanceSessions(classroomResponse.data.classroom.attendance?.sessions || []);
 
-                if (selectedSession && selectedSession.id === sessionId) {
-                    setSelectedSession(prevSession => ({
-                        ...prevSession,
-                        attendance: prevSession.attendance.map(record =>
-                            record.studentEmail === studentEmail
-                                ? {
-                                    ...record,
-                                    status,
-                                    markedAt: new Date().toISOString(),
-                                    markedBy: user.email
-                                }
-                                : record
-                        )
-                    }));
+                    // Update selected session if it's open
+                    if (selectedSession && selectedSession.id === sessionId) {
+                        const updatedSession = classroomResponse.data.classroom.attendance?.sessions.find(
+                            s => s.id === sessionId
+                        );
+                        if (updatedSession) {
+                            setSelectedSession(updatedSession);
+                        }
+                    }
                 }
 
                 setUpdateTrigger(prev => prev + 1);
 
-                Swal.fire({
-                    title: 'Success!',
-                    text: `Attendance marked as ${status}`,
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-
+                // Silent success - modal shows "Saved ✓" badge instead
                 return true;
             }
         } catch (error) {
             console.error('Error updating attendance:', error);
+            // Only show alert on error
             Swal.fire({
                 title: 'Error!',
                 text: 'Failed to update attendance.',
@@ -280,6 +242,66 @@ const AttendancePage = () => {
                 confirmButtonColor: '#3B82F6',
             });
             return false;
+        }
+    };
+
+    // ✅ NEW: Delete session handler
+    const handleDeleteSession = async (sessionId) => {
+        try {
+            if (!isOwner()) {
+                Swal.fire({
+                    title: 'Access Denied!',
+                    text: 'Only the classroom teacher can delete attendance sessions.',
+                    icon: 'error',
+                    confirmButtonColor: '#3B82F6',
+                });
+                throw new Error('Access denied');
+            }
+
+            // Make DELETE request to backend
+            const response = await axiosPublic.delete(
+                `/classrooms/${classroomId}/attendance/sessions/${sessionId}`
+            );
+
+            if (response.data.success) {
+                // Remove the deleted session from state
+                setAttendanceSessions(prevSessions =>
+                    prevSessions.filter(session => session.id !== sessionId)
+                );
+
+                // Close session details modal if it's open
+                if (selectedSession && selectedSession.id === sessionId) {
+                    setSelectedSession(null);
+                }
+
+                // Update trigger for any other dependent components
+                setUpdateTrigger(prev => prev + 1);
+
+                // Show success message
+                Swal.fire({
+                    title: 'Deleted!',
+                    text: 'Attendance session has been deleted successfully.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                console.log('✅ Session deleted successfully');
+            }
+        } catch (error) {
+            console.error('❌ Delete session error:', error);
+
+            // Only show error if it's not an access denied error (already shown)
+            if (error.message !== 'Access denied') {
+                Swal.fire({
+                    title: 'Error!',
+                    text: error.response?.data?.message || 'Failed to delete attendance session.',
+                    icon: 'error',
+                    confirmButtonColor: '#3B82F6',
+                });
+            }
+
+            throw error; // Re-throw for the card component to handle
         }
     };
 
@@ -338,58 +360,6 @@ const AttendancePage = () => {
                 icon: 'error',
                 confirmButtonColor: '#3B82F6',
             });
-        }
-    };
-
-    const handleExportAllSessions = async () => {
-        const stats = calculateRealAttendanceStats();
-
-        if (attendanceSessions.length === 0) {
-            Swal.fire({
-                title: 'No Data Available!',
-                text: 'No attendance sessions to export.',
-                icon: 'warning',
-                confirmButtonColor: '#3B82F6',
-            });
-            return;
-        }
-
-        setIsExporting(true);
-
-        try {
-            const enhancedStats = {
-                ...stats,
-                totalStudents: classroom?.students?.length || 0,
-                generatedBy: user?.displayName || user?.email || 'Teacher',
-                generatedAt: new Date().toLocaleString()
-            };
-
-            const success = exportAllSessionsPDF(
-                classroom?.name || 'Classroom',
-                attendanceSessions,
-                enhancedStats
-            );
-
-            if (success) {
-                Swal.fire({
-                    title: 'Success!',
-                    text: 'Complete attendance report exported successfully.',
-                    icon: 'success',
-                    confirmButtonColor: '#3B82F6',
-                });
-            } else {
-                throw new Error('PDF generation failed');
-            }
-        } catch (error) {
-            console.error('Export error:', error);
-            Swal.fire({
-                title: 'Export Failed!',
-                text: 'Failed to export attendance report. Please try again.',
-                icon: 'error',
-                confirmButtonColor: '#3B82F6',
-            });
-        } finally {
-            setIsExporting(false);
         }
     };
 
@@ -536,100 +506,173 @@ const AttendancePage = () => {
                             </div>
                         )}
 
-                        {/* Stats Grid - Responsive */}
-                        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-                            {/* Total Students Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                                        <MdSchool className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-xl sm:text-2xl font-bold text-slate-900">
+                        {/* Stats Grid - Mobile: 3 cards + 1 full width, Desktop: 4 columns */}
+                        <div className="mb-6 sm:mb-8">
+                            {/* First Row: Students, Sessions, Average - Mobile only */}
+                            <div className="grid grid-cols-3 gap-3 mb-3 lg:hidden">
+                                {/* Total Students Card */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-2.5 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center mb-1.5">
+                                            <MdSchool className="w-3.5 h-3.5 text-blue-600" />
+                                        </div>
+                                        <div className="text-base font-bold text-slate-900 leading-tight">
                                             {classroom?.students?.length || 0}
                                         </div>
-                                        <div className="text-xs text-slate-500 font-medium">
-                                            {isOwner() ? 'Students' : 'Class Size'}
+                                        <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
+                                            Students
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2">
-                                    <div className="bg-blue-600 h-2 rounded-full" style={{ width: '100%' }}></div>
-                                </div>
-                            </div>
 
-                            {/* Total Sessions Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
-                                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                                        <MdCalendarToday className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
-                                    </div>
-                                    <div className="text-right">
-                                        <div className="text-xl sm:text-2xl font-bold text-slate-900">
+                                {/* Total Sessions Card */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-2.5 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center mb-1.5">
+                                            <MdCalendarToday className="w-3.5 h-3.5 text-emerald-600" />
+                                        </div>
+                                        <div className="text-base font-bold text-slate-900 leading-tight">
                                             {stats.totalSessions}
                                         </div>
-                                        <div className="text-xs text-slate-500 font-medium">Sessions</div>
+                                        <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">Sessions</div>
                                     </div>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
-                                        style={{ width: `${Math.min((stats.totalSessions / 20) * 100, 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
 
-                            {/* Attendance Rate Card */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 col-span-2 sm:col-span-1">
-                                <div className="flex items-center justify-between mb-3 sm:mb-4">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                                        <MdTrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />
-                                    </div>
-                                    <div className="text-right">
-                                        <div className={`text-xl sm:text-2xl font-bold ${stats.averageAttendance >= 80 ? 'text-emerald-600' :
-                                            stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
+                                {/* Attendance Rate Card */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-2.5 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                    <div className="flex flex-col items-center text-center">
+                                        <div className="w-7 h-7 bg-amber-100 rounded-lg flex items-center justify-center mb-1.5">
+                                            <MdTrendingUp className="w-3.5 h-3.5 text-amber-600" />
+                                        </div>
+                                        <div className={`text-base font-bold leading-tight ${stats.averageAttendance >= 80 ? 'text-emerald-600' :
+                                                stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
                                             }`}>
                                             {stats.averageAttendance}%
                                         </div>
-                                        <div className="text-xs text-slate-500 font-medium">
+                                        <div className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
                                             {isOwner() ? 'Average' : 'Your Rate'}
                                         </div>
                                     </div>
                                 </div>
-                                <div className="w-full bg-slate-100 rounded-full h-2">
-                                    <div
-                                        className={`h-2 rounded-full transition-all duration-500 ${stats.averageAttendance >= 80 ? 'bg-emerald-600' :
-                                            stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
-                                            }`}
-                                        style={{ width: `${stats.averageAttendance}%` }}
-                                    ></div>
+                            </div>
+
+                            {/* Second Row: Register - Mobile only (Full width) */}
+                            <div className="lg:hidden">
+                                <div className="bg-white rounded-xl border border-slate-200 p-2.5 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                    <button
+                                        onClick={() => setShowRegisterView(true)}
+                                        disabled={attendanceSessions.length === 0}
+                                        className="w-full flex items-center justify-between transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
+                                    >
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                                                <MdBarChart className="w-4 h-4 text-indigo-600" />
+                                            </div>
+                                            <div className="text-left">
+                                                <div className="text-sm font-bold text-blue-700 underline decoration-2 underline-offset-4 group-hover:text-blue-800 transition-colors duration-200 leading-tight">
+                                                    View Details
+                                                </div>
+                                                {/* <div className="text-[10px] text-slate-500 font-medium leading-tight">
+                                                    {isOwner() ? 'View Record' : 'My Record'}
+                                                </div> */}
+                                            </div>
+                                        </div>
+                                        <svg className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Export Report Card - Only for Teachers */}
-                            {isOwner() && (
-                                <div className="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300 col-span-2 sm:col-span-1">
+                            {/* Desktop Layout: 4 columns grid */}
+                            <div className="hidden lg:grid grid-cols-4 gap-6">
+                                {/* Total Students Card - Desktop */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                                            <MdSchool className="w-5 h-5 text-blue-600" />
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xl font-bold text-slate-900 leading-tight">
+                                                {classroom?.students?.length || 0}
+                                            </div>
+                                            <div className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                                                {isOwner() ? 'Students' : 'Class Size'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                        <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: '100%' }}></div>
+                                    </div>
+                                </div>
+
+                                {/* Total Sessions Card - Desktop */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                                            <MdCalendarToday className="w-5 h-5 text-emerald-600" />
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-xl font-bold text-slate-900 leading-tight">
+                                                {stats.totalSessions}
+                                            </div>
+                                            <div className="text-xs text-slate-500 font-medium leading-tight mt-0.5">Sessions</div>
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                        <div
+                                            className="bg-emerald-600 h-1.5 rounded-full transition-all duration-500"
+                                            style={{ width: `${Math.min((stats.totalSessions / 20) * 100, 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                {/* Attendance Rate Card - Desktop */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                                            <MdTrendingUp className="w-5 h-5 text-amber-600" />
+                                        </div>
+                                        <div className="text-right">
+                                            <div className={`text-xl font-bold leading-tight ${stats.averageAttendance >= 80 ? 'text-emerald-600' :
+                                                    stats.averageAttendance >= 60 ? 'text-amber-600' : 'text-red-600'
+                                                }`}>
+                                                {stats.averageAttendance}%
+                                            </div>
+                                            <div className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                                                {isOwner() ? 'Average' : 'Your Rate'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-slate-100 rounded-full h-1.5">
+                                        <div
+                                            className={`h-1.5 rounded-full transition-all duration-500 ${stats.averageAttendance >= 80 ? 'bg-emerald-600' :
+                                                    stats.averageAttendance >= 60 ? 'bg-amber-600' : 'bg-red-600'
+                                                }`}
+                                            style={{ width: `${stats.averageAttendance}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+
+                                {/* Attendance Register Button - Desktop */}
+                                <div className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-lg hover:shadow-slate-200/50 transition-all duration-300">
                                     <button
-                                        onClick={handleExportAllSessions}
-                                        disabled={isExporting || attendanceSessions.length === 0}
+                                        onClick={() => setShowRegisterView(true)}
+                                        disabled={attendanceSessions.length === 0}
                                         className="w-full h-full flex flex-col items-center justify-center text-center transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group"
                                     >
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-200">
-                                            {isExporting ? (
-                                                <div className="animate-spin rounded-full h-5 w-5 sm:h-6 sm:w-6 border-b-2 border-purple-600"></div>
-                                            ) : (
-                                                <MdFileDownload className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-                                            )}
+                                        <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center mb-2 group-hover:scale-110 transition-transform duration-200">
+                                            <MdBarChart className="w-5 h-5 text-indigo-600" />
                                         </div>
-                                        <div className="text-xs sm:text-sm font-semibold text-slate-900 mb-1">
-                                            {isExporting ? 'Exporting...' : 'Export'}
+                                        <div className="text-sm font-bold text-blue-700 underline decoration-2 underline-offset-4 group-hover:text-blue-800 transition-colors duration-200 cursor-pointer leading-tight">
+                                            {isOwner() ? 'Full Report' : 'My Attendance'}
                                         </div>
-                                        <div className="text-xs text-slate-500">
-                                            {isExporting ? 'Wait' : 'PDF'}
-                                        </div>
+                                        {/* <div className="text-xs text-slate-500 font-medium leading-tight mt-0.5">
+                                            {isOwner() ? 'View Record' : 'My Record'}
+                                        </div> */}
                                     </button>
                                 </div>
-                            )}
+                            </div>
                         </div>
 
                         {/* Sessions Section - Responsive */}
@@ -644,7 +687,7 @@ const AttendancePage = () => {
                                             </span>
                                             {isOwner() && stats.totalPossibleAttendance > 0 && (
                                                 <span className="text-xs text-slate-500 hidden sm:inline">
-                                                    {stats.totalActualAttendance}/{stats.totalPossibleAttendance} total
+                                                    {/* {stats.totalActualAttendance}/{stats.totalPossibleAttendance} total */}
                                                 </span>
                                             )}
                                         </div>
@@ -683,11 +726,13 @@ const AttendancePage = () => {
                                                 session={session}
                                                 onUpdateAttendance={updateAttendance}
                                                 onViewDetails={handleViewSessionDetails}
+                                                onSessionUpdate={handleSessionDetailsClose}
+                                                onDeleteSession={handleDeleteSession}
                                                 isOwner={isOwner()}
                                                 currentUserEmail={user?.email}
                                                 classroomName={classroom?.name}
-                                                allClassroomStudents={classroom?.students || []} // ✅ NEW: Pass all students
-                                                teacherEmail={classroom?.teacherEmail} // ✅ NEW: Pass teacher email
+                                                allClassroomStudents={classroom?.students || []}
+                                                teacherEmail={classroom?.teacherEmail}
                                                 refreshTrigger={updateTrigger}
                                             />
                                         ))}
@@ -715,8 +760,20 @@ const AttendancePage = () => {
                     isOwner={isOwner()}
                     currentUserEmail={user?.email}
                     classroomName={classroom?.name}
-                    allClassroomStudents={classroom?.students || []} // ✅ NEW: Pass to modal too
-                    teacherEmail={classroom?.teacherEmail} // ✅ NEW: Pass to modal too
+                    allClassroomStudents={classroom?.students || []}
+                    teacherEmail={classroom?.teacherEmail}
+                />
+            )}
+
+            {/* Attendance Register Modal - Available for Everyone */}
+            {showRegisterView && (
+                <AttendanceRegisterModal
+                    onClose={() => setShowRegisterView(false)}
+                    attendanceSessions={attendanceSessions}
+                    students={classroom?.students || []}
+                    classroomName={classroom?.name}
+                    isOwner={isOwner()}
+                    currentUserEmail={user?.email}
                 />
             )}
         </div>

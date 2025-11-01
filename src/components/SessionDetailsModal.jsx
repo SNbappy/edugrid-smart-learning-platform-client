@@ -6,12 +6,12 @@ import {
     MdCancel,
     MdSchedule,
     MdDateRange,
-    MdSave,
     MdVisibility,
     MdSearch,
-    MdFilterList
+    MdCheck
 } from 'react-icons/md';
 import useAxiosPublic from '../hooks/useAxiosPublic';
+
 
 const SessionDetailsModal = ({
     session,
@@ -25,11 +25,15 @@ const SessionDetailsModal = ({
 }) => {
     const axiosPublic = useAxiosPublic();
     const [localAttendance, setLocalAttendance] = useState([]);
-    const [hasChanges, setHasChanges] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
-    const [isLoadingNames, setIsLoadingNames] = useState(false);
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    // Track saving state per student
+    const [savingStudents, setSavingStudents] = useState(new Set());
+    const [savedStudents, setSavedStudents] = useState(new Set());
+    const [saveErrors, setSaveErrors] = useState(new Map());
+
 
     // Merge session attendance with all enrolled students
     const completeAttendance = useMemo(() => {
@@ -81,9 +85,9 @@ const SessionDetailsModal = ({
         return sortedList;
     }, [session?.id, session?.attendance, allClassroomStudents, teacherEmail]);
 
+
     // Fetch updated user names from database
     const fetchUpdatedUserNames = async (attendanceRecords) => {
-        setIsLoadingNames(true);
         try {
             const updatedRecords = await Promise.all(
                 attendanceRecords.map(async (record) => {
@@ -116,10 +120,9 @@ const SessionDetailsModal = ({
         } catch (error) {
             console.error('Error updating user names:', error);
             return attendanceRecords;
-        } finally {
-            setIsLoadingNames(false);
         }
     };
+
 
     // Load attendance data whenever session or students change
     useEffect(() => {
@@ -131,21 +134,39 @@ const SessionDetailsModal = ({
             } else {
                 setLocalAttendance([]);
             }
+            setIsInitialLoad(false);
         };
 
         loadAttendanceData();
-    }, [session?.id, JSON.stringify(session?.attendance), allClassroomStudents.length, teacherEmail]); // ✅ Fixed dependencies
+    }, [session?.id, JSON.stringify(session?.attendance), allClassroomStudents.length, teacherEmail]);
+
 
     // Reset state when session changes
     useEffect(() => {
-        setHasChanges(false);
         setSearchTerm('');
         setFilterStatus('all');
+        setSavingStudents(new Set());
+        setSavedStudents(new Set());
+        setSaveErrors(new Map());
     }, [session?.id]);
 
-    const handleStatusChange = (studentEmail, newStatus) => {
+
+    // Auto-clear "Saved" status after 2 seconds
+    useEffect(() => {
+        if (savedStudents.size > 0) {
+            const timer = setTimeout(() => {
+                setSavedStudents(new Set());
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [savedStudents]);
+
+
+    // Auto-save when status changes
+    const handleStatusChange = async (studentEmail, newStatus) => {
         if (!isOwner) return;
 
+        // Optimistically update UI
         const updatedAttendance = localAttendance.map(record =>
             record.studentEmail === studentEmail
                 ? { ...record, status: newStatus, markedAt: new Date(), markedBy: currentUserEmail }
@@ -160,34 +181,49 @@ const SessionDetailsModal = ({
         });
 
         setLocalAttendance(sortedAttendance);
-        setHasChanges(true);
-    };
 
-    const handleSave = async () => {
-        if (!hasChanges || !isOwner) return;
+        // Mark as saving
+        setSavingStudents(prev => new Set(prev).add(studentEmail));
+        setSavedStudents(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(studentEmail);
+            return newSet;
+        });
+        setSaveErrors(prev => {
+            const newMap = new Map(prev);
+            newMap.delete(studentEmail);
+            return newMap;
+        });
 
-        setIsSaving(true);
+        // Auto-save to backend
         try {
-            const changes = localAttendance.filter((record) => {
-                const originalRecord = completeAttendance.find(
-                    r => r.studentEmail === record.studentEmail
-                );
-                return record.status !== originalRecord?.status;
+            await onUpdateAttendance(session.id, studentEmail, newStatus);
+
+            // Mark as saved
+            setSavingStudents(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(studentEmail);
+                return newSet;
             });
+            setSavedStudents(prev => new Set(prev).add(studentEmail));
 
-            console.log('💾 Saving changes:', changes.length);
-
-            for (const change of changes) {
-                await onUpdateAttendance(session.id, change.studentEmail, change.status);
-            }
-
-            setHasChanges(false);
+            console.log('✅ Auto-saved attendance for:', studentEmail);
         } catch (error) {
-            console.error('Error saving attendance:', error);
-        } finally {
-            setIsSaving(false);
+            console.error('❌ Failed to auto-save attendance:', error);
+
+            // Mark as error
+            setSavingStudents(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(studentEmail);
+                return newSet;
+            });
+            setSaveErrors(prev => new Map(prev).set(studentEmail, 'Save failed'));
+
+            // Revert optimistic update on error
+            setLocalAttendance(completeAttendance);
         }
     };
+
 
     const getStatusStyle = (status) => {
         switch (status) {
@@ -218,6 +254,7 @@ const SessionDetailsModal = ({
         }
     };
 
+
     // Filter and search logic (maintains sorted order)
     const filteredAttendance = localAttendance.filter(record => {
         const matchesSearch = !searchTerm ||
@@ -229,29 +266,50 @@ const SessionDetailsModal = ({
         return matchesSearch && matchesFilter;
     });
 
+
     const presentCount = localAttendance.filter(record => record.status === 'present').length;
     const absentCount = localAttendance.filter(record => record.status === 'absent').length;
     const unmarkedCount = localAttendance.filter(record => record.status === 'unmarked').length;
     const totalStudents = localAttendance.length;
     const attendancePercentage = totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0;
 
+    // Check if any saves are in progress
+    const isSavingAny = savingStudents.size > 0;
+
+    // Prevent close if saving
+    const handleClose = () => {
+        if (isSavingAny) {
+            return; // Don't close while saving
+        }
+        onClose();
+    };
+
+    // Prevent backdrop close if saving
+    const handleBackdropClick = () => {
+        if (isSavingAny) {
+            return; // Don't close while saving
+        }
+        onClose();
+    };
+
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
             {/* Professional Blurred Backdrop */}
             <div
-                className="absolute inset-0 bg-slate-900/20 backdrop-blur-md transition-opacity duration-300"
-                onClick={onClose}
+                className={`absolute inset-0 bg-slate-900/20 backdrop-blur-md transition-opacity duration-300 ${isSavingAny ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                onClick={handleBackdropClick}
             ></div>
 
             {/* Modal Container - Fully Responsive */}
             <div className="relative bg-white rounded-lg sm:rounded-2xl shadow-2xl border border-slate-200/60 w-full max-w-full sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto h-[95vh] sm:h-[90vh] md:h-[85vh] flex flex-col transform transition-all duration-300 scale-100 animate-in zoom-in-95">
 
-                {/* Loading Overlay */}
-                {isLoadingNames && (
+                {/* Initial Loading Overlay - Only on first load */}
+                {isInitialLoad && (
                     <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg sm:rounded-2xl">
                         <div className="flex flex-col items-center space-y-3">
                             <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
-                            <p className="text-sm text-slate-600 font-medium">Loading updated names...</p>
+                            <p className="text-sm text-slate-600 font-medium">Loading attendance...</p>
                         </div>
                     </div>
                 )}
@@ -287,34 +345,29 @@ const SessionDetailsModal = ({
                         </div>
 
                         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
-                            {isOwner && hasChanges && (
-                                <div className="hidden sm:flex items-center space-x-1">
-                                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></div>
-                                    <span className="text-xs text-amber-600 font-medium">Unsaved</span>
-                                </div>
-                            )}
-                            {isOwner && hasChanges && (
-                                <button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    className="inline-flex items-center px-2 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-semibold rounded-md transition-all duration-200 touch-manipulation"
-                                >
-                                    {isSaving ? (
+                            {/* Saving/Saved Status Indicator */}
+                            {isOwner && (
+                                <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
+                                    {isSavingAny ? (
                                         <>
-                                            <div className="animate-spin rounded-full h-3 w-3 border-b border-white mr-1"></div>
-                                            <span className="hidden sm:inline">Saving</span>
+                                            <div className="animate-spin rounded-full h-3 w-3 border-2 border-blue-500 border-t-transparent"></div>
+                                            <span className="text-xs text-blue-600 font-medium">Saving...</span>
+                                        </>
+                                    ) : savedStudents.size > 0 ? (
+                                        <>
+                                            <MdCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                            <span className="text-xs text-emerald-600 font-medium">Saved</span>
                                         </>
                                     ) : (
-                                        <>
-                                            <MdSave className="w-3 h-3 sm:mr-1" />
-                                            <span className="hidden sm:inline">Save</span>
-                                        </>
+                                        <span className="text-xs text-slate-500 font-medium">Auto-save enabled</span>
                                     )}
-                                </button>
+                                </div>
                             )}
                             <button
-                                onClick={onClose}
-                                className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors duration-200 text-slate-400 hover:text-slate-600 touch-manipulation"
+                                onClick={handleClose}
+                                disabled={isSavingAny}
+                                className={`w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center transition-colors duration-200 text-slate-400 hover:text-slate-600 touch-manipulation ${isSavingAny ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                title={isSavingAny ? 'Cannot close while saving' : 'Close'}
                             >
                                 <MdClose className="w-5 h-5" />
                             </button>
@@ -386,6 +439,9 @@ const SessionDetailsModal = ({
                                     const style = getStatusStyle(record.status);
                                     const IconComponent = style.icon;
                                     const isCurrentUser = record.studentEmail === currentUserEmail;
+                                    const isSaving = savingStudents.has(record.studentEmail);
+                                    const isSaved = savedStudents.has(record.studentEmail);
+                                    const saveError = saveErrors.get(record.studentEmail);
 
                                     return (
                                         <div
@@ -411,6 +467,24 @@ const SessionDetailsModal = ({
                                                         <span className={`px-1.5 py-0.5 text-xs font-medium rounded capitalize flex-shrink-0 ${style.badge}`}>
                                                             {record.status}
                                                         </span>
+                                                        {/* Saving/Saved indicator per student */}
+                                                        {isOwner && isSaving && (
+                                                            <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-xs font-medium rounded flex items-center gap-1 flex-shrink-0">
+                                                                <div className="animate-spin rounded-full h-2.5 w-2.5 border border-blue-600 border-t-transparent"></div>
+                                                                Saving
+                                                            </span>
+                                                        )}
+                                                        {isOwner && isSaved && !isSaving && (
+                                                            <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded flex items-center gap-1 flex-shrink-0">
+                                                                <MdCheck className="w-3 h-3" />
+                                                                Saved
+                                                            </span>
+                                                        )}
+                                                        {isOwner && saveError && (
+                                                            <span className="px-1.5 py-0.5 bg-red-50 text-red-600 text-xs font-medium rounded flex-shrink-0">
+                                                                {saveError}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                     <div className="text-xs sm:text-sm text-slate-500 truncate">
                                                         {record.studentEmail}
@@ -458,31 +532,24 @@ const SessionDetailsModal = ({
                     <div className="text-xs sm:text-sm text-slate-600 text-center sm:text-left">
                         {filteredAttendance.length} of {totalStudents} students
                         {searchTerm && <span className="text-slate-400"> (filtered)</span>}
+                        {isSavingAny && <span className="text-blue-600 ml-2 font-medium">• Saving changes...</span>}
                     </div>
-                    <div className="flex items-center justify-center sm:justify-end space-x-2">
-                        {isOwner && hasChanges && (
-                            <button
-                                onClick={async () => {
-                                    const updatedRecords = await fetchUpdatedUserNames(completeAttendance);
-                                    setLocalAttendance(updatedRecords);
-                                    setHasChanges(false);
-                                }}
-                                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
-                            >
-                                Reset
-                            </button>
-                        )}
-                        <button
-                            onClick={onClose}
-                            className="flex-1 sm:flex-none px-4 sm:px-5 py-2 text-xs sm:text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0"
-                        >
-                            Close
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleClose}
+                        disabled={isSavingAny}
+                        className={`w-full sm:w-auto px-4 sm:px-5 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 touch-manipulation min-h-[44px] sm:min-h-0 ${isSavingAny
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                            : 'bg-slate-700 text-white hover:bg-slate-800'
+                            }`}
+                        title={isSavingAny ? 'Please wait for saves to complete' : 'Close modal'}
+                    >
+                        {isSavingAny ? 'Saving...' : 'Close'}
+                    </button>
                 </div>
             </div>
         </div>
     );
 };
+
 
 export default SessionDetailsModal;
